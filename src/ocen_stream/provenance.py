@@ -61,6 +61,9 @@ class FileRecord:
     published_algorithm : str
         Hash algorithm of ``published_md5`` (Zenodo publishes ``md5`` today but
         the API returns ``'<algorithm>:<hexdigest>'``, so it is not assumed).
+    local_path : str or None
+        Absolute path (``~`` allowed) of a file in the canonical catalogue store,
+        for datasets of kind ``local``.
     """
 
     dataset: str
@@ -72,10 +75,19 @@ class FileRecord:
     expected_bytes_tolerance: float = 0.1
     required: bool = True
     published_algorithm: str = "md5"
+    local_path: str | None = None
 
     @property
     def path(self) -> Path:
-        """Local destination path of this file."""
+        """Where the file lives.
+
+        For downloaded files this is ``data/raw/<dataset>/<name>``. A record with
+        ``local_path`` set refers to a file kept in the user's canonical
+        catalogue store (``$OCEN_CATALOGUES/``) and is verified in place, never
+        copied into the repository.
+        """
+        if self.local_path:
+            return Path(self.local_path).expanduser()
         return raw_dir() / self.dataset / self.name
 
     @property
@@ -185,6 +197,7 @@ def load_registry(path: Path | str | None = None) -> Registry:
                         spec.get("expected_bytes_tolerance", 0.1)
                     ),
                     required=bool(spec.get("required", True)),
+                    local_path=spec.get("path"),
                 )
             )
 
