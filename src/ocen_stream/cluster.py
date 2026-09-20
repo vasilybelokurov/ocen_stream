@@ -29,8 +29,8 @@ import numpy as np
 __all__ = ["OCEN_RA", "OCEN_DEC", "OCEN_VSYS_KMS", "MU_SYS", "centre"]
 
 #: adopted centre (deg), = ``centre("omegacat")``; verified by ``tests/test_cluster_centre.py``
-OCEN_RA = 201.6968330
-OCEN_DEC = -47.4795690
+OCEN_RA = 201.69683333
+OCEN_DEC = -47.47956944
 #: systemic line-of-sight velocity, km/s
 OCEN_VSYS_KMS = 232.7
 #: systemic proper motion (mas/yr), Vasiliev & Baumgardt 2021
