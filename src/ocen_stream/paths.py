@@ -1,7 +1,8 @@
-"""Canonical project paths.
+"""Shared paths for catalogue preparation and kinematic fits.
 
-All code resolves directories through this module so that no path is
-hard-coded in more than one place.
+OCEN_DM_ROOT can override the repository root. Some exploratory tails modules
+also use working-directory-relative outputs and external local resources;
+this module does not centralise every path in the repository.
 """
 
 from __future__ import annotations
