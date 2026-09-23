@@ -99,3 +99,30 @@ def registry_copy(isolated_root):
     shutil.copy(repo_root / "provenance" / "datasets.yaml",
                 isolated_root / "provenance" / "datasets.yaml")
     return isolated_root
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _restore_agama_units():
+    """Stop one module's global AGAMA units leaking into the next.
+
+    AGAMA units are process-global. Orbit/tail modules set kpc units, while the
+    DF branch (``positive_df.agama_pc``) requires pc and refuses mixed units.
+    Units in force when a module starts are restored when it ends; if none were
+    set, the DF convention (pc, Msun, km/s) is restored. AGAMA objects made
+    under a module's own units must not outlive that module.
+    """
+    try:
+        import agama
+    except ImportError:
+        yield
+        return
+    before = dict(agama.getUnits())
+    yield
+    after = dict(agama.getUnits())
+    keys = ("length", "mass", "velocity")
+    if before and all(np.isclose(after.get(k, np.nan), before[k]) for k in keys):
+        return
+    if before:
+        agama.setUnits(**{k: before[k] for k in keys})
+    elif after:
+        agama.setUnits(length=0.001, mass=1., velocity=1.)
