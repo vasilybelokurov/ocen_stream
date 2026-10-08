@@ -29,6 +29,19 @@ data to b = 37) and turns the sky track by about half of the observed ~10 deg; a
 | Objective | Gaussian track likelihood per bin: (y - m)^T (C_obs + C_model + C_sys)^-1 (y - m), model summaries built with identical frame, cuts, binning and error convolution | Erkal+2019 arXiv:1812.08192; Koposov+2023 |
 | Optimiser | coarse grid -> Nelder-Mead / CMA-ES with common random numbers -> small emcee only if needed | Codex; brute-force MCMC on tracer runs is unaffordable |
 
+## Revision 2026-10-09 after the methods review ([STREAM_FIT_METHODS_REVIEW.md](STREAM_FIT_METHODS_REVIEW.md))
+
+- Model track: select trailing-arm particles by the sign of the Gibbons+2014 phase chi (accumulated r - r_prog since release)
+  and, where needed, by release time; bin in b; per bin a local linear fit to particles gives the model value and its error
+  of the mean (Erkal+2019, Koposov+2023); require sigma_sim < sigma_data/5 (sets the particle number).
+- Mask only bins where the MODEL is multi-valued in b (Koposov+2023 practice); never mask the observed knee.
+- Likelihood: Gaussian per bin and observable with sigma_data^2 + sigma_sim^2; no extra error floors unless the user approves.
+- Spray: AGAMA, moving progenitor potential = our model's mass profile (Gibbons+2014: progenitor gravity essential),
+  pericentre-weighted release (Erkal+2019) or Chen+25; validated against the tracer runs. StreaMAX not used (bar not wired
+  into its integrator, 2D-only track).
+- Optimiser: simplex/Nelder-Mead from many prior draws or dual annealing (likelihood discontinuous), then emcee if needed.
+- Report the pull on omega Cen's present-day 6D point (Dillamore+2022: it absorbs perturbations); mock calibration of the DM test.
+
 ## Stages
 
 **Stage 0 -- freeze the observables (data only, ~1 day of work, negligible CPU).**
