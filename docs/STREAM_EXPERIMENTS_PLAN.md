@@ -1,6 +1,6 @@
 # Restricted N-body tails with and without DM vs Fimbulthul — scoping (2026-10-08)
 
-Status: **proposal, not implemented.** Decisions marked D1–D5 are the user's.
+Status: **implemented and run (2026-10-08)**; results and open questions in [STREAM_KNEE_INVESTIGATION.md](STREAM_KNEE_INVESTIGATION.md). Decisions marked D1–D5 are the user's.
 
 ## Question
 
