@@ -5,6 +5,7 @@ Usage: python bin/streams/plot_arm_overlay.py plots/streams_arm_overlay_pm_b.png
 """
 import sys, os; from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
+import json
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
 from plot_debris_vs_ibata import observables, MODELS
@@ -18,8 +19,9 @@ for j, (key, lab, col) in enumerate(MODELS):
     R = ROOT/"results/streams"/(sys.argv[2] if len(sys.argv) > 2 else "prescribed")/key
     if not (R/"run.json").exists():                 # run not finished
         continue
-    m, s = run_particles(R); _, xv = load(R, name="snap_today.npz"); c = OCEN_TODAY.copy()
-    bnd, _ = bound_set(xv, c, m, start=np.linalg.norm(xv[:, :3]-c[:3], axis=1) < 0.5, core=run_core(R)); o = observables(xv[~bnd])
+    rj = json.loads((R/"run.json").read_text()); frame = rj.get("frame", "baumgardt")
+    m, s = run_particles(R); _, xv = load(R, name="snap_today.npz"); c = np.array(rj.get("ocen_today", OCEN_TODAY))
+    bnd, _ = bound_set(xv, c, m, start=np.linalg.norm(xv[:, :3]-c[:3], axis=1) < 0.5, core=run_core(R)); o = observables(xv[~bnd], frame)
     k = (o["b"] > 5) & (w(o["l"]) < -15) & (w(o["l"]) > -80)
     for i, q, qq in ((0, "pmra", "pmRA"), (1, "pmdec", "pmDE")):
         a = ax[i, j]

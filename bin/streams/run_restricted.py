@@ -98,7 +98,7 @@ def main():
         host = null_host(); start = np.zeros(6)
     else:
         host = host_potential(args.mw)
-        _, traj = agama.orbit(potential=host, ic=OCEN_TODAY, time=-args.tback/AGAMA_T_MYR, trajsize=2)
+        _, traj = agama.orbit(potential=host, ic=OCEN_TODAY, time=-args.tback/AGAMA_T_MYR, trajsize=2, accuracy=1e-12)
         start = traj[-1]
     restart = args.out/"restart.npz"
     if args.resume and restart.exists():

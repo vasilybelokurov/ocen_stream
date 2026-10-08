@@ -43,7 +43,10 @@ MODELS = [("A_nodm", "A: no DM", "#2a78d6"), ("B_dm_phot", "B: moderate DM", "#e
 INK, MUTED, GRID = "#1f1f1e", "#6b6a64", "#e4e3dc"
 
 
-def observables(xv):
+def observables(xv, frame="baumgardt"):
+    if frame != "baumgardt":
+        from ocen_dm.streams.frames import observables as obs_frame
+        return obs_frame(xv, frame)
     gc = coord.Galactocentric(x=-xv[:, 0]*u.kpc, y=xv[:, 1]*u.kpc, z=xv[:, 2]*u.kpc,
                               v_x=-xv[:, 3]*u.km/u.s, v_y=xv[:, 4]*u.km/u.s, v_z=xv[:, 5]*u.km/u.s,
                               galcen_distance=R_SUN_KPC*u.kpc, z_sun=0*u.pc,
@@ -73,10 +76,12 @@ def main():
         R = ROOT/"results/streams"/args.runs/key
         m, s = run_particles(R)
         _, xv = load(R, name="snap_today.npz")
-        c = OCEN_TODAY.copy()                     # the prescribed centre ends 0.5 pc from today's position (run.json)
+        rj = json.loads((R/"run.json").read_text())
+        frame = rj.get("frame", "baumgardt")       # runs before the frame option used OCEN_TODAY (= baumgardt)
+        c = np.array(rj.get("ocen_today", OCEN_TODAY))   # the prescribed centre ends 0.5 pc from today's position
         near = np.linalg.norm(xv[:, :3]-c[:3], axis=1) < 0.5
         b, _ = bound_set(xv, c, m, start=near, core=run_core(R))
-        o = observables(xv[~b]); oc = observables(c[None, :])
+        o = observables(xv[~b], frame); oc = observables(c[None, :], frame)
         k = sep_deg(o["l"], o["b"]) < RAD
         cols.append((lab, col, {q: v[k] for q, v in o.items()}, oc))
         out[key] = dict(n_within=int(k.sum()), cluster={q: float(v[0]) for q, v in oc.items()})
@@ -133,6 +138,7 @@ def main():
                 a.set_xlabel("b [deg]" if (i > 0 and args.xlower == "b") else "l [deg]", color=INK)
     rj = json.loads((ROOT/"results/streams"/args.runs/MODELS[0][0]/"run.json").read_text())
     host = Path(rj["mw"]).stem
+    host += f", {rj.get('frame', 'baumgardt')} frame"
     spin = "no rotation" if not rj.get("spin") else ("max rotation" if "note" in rj["spin"] else "fitted rotation")
     fig.suptitle(f"Debris within {RAD:g} deg of omega Cen today: three DM models (prescribed potential, {host}, "
                  f"{rj['tback_myr']/1e3:.2f} Gyr, {spin}) "

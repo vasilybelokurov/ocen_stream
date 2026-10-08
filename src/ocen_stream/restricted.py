@@ -194,7 +194,7 @@ def centre_orbit(host, ic, t0_myr, dt_myr, n):
     """Point-mass orbit of the satellite centre from t0 over n steps of dt [Myr]; returns (t_agama, xv)."""
     agama = agama_kpc()
     t, traj = agama.orbit(potential=host, ic=ic, timestart=t0_myr/AGAMA_T_MYR, time=n*dt_myr/AGAMA_T_MYR,
-                          trajsize=n+1)
+                          trajsize=n+1, accuracy=1e-12)     # default 1e-8 drifts 5-12 pc per 2 Gyr round trip
     return t, traj
 
 

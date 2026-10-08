@@ -21,18 +21,16 @@ R_SUN_KPC, V_SUN = 8.178, (11.1, 12.24+240.0, 7.25)
 K_PMV = 4.740470446                    # km/s per (mas/yr kpc)
 
 
-def _galcen():
-    import astropy.coordinates as coord
-    import astropy.units as u
-    return coord.Galactocentric(galcen_distance=R_SUN_KPC*u.kpc, z_sun=0*u.pc,
-                                galcen_v_sun=coord.CartesianDifferential(V_SUN*u.km/u.s))
+def _galcen(frame="baumgardt"):
+    from ocen_dm.streams.frames import galcen
+    return galcen(frame)
 
 
-def icrs_to_model_matrix():
+def icrs_to_model_matrix(frame="baumgardt"):
     """3x3 matrix M with p_model = M p_icrs for relative (polar) vectors."""
     import astropy.coordinates as coord
     import astropy.units as u
-    gc = _galcen()
+    gc = _galcen(frame)
     pts = np.vstack((np.zeros(3), np.eye(3)))*1.0
     c = coord.SkyCoord(coord.CartesianRepresentation(pts.T*u.kpc), frame="icrs").transform_to(gc)
     g = np.vstack((c.x.to_value(u.kpc), c.y.to_value(u.kpc), c.z.to_value(u.kpc))).T
@@ -40,12 +38,12 @@ def icrs_to_model_matrix():
     return np.diag([-1., 1., 1.]) @ R
 
 
-def sky_basis(centre_model):
+def sky_basis(centre_model, frame="baumgardt"):
     """ICRS unit vectors (e_r away from the Sun, e_E, e_N) at the cluster, and its distance [kpc]."""
     import astropy.coordinates as coord
     import astropy.units as u
     x = centre_model
-    gc = coord.SkyCoord(x=-x[0]*u.kpc, y=x[1]*u.kpc, z=x[2]*u.kpc, frame=_galcen()).transform_to(coord.ICRS())
+    gc = coord.SkyCoord(x=-x[0]*u.kpc, y=x[1]*u.kpc, z=x[2]*u.kpc, frame=_galcen(frame)).transform_to(coord.ICRS())
     a, d = gc.ra.rad, gc.dec.rad
     e_r = np.array([np.cos(d)*np.cos(a), np.cos(d)*np.sin(a), np.sin(d)])
     e_E = np.array([-np.sin(a), np.cos(a), 0.])
@@ -53,9 +51,9 @@ def sky_basis(centre_model):
     return e_r, e_E, e_N, float(gc.distance.kpc)
 
 
-def spin_axis_icrs(centre_model, pa_deg=192., incl_towards_deg=45.):
+def spin_axis_icrs(centre_model, pa_deg=192., incl_towards_deg=45., frame="baumgardt"):
     """Unit spin vector (ICRS): sky projection at PA pa_deg (E of N), tilted incl_towards_deg towards the Sun."""
-    e_r, e_E, e_N, _ = sky_basis(centre_model)
+    e_r, e_E, e_N, _ = sky_basis(centre_model, frame)
     pa, i = np.radians(pa_deg), np.radians(incl_towards_deg)
     return np.cos(i)*(np.cos(pa)*e_N+np.sin(pa)*e_E) - np.sin(i)*e_r
 
@@ -67,11 +65,11 @@ def flip_probability(rmax_pc, q0, rq_pc, r1_pc=0.):
     return q0*inner/(1.+(r/rq_pc)**2)
 
 
-def spin_up(xv_rel_model, rmax_pc, centre_model, q0, rq_pc, pa_deg=192., incl_towards_deg=45., seed=0, r1_pc=0.):
+def spin_up(xv_rel_model, rmax_pc, centre_model, q0, rq_pc, pa_deg=192., incl_towards_deg=45., seed=0, r1_pc=0., frame="baumgardt"):
     """Return a copy of the relative phase-space coordinates (model frame, kpc and km/s) with Lynden-Bell flips,
     and the boolean mask of flipped stars."""
-    M = icrs_to_model_matrix()
-    s = M @ spin_axis_icrs(centre_model, pa_deg, incl_towards_deg)      # spin direction as a model-frame polar vector
+    M = icrs_to_model_matrix(frame)
+    s = M @ spin_axis_icrs(centre_model, pa_deg, incl_towards_deg, frame)      # spin direction as a model-frame polar vector
     pos_i = xv_rel_model[:, :3] @ M                                       # M^T p  (M orthogonal)
     vel_i = xv_rel_model[:, 3:] @ M
     s_i = M.T @ s

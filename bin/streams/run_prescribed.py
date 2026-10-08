@@ -48,6 +48,8 @@ def main():
     p.add_argument("--snap", type=float, default=50.)
     p.add_argument("--accuracy", type=float, default=1e-8)
     p.add_argument("--seed", type=int, default=1)
+    p.add_argument("--frame", default=None, choices=("baumgardt", "ibata19"), help="solar frame + omega Cen distance "
+                   "(src/ocen_dm/streams/frames.py) for today's centre; default: legacy OCEN_TODAY (= baumgardt within 0.6 km/s)")
     p.add_argument("--spin", type=Path, default=None, help="results/streams/spin/<model>.json from bin/streams/fit_spin.py: "
                    "Lynden-Bell rotation (src/ocen_dm/streams/rotation.py), axis fixed in the Galactic frame at today's orientation")
     args = p.parse_args()
@@ -69,12 +71,14 @@ def main():
     xv_rel = np.hstack((ics["pos"][pick]/1e3, ics["vel"][pick])).astype(float)
     E = sat.potential(xv_rel[:, :3]) + 0.5*np.sum(xv_rel[:, 3:]**2, axis=1)
     rmax_pc = rmax_of_energy(sat, E)*1e3
+    from ocen_dm.streams.frames import ocen_today
+    today = OCEN_TODAY.copy() if args.frame is None else ocen_today(args.frame)
     spin = None
     if args.spin is not None:
         from ocen_dm.streams.rotation import spin_up
         spin = json.loads(args.spin.read_text())
-        xv_rel, flipped = spin_up(xv_rel, rmax_pc, OCEN_TODAY, spin["q0"], spin["rq_pc"], pa_deg=spin["pa_deg"],
-                                  incl_towards_deg=spin["incl_towards_deg"], r1_pc=spin["r1_pc"])
+        xv_rel, flipped = spin_up(xv_rel, rmax_pc, today, spin["q0"], spin["rq_pc"], pa_deg=spin["pa_deg"],
+                                  incl_towards_deg=spin["incl_towards_deg"], r1_pc=spin["r1_pc"], frame=args.frame or "baumgardt")
         print(f"spin: {args.spin}: flipped {flipped.mean():.3f} of the tracers", flush=True)
     active = rmax_pc >= args.rfreeze
     n_frozen = int((~active).sum())
@@ -82,10 +86,10 @@ def main():
           f"integrating {active.sum()}", flush=True)
 
     host = host_potential(args.mw)
-    _, traj = agama.orbit(potential=host, ic=OCEN_TODAY, time=-args.tback/AGAMA_T_MYR, trajsize=2)
+    _, traj = agama.orbit(potential=host, ic=today, time=-args.tback/AGAMA_T_MYR, trajsize=2, accuracy=1e-12)   # default 1e-8 loses 5-12 pc per round trip
     start = traj[-1]
     T = args.tback/AGAMA_T_MYR
-    tc, orb = agama.orbit(potential=host, ic=start, timestart=0., time=T, trajsize=int(np.ceil(args.tback/0.05))+1)
+    tc, orb = agama.orbit(potential=host, ic=start, timestart=0., time=T, trajsize=int(np.ceil(args.tback/0.05))+1, accuracy=1e-12)
     total = agama.Potential(host, agama.Potential(potential=sat, center=np.column_stack((tc, orb))))
     nsnap = int(round(args.tback/args.snap))
     ic = xv_rel[active] + start
@@ -106,9 +110,9 @@ def main():
                 "massless star tracers", model=args.model, model_profiles=str(mdir/"model_profiles.json"),
                 ics=str(ics_path), mw=args.mw, tback_myr=args.tback, t_today_myr=args.tback, nstars=int(len(pick)),
                 n_integrated=int(active.sum()), n_counted_only=n_frozen, rfreeze_pc=args.rfreeze, seed=args.seed,
-                accuracy=args.accuracy, spin=spin, spin_file=str(args.spin) if args.spin else None, snap_times_myr=times.tolist(), start=start.tolist(), ocen_today=OCEN_TODAY.tolist(),
+                accuracy=args.accuracy, spin=spin, spin_file=str(args.spin) if args.spin else None, snap_times_myr=times.tolist(), start=start.tolist(), ocen_today=today.tolist(), frame=args.frame or "baumgardt",
                 satellite_mass=float(M_tot[-1]), integration_s=t_int, wall_s=time.time()-t_wall,
-                centre_offset_today_pc=float(np.linalg.norm(orb[-1, :3]-OCEN_TODAY[:3])*1e3))
+                centre_offset_today_pc=float(np.linalg.norm(orb[-1, :3]-today[:3])*1e3))
     (args.out/"run.json").write_text(json.dumps(meta, indent=1))
     print(f"integration {t_int:.1f} s, total {time.time()-t_wall:.1f} s; centre today {meta['centre_offset_today_pc']:.2f} pc "
           f"from omega Cen", flush=True)
