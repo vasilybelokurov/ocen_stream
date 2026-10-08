@@ -19,9 +19,11 @@ Consolidated record of the stream experiments of 2026-10-08. Day-by-day detail a
   (b ~ 35, l = -52..-32); their "knee" (l ~ -57, b ~ 20, Fig. 4b) is a sky feature near the cluster. Ibata+2024
   excludes stream 54 from its fit; Zheng+2026 report stronger observed bending than in their and Ibata's simulations.
   The premise "Ibata reproduces the knee" (adopted mid-day) was wrong.
-- **Open lead (untested):** stream 54 joins the near-cluster arm and the DR2 Fimbulthul arc, which Ibata+2019 Fig. 3
-  places ~1.5 kpc closer than omega Cen from a 0.7 mag CMD offset. A distance step would produce part of the PM jump
-  (PM ~ 1/d; 5.0/3.9 = 1.3, about the pmra deficit). Test: CMD-offset distances in b bins along stream 54.
+- **Distance is not the explanation (tested).** CMD-shift distances along stream 54 (`bin/streams/stream54_cmd_distance.py`,
+  `plots/stream54_cmd_distance.png`) fall by 8-12% from b = 15-20 to b = 33-42, matching the model arm (13%); there is no
+  ~30% distance step. The PM knee is therefore a tangential-velocity mismatch at the same distance (~90 km/s at b = 35-40).
+  A perturber or extra cluster DM cannot supply this (cluster: <~13 km/s even with 10x DM at 1 kpc; a flyby needs ~5e8 Msun
+  within ~0.3 kpc).
 
 ## Data
 
@@ -132,7 +134,7 @@ irrelevant for the knee).
 
 ## Next steps (proposed, not started)
 
-1. CMD-offset (photometric) distances in b bins along stream 54, to test the distance-step reading of the PM jump.
+1. Done: distance step excluded (see Summary).
 2. Particle-spray streams (AGAMA, Fardal+15 / Chen+24) for fast scans of omega Cen's present-day PM/distance and the host's
    disc/halo parameters.
 3. Cross-check the DR3 knee against DR2 candidates and RV/chemistry members (STREAMFINDER template influence).
