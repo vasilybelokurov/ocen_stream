@@ -15,7 +15,10 @@ t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.f
 g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic
 fig, ax = plt.subplots(2, 3, figsize=(16, 10))
 for j, (key, lab, col) in enumerate(MODELS):
-    R = ROOT/"results/streams"/(sys.argv[2] if len(sys.argv) > 2 else "prescribed")/key; m, s = run_particles(R); _, xv = load(R, name="snap_today.npz"); c = OCEN_TODAY.copy()
+    R = ROOT/"results/streams"/(sys.argv[2] if len(sys.argv) > 2 else "prescribed")/key
+    if not (R/"run.json").exists():                 # run not finished
+        continue
+    m, s = run_particles(R); _, xv = load(R, name="snap_today.npz"); c = OCEN_TODAY.copy()
     bnd, _ = bound_set(xv, c, m, start=np.linalg.norm(xv[:, :3]-c[:3], axis=1) < 0.5, core=run_core(R)); o = observables(xv[~bnd])
     k = (o["b"] > 5) & (w(o["l"]) < -15) & (w(o["l"]) > -80)
     for i, q, qq in ((0, "pmra", "pmRA"), (1, "pmdec", "pmDE")):

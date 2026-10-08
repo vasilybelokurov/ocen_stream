@@ -131,7 +131,11 @@ def main():
                 a.set_ylabel(ylab, color=INK)
             if i == 0 or i == 3 or args.xlower == "b":
                 a.set_xlabel("b [deg]" if (i > 0 and args.xlower == "b") else "l [deg]", color=INK)
-    fig.suptitle(f"Debris within {RAD:g} deg of omega Cen today: three DM models (prescribed potential, McMillan17, 1.96 Gyr) "
+    rj = json.loads((ROOT/"results/streams"/args.runs/MODELS[0][0]/"run.json").read_text())
+    host = Path(rj["mw"]).stem
+    spin = "no rotation" if not rj.get("spin") else ("max rotation" if "note" in rj["spin"] else "fitted rotation")
+    fig.suptitle(f"Debris within {RAD:g} deg of omega Cen today: three DM models (prescribed potential, {host}, "
+                 f"{rj['tback_myr']/1e3:.2f} Gyr, {spin}) "
                  f"vs Ibata+2024 members [{args.runs}]", fontsize=12, color=INK)
     fig.tight_layout()
     fig.savefig(ROOT/f"plots/streams_debris_vs_ibata2024{tag}.png", dpi=110)

@@ -84,6 +84,8 @@ def main():
     p.add_argument("--rfreeze", type=float, default=0., help="freeze particles whose initial radial apocentre r_max(E) "
                    "in the satellite potential is below this [pc]: their mass becomes a fixed spherical core and they are "
                    "not integrated (0 = integrate all). The A validation found no escaper with r_max < 48 pc by 800 Myr.")
+    p.add_argument("--spin", type=Path, default=None, help="results/streams/spin/<model>.json (bin/streams/fit_spin.py): Lynden-Bell "
+                   "rotation of stars and remnants (not DM) at t = 0, axis fixed in the Galactic frame at today's orientation; needs --rfreeze")
     args = p.parse_args()
     tstop = args.tback if args.tstop is None else args.tstop
     args.out.mkdir(parents=True, exist_ok=True)
@@ -120,6 +122,15 @@ def main():
         rel = state.xv - state.centre
         E = pot_all.potential(rel[:, :3]) + 0.5*np.sum(rel[:, 3:]**2, axis=1)
         rmax_pc = rmax_of_energy(pot_all, E)*1e3
+        if args.spin is not None:
+            from ocen_dm.streams.rotation import spin_up
+            sp = json.loads(args.spin.read_text())
+            lum = species != 2                                             # 0 stars, 1 remnants, 2 halo: DM not rotated
+            rel_s, flipped = spin_up(rel[lum], rmax_pc[lum], OCEN_TODAY, sp["q0"], sp["rq_pc"], pa_deg=sp["pa_deg"],
+                                     incl_towards_deg=sp["incl_towards_deg"], r1_pc=sp["r1_pc"])
+            rel[lum] = rel_s
+            state.xv = rel + state.centre
+            print(f"spin {args.spin}: flipped {flipped.mean():.3f} of stars+remnants", flush=True)
         active = rmax_pc >= args.rfreeze
         core = FrozenCore.from_particles(rel[~active, :3], mass[~active], species[~active])
         core.save(args.out/"frozen_core.npz")
@@ -143,7 +154,7 @@ def main():
                 tback_myr=args.tback, tstop_myr=tstop, tupd_myr=args.tupd, frozen=args.frozen, snap_myr=args.snap, accuracy=args.accuracy,
                 n=len(mass), counts={SPECIES[s]: int(np.sum(species == s)) for s in np.unique(species)},
                 start=start.tolist(), ocen_today=OCEN_TODAY.tolist(), t_today_myr=args.tback, method="restricted N-body",
-                agama_t_myr=AGAMA_T_MYR, rfreeze_pc=args.rfreeze, nactive=args.nactive, seed=args.seed, n_integrated=int(len(mass)),
+                agama_t_myr=AGAMA_T_MYR, rfreeze_pc=args.rfreeze, nactive=args.nactive, seed=args.seed, spin=str(args.spin) if args.spin else None, n_integrated=int(len(mass)),
                 frozen_core_mass={SPECIES[k]: v for k, v in core.mass_by_species.items()} if core is not None else None)
     (args.out/"run.json").write_text(json.dumps(meta, indent=1))
     np.savez(args.out/"particles.npz", mass=mass.astype(np.float32), species=species, index=index)

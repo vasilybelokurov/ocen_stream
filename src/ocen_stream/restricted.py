@@ -35,7 +35,10 @@ def agama_kpc():
 
 
 def host_potential(name="McMillan17"):
+    """AGAMA host: a bundled potential name (McMillan17) or a path to an .ini file (configs/potentials/DB98_Model1.ini)."""
     agama = agama_kpc()
+    if os.path.isfile(name):
+        return agama.Potential(name)
     ini = glob.glob(os.path.dirname(agama.__file__)+f"/**/{name}.ini", recursive=True)
     if not ini:
         raise FileNotFoundError(f"AGAMA potential file {name}.ini not found")
