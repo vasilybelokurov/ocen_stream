@@ -38,14 +38,10 @@ def run_core(run):
     return FrozenCore.load(path) if path.exists() else None
 
 
-def frozen_star_count(run, species_mass_star=None):
-    """Number of star particles in the frozen core (equal-mass particles), 0 if none."""
+def frozen_star_mass(run):
+    """Stellar mass in the frozen core [Msun], 0 if none."""
     core = run_core(run)
-    if core is None or 0 not in core.mass_by_species:
-        return 0
-    mass, species = run_particles(run)
-    m_star = float(np.median(mass[species == 0])) if np.any(species == 0) else 1.
-    return int(round(core.mass_by_species[0]/m_star))
+    return float(core.mass_by_species.get(0, 0.)) if core is not None else 0.
 
 
 def snapshot_times(run):
@@ -95,7 +91,7 @@ def host_energy_lz(host, xv):
     return E, Lz
 
 
-def tail_metrics(host, xv, centre, bound, species, shell_kpc=(0.3, 2.0), n_frozen_stars=0):
+def tail_metrics(host, xv, centre, bound, species, shell_kpc=(0.3, 2.0), mass=None, frozen_star_mass=0.):
     """Stellar debris statistics: counts, spreads of host energy and Lz relative to the cluster,
     and the local 3D structure of unbound stars in a shell around the cluster."""
     stars = species == 0
@@ -109,7 +105,9 @@ def tail_metrics(host, xv, centre, bound, species, shell_kpc=(0.3, 2.0), n_froze
     v = centre[3:]/np.linalg.norm(centre[3:])
     n = np.cross(centre[:3], centre[3:]); n /= np.linalg.norm(n)
     w = np.cross(n, v)
-    out = dict(n_unbound_stars=int(unb.sum()), unbound_star_fraction=float(unb.sum()/(stars.sum()+n_frozen_stars)),
+    m = np.ones(len(xv)) if mass is None else np.asarray(mass, float)
+    out = dict(n_unbound_stars=int(unb.sum()),
+               unbound_star_fraction=float(m[unb].sum()/(m[stars].sum()+frozen_star_mass)),     # mass-weighted
                dE_rms=float(np.std(E-Ec[0])), dLz_rms=float(np.std(Lz-Lzc[0])),
                dE_mad=float(1.4826*np.median(np.abs(E-Ec[0]-np.median(E-Ec[0])))),
                dLz_mad=float(1.4826*np.median(np.abs(Lz-Lzc[0]-np.median(Lz-Lzc[0])))),

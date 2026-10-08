@@ -77,6 +77,10 @@ def main():
     p.add_argument("--no-host", action="store_true")
     p.add_argument("--frozen", action="store_true", help="never refit the satellite potential (fitted once at t = 0)")
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--nactive", type=int, default=0, help="integrate a random subsample of this many of the non-frozen "
+                   "particles (per-species fractions kept), their masses scaled up to conserve each species' active mass "
+                   "(0 = all)")
+    p.add_argument("--seed", type=int, default=1)
     p.add_argument("--rfreeze", type=float, default=0., help="freeze particles whose initial radial apocentre r_max(E) "
                    "in the satellite potential is below this [pc]: their mass becomes a fixed spherical core and they are "
                    "not integrated (0 = integrate all). The A validation found no escaper with r_max < 48 pc by 800 Myr.")
@@ -119,6 +123,15 @@ def main():
         active = rmax_pc >= args.rfreeze
         core = FrozenCore.from_particles(rel[~active, :3], mass[~active], species[~active])
         core.save(args.out/"frozen_core.npz")
+        if args.nactive and args.nactive < active.sum():
+            rng = np.random.default_rng(args.seed)
+            keep = np.zeros(len(mass), bool)
+            for s_ in np.unique(species[active]):
+                idx = np.where(active & (species == s_))[0]
+                k = max(1, int(round(args.nactive*len(idx)/active.sum())))
+                keep[rng.choice(idx, k, replace=False)] = True
+                mass = mass.copy(); mass[keep & (species == s_)] *= len(idx)/k     # conserve the species' active mass
+            active = keep
         index = np.where(active)[0]
         mass, species = mass[active], species[active]
         state = RestrictedState(state.t_myr, state.xv[active], state.centre, state.bound[active])
@@ -130,7 +143,7 @@ def main():
                 tback_myr=args.tback, tstop_myr=tstop, tupd_myr=args.tupd, frozen=args.frozen, snap_myr=args.snap, accuracy=args.accuracy,
                 n=len(mass), counts={SPECIES[s]: int(np.sum(species == s)) for s in np.unique(species)},
                 start=start.tolist(), ocen_today=OCEN_TODAY.tolist(), t_today_myr=args.tback, method="restricted N-body",
-                agama_t_myr=AGAMA_T_MYR, rfreeze_pc=args.rfreeze, n_integrated=int(len(mass)),
+                agama_t_myr=AGAMA_T_MYR, rfreeze_pc=args.rfreeze, nactive=args.nactive, seed=args.seed, n_integrated=int(len(mass)),
                 frozen_core_mass={SPECIES[k]: v for k, v in core.mass_by_species.items()} if core is not None else None)
     (args.out/"run.json").write_text(json.dumps(meta, indent=1))
     np.savez(args.out/"particles.npz", mass=mass.astype(np.float32), species=species, index=index)
