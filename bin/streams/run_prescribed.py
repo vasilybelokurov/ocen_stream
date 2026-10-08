@@ -41,6 +41,7 @@ def main():
     p.add_argument("--model", required=True, help="results/nbody/<model> with ics.npz and model_profiles.json")
     p.add_argument("--out", required=True, type=Path)
     p.add_argument("--nstars", type=int, default=200000)
+    p.add_argument("--ics", type=Path, default=None, help="star-tracer ICs (default results/nbody/<model>/ics.npz)")
     p.add_argument("--rfreeze", type=float, default=30., help="[pc] stars with r_max(E) below this are not integrated")
     p.add_argument("--mw", default="McMillan17")
     p.add_argument("--tback", type=float, default=2.0*AGAMA_T_MYR, help="Myr before today (default 1955.58)")
@@ -58,7 +59,8 @@ def main():
     sat_model = FrozenCore(r_kpc, M_tot)
     sat = satellite_potential(np.zeros((0, 3)), np.zeros(0), core=sat_model)
 
-    ics = np.load(mdir/"ics.npz")
+    ics_path = args.ics or (mdir/"ics.npz")
+    ics = np.load(ics_path)
     stars = np.where(ics["species"] == 0)[0]
     rng = np.random.default_rng(args.seed)
     pick = np.sort(rng.choice(stars, min(args.nstars, len(stars)), replace=False))
@@ -93,7 +95,7 @@ def main():
     FrozenCore(r_kpc, M_tot, {0: n_frozen*M_TRACER}).save(args.out/"frozen_core.npz")
     meta = dict(created_utc=datetime.now(timezone.utc).isoformat(), method="prescribed (frozen) satellite potential, "
                 "massless star tracers", model=args.model, model_profiles=str(mdir/"model_profiles.json"),
-                ics=str(mdir/"ics.npz"), mw=args.mw, tback_myr=args.tback, t_today_myr=args.tback, nstars=int(len(pick)),
+                ics=str(ics_path), mw=args.mw, tback_myr=args.tback, t_today_myr=args.tback, nstars=int(len(pick)),
                 n_integrated=int(active.sum()), n_counted_only=n_frozen, rfreeze_pc=args.rfreeze, seed=args.seed,
                 accuracy=args.accuracy, snap_times_myr=times.tolist(), start=start.tolist(), ocen_today=OCEN_TODAY.tolist(),
                 satellite_mass=float(M_tot[-1]), integration_s=t_int, wall_s=time.time()-t_wall,
