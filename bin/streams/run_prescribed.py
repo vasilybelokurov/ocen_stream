@@ -48,6 +48,10 @@ def main():
     p.add_argument("--snap", type=float, default=50.)
     p.add_argument("--accuracy", type=float, default=1e-8)
     p.add_argument("--seed", type=int, default=1)
+    p.add_argument("--bar-omega", type=float, default=None, help="rotating-bar host: Hunter+2024 barred MW "
+                   "(../oCen_bar/agama_potentials/MWPotentialHunter24_full.ini) with constant pattern speed [km/s/kpc, >0 prograde]; "
+                   "use --mw hunter24_axi for its axisymmetric control")
+    p.add_argument("--bar-angle", type=float, default=28.0, help="present-day bar angle [deg] from the Sun-GC line (near end at l > 0)")
     p.add_argument("--frame", default=None, choices=("baumgardt", "ibata19"), help="solar frame + omega Cen distance "
                    "(src/ocen_dm/streams/frames.py) for today's centre; default: legacy OCEN_TODAY (= baumgardt within 0.6 km/s)")
     p.add_argument("--spin", type=Path, default=None, help="results/streams/spin/<model>.json from bin/streams/fit_spin.py: "
@@ -85,10 +89,11 @@ def main():
     print(f"{args.model}: {len(pick)} star tracers; {n_frozen} with r_max < {args.rfreeze:g} pc counted only; "
           f"integrating {active.sum()}", flush=True)
 
-    host = host_potential(args.mw)
-    _, traj = agama.orbit(potential=host, ic=today, time=-args.tback/AGAMA_T_MYR, trajsize=2, accuracy=1e-12)   # default 1e-8 loses 5-12 pc per round trip
-    start = traj[-1]
     T = args.tback/AGAMA_T_MYR
+    host = host_potential(args.mw, bar_omega=args.bar_omega, bar_angle_deg=args.bar_angle, t_today=T)
+    # backward from t = T (today) to 0: for a time-dependent (rotating-bar) host the clock must start at T
+    _, traj = agama.orbit(potential=host, ic=today, timestart=T, time=-T, trajsize=2, accuracy=1e-12)   # default 1e-8 loses 5-12 pc per round trip
+    start = traj[-1]
     tc, orb = agama.orbit(potential=host, ic=start, timestart=0., time=T, trajsize=int(np.ceil(args.tback/0.05))+1, accuracy=1e-12)
     total = agama.Potential(host, agama.Potential(potential=sat, center=np.column_stack((tc, orb))))
     nsnap = int(round(args.tback/args.snap))
@@ -107,7 +112,7 @@ def main():
              species=np.zeros(active.sum(), np.int8), index=pick[active])
     FrozenCore(r_kpc, M_tot, {0: n_frozen*M_TRACER}).save(args.out/"frozen_core.npz")
     meta = dict(created_utc=datetime.now(timezone.utc).isoformat(), method="prescribed (frozen) satellite potential, "
-                "massless star tracers", model=args.model, model_profiles=str(mdir/"model_profiles.json"),
+                "massless star tracers", model=args.model, bar_omega=args.bar_omega, bar_angle_deg=args.bar_angle if args.bar_omega else None, model_profiles=str(mdir/"model_profiles.json"),
                 ics=str(ics_path), mw=args.mw, tback_myr=args.tback, t_today_myr=args.tback, nstars=int(len(pick)),
                 n_integrated=int(active.sum()), n_counted_only=n_frozen, rfreeze_pc=args.rfreeze, seed=args.seed,
                 accuracy=args.accuracy, spin=spin, spin_file=str(args.spin) if args.spin else None, snap_times_myr=times.tolist(), start=start.tolist(), ocen_today=today.tolist(), frame=args.frame or "baumgardt",

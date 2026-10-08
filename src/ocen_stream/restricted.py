@@ -34,9 +34,25 @@ def agama_kpc():
     return agama
 
 
-def host_potential(name="McMillan17"):
-    """AGAMA host: a bundled potential name (McMillan17) or a path to an .ini file (configs/potentials/DB98_Model1.ini)."""
+HUNTER24_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "oCen_bar", "agama_potentials")
+
+
+def host_potential(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None):
+    """AGAMA host: a bundled potential name (McMillan17), a path to an .ini file (configs/potentials/DB98_Model1.ini),
+    'hunter24_axi' (Hunter+2024 axisymmetrised MW, ../oCen_bar/agama_potentials), or, with bar_omega [km/s/kpc], the Hunter+2024
+    barred MW rotating at constant pattern speed. Bar convention (verified 2026-10-08; as ../chevron_bar_subhalo): AGAMA
+    rotation angle = bar major axis measured anticlockwise from +x in the model frame (Sun at +x, Galactic rotation Lz > 0);
+    angle(t) = bar_angle + bar_omega (t - t_today) [AGAMA time units], so the bar is at bar_angle today."""
     agama = agama_kpc()
+    if bar_omega is not None:
+        if t_today is None:
+            raise ValueError("a rotating bar needs t_today (AGAMA time units of the present day)")
+        tt = np.linspace(-1., t_today+1., 4001)
+        ang = np.deg2rad(bar_angle_deg) + bar_omega*(tt-t_today)
+        return agama.Potential(potential=agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_full.ini")),
+                               rotation=np.column_stack((tt, ang)))
+    if name == "hunter24_axi":
+        return agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini"))
     if os.path.isfile(name):
         return agama.Potential(name)
     ini = glob.glob(os.path.dirname(agama.__file__)+f"/**/{name}.ini", recursive=True)
