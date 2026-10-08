@@ -64,6 +64,8 @@ def main():
     p.add_argument("--pair", nargs=2, action="append", required=True, metavar=("LIVE", "RESTRICTED"))
     p.add_argument("--times", nargs="+", type=float, default=[50, 100, 200, 300, 500, 750, 1000, 1500, 1955.58])
     p.add_argument("--labels", nargs="+", default=None)
+    p.add_argument("--tags", nargs=2, default=["live", "restricted"], help="names of the first and second run of each pair (plot legend)")
+    p.add_argument("--title", default="Restricted vs live N-body: same ICs, same orbit start, same bound criterion")
     args = p.parse_args()
     host = host_potential("McMillan17")
     labels = args.labels or [Path(r).parent.name if Path(r).name == "orbit" else Path(r).name for r, _ in args.pair]
@@ -101,8 +103,8 @@ def main():
                   ("sigma_v_inplane", r"$\sigma_v$ in-plane [km/s]"), ("sigma_v_along", r"$\sigma_v$ along [km/s]"),
                   ("orbit_offset_pc", "cluster offset from point-mass orbit [pc]")]
         for a, (key, ttl) in zip(ax.flat, panels):
-            a.plot(T, series("live", key), "o-", color=col, label=f"{lab} live")
-            a.plot(T, series("restricted", key), "s--", color=col, mfc="none", label=f"{lab} restricted")
+            a.plot(T, series("live", key), "o-", color=col, label=f"{lab} {args.tags[0]}")
+            a.plot(T, series("restricted", key), "s--", color=col, mfc="none", label=f"{lab} {args.tags[1]}")
             a.set_title(ttl, fontsize=10); a.set_xlabel("t [Myr]")
         for sp_name in ("stars", "halo"):
             a = ax.flat[9]
@@ -111,8 +113,8 @@ def main():
             if np.all(np.isnan(bl)):
                 continue
             ls = "-" if sp_name == "stars" else ":"
-            a.plot(T, bl/bl[0], ls, color=col, marker="o", ms=3, label=f"{lab} {sp_name} live")
-            a.plot(T, br/br[0], ls, color=col, marker="s", ms=3, mfc="none", label=f"{lab} {sp_name} restricted")
+            a.plot(T, bl/bl[0], ls, color=col, marker="o", ms=3, label=f"{lab} {sp_name} {args.tags[0]}")
+            a.plot(T, br/br[0], ls, color=col, marker="s", ms=3, mfc="none", label=f"{lab} {sp_name} {args.tags[1]}")
             a.set_title("bound mass / initial", fontsize=10); a.set_xlabel("t [Myr]")
         # sky today
         if T.max() > tback - 1:
@@ -125,10 +127,10 @@ def main():
                 a.plot(l, bb, ",", color=col, alpha=0.3)
                 lc, bc = sky(c[None, :])
                 a.plot(lc, bc, "k*", ms=10)
-                a.set_title(f"unbound stars today, {tag}", fontsize=10); a.set_xlabel("l [deg]"); a.set_ylabel("b [deg]")
+                a.set_title(f"unbound stars today, {args.tags[j]}", fontsize=10); a.set_xlabel("l [deg]"); a.set_ylabel("b [deg]")
                 a.set_xlim(90, -90); a.set_ylim(-60, 60)
     ax.flat[0].legend(fontsize=7); ax.flat[9].legend(fontsize=6)
-    fig.suptitle("Restricted vs live N-body: same ICs, same orbit start, same bound criterion", fontsize=12)
+    fig.suptitle(args.title, fontsize=12)
     fig.tight_layout()
     fig.savefig(ROOT/f"plots/{args.name}.png", dpi=110)
     (ROOT/f"results/plot_data/{args.name}.json").write_text(json.dumps(out, indent=1))
