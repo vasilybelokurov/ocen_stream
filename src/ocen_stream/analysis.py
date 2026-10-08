@@ -111,6 +111,8 @@ def tail_metrics(host, xv, centre, bound, species, shell_kpc=(0.3, 2.0), n_froze
     w = np.cross(n, v)
     out = dict(n_unbound_stars=int(unb.sum()), unbound_star_fraction=float(unb.sum()/(stars.sum()+n_frozen_stars)),
                dE_rms=float(np.std(E-Ec[0])), dLz_rms=float(np.std(Lz-Lzc[0])),
+               dE_mad=float(1.4826*np.median(np.abs(E-Ec[0]-np.median(E-Ec[0])))),
+               dLz_mad=float(1.4826*np.median(np.abs(Lz-Lzc[0]-np.median(Lz-Lzc[0])))),
                dE_median=float(np.median(E-Ec[0])), n_shell=int(sh.sum()))
     if sh.sum() > 20:
         out.update(width_normal_pc=float(np.std(rel[sh, :3] @ n)*1e3),

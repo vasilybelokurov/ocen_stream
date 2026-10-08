@@ -52,10 +52,13 @@ def sky(xv):
 
 
 def point_mass_track(host, tback, times):
-    _, traj = agama_kpc().orbit(potential=host, ic=OCEN_TODAY, time=-tback/AGAMA_T_MYR, trajsize=2)
+    """Point-mass orbit of the centre evaluated exactly at the requested times [Myr from start]."""
+    agama = agama_kpc()
+    _, traj = agama.orbit(potential=host, ic=OCEN_TODAY, time=-tback/AGAMA_T_MYR, trajsize=2)
     start = traj[-1]
-    t, orb = centre_orbit(host, start, 0.0, 1.0, int(np.ceil(max(times)))+1)
-    return np.interp(times, t*AGAMA_T_MYR, np.arange(len(t))), orb
+    orb = np.array([agama.orbit(potential=host, ic=start, time=t/AGAMA_T_MYR, trajsize=2)[1][-1] if t > 0 else start
+                    for t in times])
+    return np.arange(len(times)), orb
 
 
 def main():
@@ -78,18 +81,19 @@ def main():
         _, t_r = snapshot_times(restr)
         idx, orb = point_mass_track(host, tback, args.times)
         for t, k in zip(args.times, idx):
-            if t > t_r.max() + 1:
+            today = t > tback - 1
+            if t > t_r.max() + 1 and not (today and (Path(restr)/"snap_today.npz").exists()):
                 continue
             row = dict(t_myr=t)
             for tag, run, m, s in (("live", live, mass_l, sp_l), ("restricted", restr, mass_r, sp_r)):
-                tt, xv = load(run, t)
+                tt, xv = load(run, name="snap_today.npz") if today and (Path(run)/"snap_today.npz").exists() else load(run, t)
                 c, b, bm = state(xv, m, s, guess=orb[int(round(k))], core=run_core(run))
                 tm = tail_metrics(host, xv, c, b, s, n_frozen_stars=frozen_star_count(run))
                 drift = float(np.linalg.norm(c[:3]-orb[int(round(k)), :3])*1e3)
                 row[tag] = dict(t_snap=tt, bound_mass=bm, orbit_offset_pc=drift, **tm)
             rec["rows"].append(row)
             print(lab, f"t={t:7.1f}", " | ".join(
-                f"{tag}: unb {row[tag]['unbound_star_fraction']:.4f} dE {row[tag]['dE_rms']:.0f} dLz {row[tag]['dLz_rms']:.1f} "
+                f"{tag}: unb {row[tag]['unbound_star_fraction']:.4f} dE {row[tag]['dE_rms']:.0f}/{row[tag]['dE_mad']:.0f} dLz {row[tag]['dLz_rms']:.1f}/{row[tag]['dLz_mad']:.1f} "
                 f"wN {row[tag].get('width_normal_pc', np.nan):.0f} sN {row[tag].get('sigma_v_normal', np.nan):.1f} off {row[tag]['orbit_offset_pc']:.0f}"
                 for tag in ("live", "restricted")), flush=True)
         out["pairs"].append(rec)
@@ -97,8 +101,8 @@ def main():
         col = f"C{ip}"
         def series(tag, key):
             return np.array([r[tag].get(key, np.nan) for r in rows], float)
-        panels = [("unbound_star_fraction", "unbound stellar fraction"), ("dE_rms", "debris dE rms [km$^2$ s$^{-2}$]"),
-                  ("dLz_rms", "debris dLz rms [kpc km/s]"), ("width_normal_pc", "debris width normal, 0.3-2 kpc [pc]"),
+        panels = [("unbound_star_fraction", "unbound stellar fraction"), ("dE_mad", "debris dE spread (1.48 MAD) [km$^2$ s$^{-2}$]"),
+                  ("dLz_mad", "debris dLz spread (1.48 MAD) [kpc km/s]"), ("width_normal_pc", "debris width normal, 0.3-2 kpc [pc]"),
                   ("width_inplane_pc", "debris width in-plane [pc]"), ("sigma_v_normal", r"$\sigma_v$ normal [km/s]"),
                   ("sigma_v_inplane", r"$\sigma_v$ in-plane [km/s]"), ("sigma_v_along", r"$\sigma_v$ along [km/s]"),
                   ("orbit_offset_pc", "cluster offset from point-mass orbit [pc]")]
@@ -119,7 +123,7 @@ def main():
         # sky today
         if T.max() > tback - 1:
             for j, (tag, run, m, s) in enumerate((("live", live, mass_l, sp_l), ("restricted", restr, mass_r, sp_r))):
-                tt, xv = load(run, tback)
+                tt, xv = load(run, name="snap_today.npz") if (Path(run)/"snap_today.npz").exists() else load(run, tback)
                 c, b, _ = state(xv, m, s, guess=orb[-1], core=run_core(run))
                 sel = (s == 0) & ~b
                 l, bb = sky(xv[sel])
