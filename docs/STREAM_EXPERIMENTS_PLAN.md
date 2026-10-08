@@ -86,7 +86,7 @@ multithreaded integrator, against ~30 h for each live run. No run is launched wi
   progenitor heavier than today's model, and that mass has to be chosen.
 - **D4 Rotation.** Keep non-rotating now, or add a rotating DF before S2 (I19: rotation
   matters for width).
-- **D5 Data.** Fetch the Ibata+2024 DR3 members (VizieR) in addition to the local I19 table.
+- **D5 Data.** Done: Ibata+2024 DR3 (streams 54, 55) and Ibata+2021 EDR3 (stream 16) in $OCEN_CATALOGUES/, see configs/data.yaml.
 
 ## References (arXiv IDs verified 2026-10-08)
 
@@ -99,4 +99,4 @@ Evans, Strigari & Zivick 2022, arXiv:2109.10998; Kuzma+2026, arXiv:2605.23474.
 Codex research pass (ordinary web-research fallback, not Deep Research) supplied the
 bibliography. The I19 method details (DB98 Model 1, >= 5 Gyr, 1e5 particles, rotating
 progenitor) are as reported by Codex from the Methods section and are consistent with the
-journal entry of 2026-09-26. The Ibata+2024 Fimbulthul membership count (22) is UNVERIFIED.
+journal entry of 2026-09-26. Ibata+2024 (2024ApJ...967...89I) Table 1, fetched 2026-10-08 from the ApJ machine-readable file: Fimbulthul = stream 54 with 3724 stars (29 with VHel); Fimbulthul-S = stream 55 with 1734 stars (25 VHel), which the paper also interprets as omega Cen trailing debris lost 0.5-1 Gyr ago at ~3 kpc. The '22 members' figure from the Codex pass is wrong.
