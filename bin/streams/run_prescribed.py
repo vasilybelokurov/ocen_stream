@@ -48,6 +48,8 @@ def main():
     p.add_argument("--snap", type=float, default=50.)
     p.add_argument("--accuracy", type=float, default=1e-8)
     p.add_argument("--seed", type=int, default=1)
+    p.add_argument("--spin", type=Path, default=None, help="results/streams/spin/<model>.json from bin/streams/fit_spin.py: "
+                   "Lynden-Bell rotation (src/ocen_dm/streams/rotation.py), axis fixed in the Galactic frame at today's orientation")
     args = p.parse_args()
     t_wall = time.time()
     args.out.mkdir(parents=True, exist_ok=True)
@@ -67,6 +69,13 @@ def main():
     xv_rel = np.hstack((ics["pos"][pick]/1e3, ics["vel"][pick])).astype(float)
     E = sat.potential(xv_rel[:, :3]) + 0.5*np.sum(xv_rel[:, 3:]**2, axis=1)
     rmax_pc = rmax_of_energy(sat, E)*1e3
+    spin = None
+    if args.spin is not None:
+        from ocen_dm.streams.rotation import spin_up
+        spin = json.loads(args.spin.read_text())
+        xv_rel, flipped = spin_up(xv_rel, rmax_pc, OCEN_TODAY, spin["q0"], spin["rq_pc"], pa_deg=spin["pa_deg"],
+                                  incl_towards_deg=spin["incl_towards_deg"], r1_pc=spin["r1_pc"])
+        print(f"spin: {args.spin}: flipped {flipped.mean():.3f} of the tracers", flush=True)
     active = rmax_pc >= args.rfreeze
     n_frozen = int((~active).sum())
     print(f"{args.model}: {len(pick)} star tracers; {n_frozen} with r_max < {args.rfreeze:g} pc counted only; "
@@ -97,7 +106,7 @@ def main():
                 "massless star tracers", model=args.model, model_profiles=str(mdir/"model_profiles.json"),
                 ics=str(ics_path), mw=args.mw, tback_myr=args.tback, t_today_myr=args.tback, nstars=int(len(pick)),
                 n_integrated=int(active.sum()), n_counted_only=n_frozen, rfreeze_pc=args.rfreeze, seed=args.seed,
-                accuracy=args.accuracy, snap_times_myr=times.tolist(), start=start.tolist(), ocen_today=OCEN_TODAY.tolist(),
+                accuracy=args.accuracy, spin=spin, spin_file=str(args.spin) if args.spin else None, snap_times_myr=times.tolist(), start=start.tolist(), ocen_today=OCEN_TODAY.tolist(),
                 satellite_mass=float(M_tot[-1]), integration_s=t_int, wall_s=time.time()-t_wall,
                 centre_offset_today_pc=float(np.linalg.norm(orb[-1, :3]-OCEN_TODAY[:3])*1e3))
     (args.out/"run.json").write_text(json.dumps(meta, indent=1))

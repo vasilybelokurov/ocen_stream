@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Overlay of the northern-arm debris (A, B, C; prescribed potential, today; b > 5, -80 < l < -15) on Ibata+2024 stream 54
 in pmra-b and pmdec-b (zoom b 10-45). Model PMs are not convolved with Gaia errors.
-Usage: python bin/streams/plot_arm_overlay.py plots/streams_arm_overlay_pm_b.png
+Usage: python bin/streams/plot_arm_overlay.py plots/streams_arm_overlay_pm_b.png [prescribed_rot]
 """
 import sys, os; from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
@@ -15,7 +15,7 @@ t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.f
 g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic
 fig, ax = plt.subplots(2, 3, figsize=(16, 10))
 for j, (key, lab, col) in enumerate(MODELS):
-    R = ROOT/"results/streams/prescribed"/key; m, s = run_particles(R); _, xv = load(R, name="snap_today.npz"); c = OCEN_TODAY.copy()
+    R = ROOT/"results/streams"/(sys.argv[2] if len(sys.argv) > 2 else "prescribed")/key; m, s = run_particles(R); _, xv = load(R, name="snap_today.npz"); c = OCEN_TODAY.copy()
     bnd, _ = bound_set(xv, c, m, start=np.linalg.norm(xv[:, :3]-c[:3], axis=1) < 0.5, core=run_core(R)); o = observables(xv[~bnd])
     k = (o["b"] > 5) & (w(o["l"]) < -15) & (w(o["l"]) > -80)
     for i, q, qq in ((0, "pmra", "pmRA"), (1, "pmdec", "pmDE")):

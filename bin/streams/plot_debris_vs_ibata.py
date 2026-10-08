@@ -63,13 +63,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--radius", type=float, default=20.)
     ap.add_argument("--xlower", choices=("l", "b"), default="l")
+    ap.add_argument("--runs", default="prescribed", help="results/streams/<runs>/<model> (e.g. prescribed_rot)")
     args = ap.parse_args()
     RAD = args.radius
-    tag = "" if (RAD == 20. and args.xlower == "l") else f"_r{RAD:g}_x{args.xlower}"
+    tag = ("" if (RAD == 20. and args.xlower == "l") else f"_r{RAD:g}_x{args.xlower}") + ("" if args.runs == "prescribed" else f"_{args.runs}")
     cols = []
     out = {}
     for key, lab, col in MODELS:
-        R = ROOT/"results/streams/prescribed"/key
+        R = ROOT/"results/streams"/args.runs/key
         m, s = run_particles(R)
         _, xv = load(R, name="snap_today.npz")
         c = OCEN_TODAY.copy()                     # the prescribed centre ends 0.5 pc from today's position (run.json)
@@ -131,7 +132,7 @@ def main():
             if i == 0 or i == 3 or args.xlower == "b":
                 a.set_xlabel("b [deg]" if (i > 0 and args.xlower == "b") else "l [deg]", color=INK)
     fig.suptitle(f"Debris within {RAD:g} deg of omega Cen today: three DM models (prescribed potential, McMillan17, 1.96 Gyr) "
-                 "vs Ibata+2024 members", fontsize=12, color=INK)
+                 f"vs Ibata+2024 members [{args.runs}]", fontsize=12, color=INK)
     fig.tight_layout()
     fig.savefig(ROOT/f"plots/streams_debris_vs_ibata2024{tag}.png", dpi=110)
     (ROOT/f"results/plot_data/streams_debris_vs_ibata2024{tag}.json").write_text(json.dumps(out, indent=1))
