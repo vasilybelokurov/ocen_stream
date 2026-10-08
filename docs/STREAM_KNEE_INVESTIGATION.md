@@ -25,6 +25,11 @@ Consolidated record of the stream experiments of 2026-10-08. Day-by-day detail a
   A perturber or extra cluster DM cannot supply this (cluster: <~13 km/s even with 10x DM at 1 kpc; a flyby needs ~5e8 Msun
   within ~0.3 kpc).
 
+- **Chemistry supports membership.** Gaia XP (Andrae+2023) [M/H] of bright members (G < 15.5, giants) in the knee
+  (N 19, median -1.36), next to the cluster (N 16, -1.60) and stream 55 (N 18, -1.31) are consistent with omega Cen members at
+  the same G (N 1163, -1.47; KS p 0.17-0.80). Fainter XP members are dominated by metal-rich foreground dwarfs everywhere.
+  So the knee is most likely omega Cen debris on a track our models do not reproduce.
+
 ## Data
 
 | Item | Source | Local |
