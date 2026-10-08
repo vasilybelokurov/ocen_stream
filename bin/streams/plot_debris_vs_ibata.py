@@ -91,8 +91,11 @@ def main():
         k = (st == sid) & (sep_deg(l, b) < RAD)
         obs[name] = (col, dict(l=l[k], b=b[k], pmra=np.asarray(t["pmRA"], float)[k], pmdec=np.asarray(t["pmDE"], float)[k], vlos=v[k]))
         out[f"ibata2024_{sid}"] = dict(n_within=int(k.sum()), n_vlos=int(np.isfinite(v[k]).sum()))
-    rows = [("b", "b [deg]", (max(OCEN_LB[1]-RAD, -90), min(OCEN_LB[1]+RAD, 90))), ("pmra", r"$\mu_{\alpha*}$ [mas/yr]", (-15, 8)),
-            ("pmdec", r"$\mu_\delta$ [mas/yr]", (-15, 8)), ("vlos", r"$v_{\rm los}$ [km/s]", (-50, 450))]
+    wide = RAD > 40                      # wide fields include Fimbulthul-S (stream 55, ~3 kpc, large PMs)
+    rows = [("b", "b [deg]", (max(OCEN_LB[1]-RAD, -90), min(OCEN_LB[1]+RAD, 90))),
+            ("pmra", r"$\mu_{\alpha*}$ [mas/yr]", (-25, 8) if wide else (-15, 8)),
+            ("pmdec", r"$\mu_\delta$ [mas/yr]", (-35, 8) if wide else (-15, 8)),
+            ("vlos", r"$v_{\rm los}$ [km/s]", (-100, 450) if wide else (-50, 450))]
     fig, ax = plt.subplots(4, 4, figsize=(19, 17))
     wrap = lambda x: np.where(x > 180, x-360, x)
     xl = (wrap(np.array([OCEN_LB[0]+RAD]))[0], wrap(np.array([OCEN_LB[0]-RAD]))[0])
