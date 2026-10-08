@@ -42,15 +42,16 @@ def host_potential(name="McMillan17"):
     return agama.Potential(ini[0])
 
 
-N_CORE = 300          # particles inside the innermost node; constant density inside it
+N_CORE = 50           # particles inside the innermost node; constant density inside it
 N_NODES = 50
+N_MIN_BIN = 400       # minimum particles between consecutive nodes
 
 
 def spherical_density(rel_pos, mass):
     """Smooth spherical density of a particle set [Msun/kpc^3 vs kpc], from its enclosed-mass profile.
 
     M(<r) is sampled at log-spaced nodes from the radius enclosing N_CORE particles to the outermost
-    particle and interpolated with a monotone (PCHIP) spline in (ln r, ln M), so rho >= 0. Inside the
+    particle (merged so that each interval holds >= N_MIN_BIN particles) and interpolated with a monotone (PCHIP) spline in (ln r, ln M), so rho >= 0. Inside the
     first node the density is constant. AGAMA's particle Multipole instead extrapolates a power law
     inside its innermost node, whose slope is set by a few particles; in the restricted runs this
     produced intermittent spurious central cusps that ejected core particles (2026-10-08 debug).
@@ -61,9 +62,20 @@ def spherical_density(rel_pos, mass):
     order = np.argsort(r)
     r, m = r[order], np.cumsum(mass[order])
     r_in, r_out = r[min(N_CORE, len(r)-1)], r[-1]
-    nodes = np.geomspace(r_in, r_out, N_NODES)
+    # log-spaced nodes, merged so that every interval holds >= N_MIN_BIN particles (no noisy inner bins)
+    cand = np.geomspace(r_in, r_out, N_NODES)
+    counts = np.searchsorted(r, cand)
+    keep = [0]
+    for k in range(1, len(cand)):
+        if counts[k] - counts[keep[-1]] >= N_MIN_BIN:
+            keep.append(k)
+    if keep[-1] != len(cand)-1:
+        keep[-1] = len(cand)-1
+    nodes = cand[keep]
+    if len(nodes) < 4:                                   # tiny particle sets: fall back to plain log nodes
+        nodes = np.geomspace(r_in, r_out, 8)
     M = np.interp(nodes, r, m)
-    M = np.maximum.accumulate(M*(1+1e-12*np.arange(N_NODES)))          # strictly increasing
+    M = np.maximum.accumulate(M*(1+1e-12*np.arange(len(M))))          # strictly increasing
     spl = PchipInterpolator(np.log(nodes), np.log(M))
     rho_core = 3*M[0]/(4*np.pi*r_in**3)
 

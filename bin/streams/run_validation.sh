@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../.."
 source <venv>/bin/activate
 TUPD=${TUPD:-2}
 for m in A_nodm B_dm_phot; do
-  python bin/streams/run_restricted.py --ics results/nbody/$m/ics.npz --out results/streams/validation/${m}_refit --tupd $TUPD
-  python bin/streams/run_restricted.py --ics results/nbody/$m/ics.npz --out results/streams/validation/${m}_frozen --tupd $TUPD --frozen
+  python bin/streams/run_restricted.py --ics results/nbody/$m/ics.npz --out results/streams/validation/${m}_refit --tupd $TUPD --snap 50
+  python bin/streams/run_restricted.py --ics results/nbody/$m/ics.npz --out results/streams/validation/${m}_frozen --tupd $TUPD --snap 50 --frozen
 done
 echo ALL DONE
