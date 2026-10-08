@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .restricted import bound_set
+from .restricted import FrozenCore, bound_set
 
 SPECIES = ("stars", "remnants", "halo")
 
@@ -30,6 +30,22 @@ def run_particles(run):
             root = root.parent
         d = np.load(root/ics)
     return d["mass"].astype(float), d["species"].astype(np.int8)
+
+
+def run_core(run):
+    """The run's FrozenCore (restricted runs with --rfreeze), else None."""
+    path = Path(run)/"frozen_core.npz"
+    return FrozenCore.load(path) if path.exists() else None
+
+
+def frozen_star_count(run, species_mass_star=None):
+    """Number of star particles in the frozen core (equal-mass particles), 0 if none."""
+    core = run_core(run)
+    if core is None or 0 not in core.mass_by_species:
+        return 0
+    mass, species = run_particles(run)
+    m_star = float(np.median(mass[species == 0])) if np.any(species == 0) else 1.
+    return int(round(core.mass_by_species[0]/m_star))
 
 
 def snapshot_times(run):
@@ -61,13 +77,15 @@ def find_centre(xv, sel, guess=None, radii_pc=(200., 50., 20., 10., 5.)):
     return np.concatenate((c, v))
 
 
-def state(xv, mass, species, guess=None):
-    """Centre, bound mask and bound mass per species."""
+def state(xv, mass, species, guess=None, core=None):
+    """Centre, bound mask and bound mass per species (frozen-core mass included if a FrozenCore is given)."""
     lum = species <= 1
     centre = find_centre(xv, lum, guess)
     near = np.sum((xv[:, :3]-centre[:3])**2, axis=1) < 0.5**2     # start the iteration from particles within 500 pc
-    bound, _ = bound_set(xv, centre, mass, start=near)
-    bm = {SPECIES[s]: float(mass[bound & (species == s)].sum()) for s in np.unique(species)}
+    bound, _ = bound_set(xv, centre, mass, start=near, core=core)
+    frozen = core.mass_by_species if core is not None else {}
+    bm = {SPECIES[s]: float(mass[bound & (species == s)].sum()) + frozen.get(int(s), 0.)
+          for s in sorted(set(np.unique(species).tolist()) | set(frozen))}
     return centre, bound, bm
 
 
@@ -77,7 +95,7 @@ def host_energy_lz(host, xv):
     return E, Lz
 
 
-def tail_metrics(host, xv, centre, bound, species, shell_kpc=(0.3, 2.0)):
+def tail_metrics(host, xv, centre, bound, species, shell_kpc=(0.3, 2.0), n_frozen_stars=0):
     """Stellar debris statistics: counts, spreads of host energy and Lz relative to the cluster,
     and the local 3D structure of unbound stars in a shell around the cluster."""
     stars = species == 0
@@ -91,7 +109,7 @@ def tail_metrics(host, xv, centre, bound, species, shell_kpc=(0.3, 2.0)):
     v = centre[3:]/np.linalg.norm(centre[3:])
     n = np.cross(centre[:3], centre[3:]); n /= np.linalg.norm(n)
     w = np.cross(n, v)
-    out = dict(n_unbound_stars=int(unb.sum()), unbound_star_fraction=float(unb.sum()/stars.sum()),
+    out = dict(n_unbound_stars=int(unb.sum()), unbound_star_fraction=float(unb.sum()/(stars.sum()+n_frozen_stars)),
                dE_rms=float(np.std(E-Ec[0])), dLz_rms=float(np.std(Lz-Lzc[0])),
                dE_median=float(np.median(E-Ec[0])), n_shell=int(sh.sum()))
     if sh.sum() > 20:

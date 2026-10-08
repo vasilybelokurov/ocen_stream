@@ -33,7 +33,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ocen_dm.streams.analysis import load, run_particles, snapshot_times, state, tail_metrics
+from ocen_dm.streams.analysis import frozen_star_count, load, run_core, run_particles, snapshot_times, state, tail_metrics
 from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, centre_orbit, host_potential
 
 R_SUN_KPC, V_SUN = 8.178, (11.1, 12.24+240.0, 7.25)     # as bin/nbody/analyse_tails.py
@@ -83,8 +83,8 @@ def main():
             row = dict(t_myr=t)
             for tag, run, m, s in (("live", live, mass_l, sp_l), ("restricted", restr, mass_r, sp_r)):
                 tt, xv = load(run, t)
-                c, b, bm = state(xv, m, s, guess=orb[int(round(k))])
-                tm = tail_metrics(host, xv, c, b, s)
+                c, b, bm = state(xv, m, s, guess=orb[int(round(k))], core=run_core(run))
+                tm = tail_metrics(host, xv, c, b, s, n_frozen_stars=frozen_star_count(run))
                 drift = float(np.linalg.norm(c[:3]-orb[int(round(k)), :3])*1e3)
                 row[tag] = dict(t_snap=tt, bound_mass=bm, orbit_offset_pc=drift, **tm)
             rec["rows"].append(row)
@@ -120,7 +120,7 @@ def main():
         if T.max() > tback - 1:
             for j, (tag, run, m, s) in enumerate((("live", live, mass_l, sp_l), ("restricted", restr, mass_r, sp_r))):
                 tt, xv = load(run, tback)
-                c, b, _ = state(xv, m, s, guess=orb[-1])
+                c, b, _ = state(xv, m, s, guess=orb[-1], core=run_core(run))
                 sel = (s == 0) & ~b
                 l, bb = sky(xv[sel])
                 a = ax.flat[10+j]

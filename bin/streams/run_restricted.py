@@ -33,8 +33,8 @@ sys.path.insert(0, str(ROOT/"src"))
 
 import numpy as np
 
-from ocen_dm.streams.restricted import (AGAMA_T_MYR, OCEN_TODAY, RestrictedState, advance, agama_kpc,
-                                        bound_set, host_potential)
+from ocen_dm.streams.restricted import (AGAMA_T_MYR, OCEN_TODAY, FrozenCore, RestrictedState, advance, agama_kpc,
+                                        bound_set, host_potential, rmax_of_energy)
 
 SPECIES = ("stars", "remnants", "halo")
 
@@ -45,10 +45,12 @@ def null_host():
     return agama.Potential(type="Plummer", mass=1e-20, scaleRadius=1.0)
 
 
-def diagnostics(state, mass, species, sat=None):
+def diagnostics(state, mass, species, sat=None, core=None):
     rel = state.xv - state.centre
+    frozen = core.mass_by_species if core is not None else {}
+    present = sorted(set(np.unique(species).tolist()) | set(frozen))
     row = dict(t_myr=state.t_myr, centre=state.centre.tolist(), r_gal_kpc=float(np.linalg.norm(state.centre[:3])),
-               bound_mass={SPECIES[s]: float(mass[state.bound & (species == s)].sum()) for s in np.unique(species)})
+               bound_mass={SPECIES[s]: float(mass[state.bound & (species == s)].sum()) + frozen.get(s, 0.) for s in present})
     if sat is not None:      # central potential and density of the refitted satellite (guards against spurious cusps)
         rr = np.array([1e-7, 1e-6, 1e-5, 1e-4, 1e-3])
         xyz = np.column_stack((rr, 0*rr, 0*rr))
@@ -75,6 +77,9 @@ def main():
     p.add_argument("--no-host", action="store_true")
     p.add_argument("--frozen", action="store_true", help="never refit the satellite potential (fitted once at t = 0)")
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--rfreeze", type=float, default=0., help="freeze particles whose initial radial apocentre r_max(E) "
+                   "in the satellite potential is below this [pc]: their mass becomes a fixed spherical core and they are "
+                   "not integrated (0 = integrate all). The A validation found no escaper with r_max < 48 pc by 800 Myr.")
     args = p.parse_args()
     tstop = args.tback if args.tstop is None else args.tstop
     args.out.mkdir(parents=True, exist_ok=True)
@@ -100,22 +105,42 @@ def main():
     else:
         state = RestrictedState(0.0, xv0 + start, start.copy(), np.ones(len(mass), bool))
         diag_mode = "w"
-    bound, sat = bound_set(state.xv, state.centre, mass, start=state.bound)
+    core = None
+    index = np.arange(len(mass))
+    if args.resume and (args.out/"frozen_core.npz").exists():
+        core = FrozenCore.load(args.out/"frozen_core.npz")
+        index = np.load(args.out/"particles.npz")["index"]
+        mass, species = mass[index], species[index]
+    elif args.rfreeze > 0:
+        _, pot_all = bound_set(state.xv, state.centre, mass)
+        rel = state.xv - state.centre
+        E = pot_all.potential(rel[:, :3]) + 0.5*np.sum(rel[:, 3:]**2, axis=1)
+        rmax_pc = rmax_of_energy(pot_all, E)*1e3
+        active = rmax_pc >= args.rfreeze
+        core = FrozenCore.from_particles(rel[~active, :3], mass[~active], species[~active])
+        core.save(args.out/"frozen_core.npz")
+        index = np.where(active)[0]
+        mass, species = mass[active], species[active]
+        state = RestrictedState(state.t_myr, state.xv[active], state.centre, state.bound[active])
+        print(f"frozen core: r_max(E) < {args.rfreeze:g} pc: {np.sum(~active)} particles, {core.mass:.4e} Msun "
+              f"({ {SPECIES[k]: f'{v:.3e}' for k, v in core.mass_by_species.items()} }); integrating {active.sum()} particles", flush=True)
+    bound, sat = bound_set(state.xv, state.centre, mass, start=state.bound, core=core)
     state.bound = bound
     meta = dict(created_utc=datetime.now(timezone.utc).isoformat(), ics=str(args.ics), mw=None if args.no_host else args.mw,
                 tback_myr=args.tback, tstop_myr=tstop, tupd_myr=args.tupd, frozen=args.frozen, snap_myr=args.snap, accuracy=args.accuracy,
                 n=len(mass), counts={SPECIES[s]: int(np.sum(species == s)) for s in np.unique(species)},
                 start=start.tolist(), ocen_today=OCEN_TODAY.tolist(), t_today_myr=args.tback, method="restricted N-body",
-                agama_t_myr=AGAMA_T_MYR)
+                agama_t_myr=AGAMA_T_MYR, rfreeze_pc=args.rfreeze, n_integrated=int(len(mass)),
+                frozen_core_mass={SPECIES[k]: v for k, v in core.mass_by_species.items()} if core is not None else None)
     (args.out/"run.json").write_text(json.dumps(meta, indent=1))
-    np.savez(args.out/"particles.npz", mass=mass.astype(np.float32), species=species)
+    np.savez(args.out/"particles.npz", mass=mass.astype(np.float32), species=species, index=index)
     diag = open(args.out/"diagnostics.jsonl", diag_mode)
 
     def snapshot(name, st):
         np.savez(args.out/name, t_myr=st.t_myr, pos=(st.xv[:, :3]*1e3).astype(np.float32), vel=st.xv[:, 3:].astype(np.float32))
 
     if state.t_myr == 0:
-        diag.write(json.dumps(diagnostics(state, mass, species, sat))+"\n"); diag.flush()
+        diag.write(json.dumps(diagnostics(state, mass, species, sat, core))+"\n"); diag.flush()
         snapshot("snap_0000.npz", state)
     eps = 1e-9
     next_snap = (np.floor(state.t_myr/args.snap+eps)+1)*args.snap
@@ -123,8 +148,8 @@ def main():
     while state.t_myr < tstop - eps:
         dt = min(args.tupd, tstop-state.t_myr, next_snap-state.t_myr)
         t0 = time.time()
-        state, sat, _ = advance(state, host, mass, sat, dt, accuracy=args.accuracy, frozen=args.frozen)
-        row = diagnostics(state, mass, species, sat)
+        state, sat, _ = advance(state, host, mass, sat, dt, accuracy=args.accuracy, frozen=args.frozen, core=core)
+        row = diagnostics(state, mass, species, sat, core)
         diag.write(json.dumps(row)+"\n"); diag.flush()
         if state.t_myr >= next_snap - eps:
             k = int(round(state.t_myr/args.snap))
