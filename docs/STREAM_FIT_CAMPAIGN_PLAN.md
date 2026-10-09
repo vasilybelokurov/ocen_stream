@@ -42,6 +42,13 @@ data to b = 37) and turns the sky track by about half of the observed ~10 deg; a
 - Optimiser: simplex/Nelder-Mead from many prior draws or dual annealing (likelihood discontinuous), then emcee if needed.
 - Report the pull on omega Cen's present-day 6D point (Dillamore+2022: it absorbs perturbations); mock calibration of the DM test.
 
+## Decision 2026-10-09 (user): bar-angle prior
+
+The spray grid prefers small bar angles (16-20 deg) with a strong bar (1.2-1.6 x Hunter), but the gain over 24 deg is modest
+(Delta lnL ~ 0.5 per member). In the fit the bar angle gets a tighter, literature-based prior (published estimates ~25-30 deg;
+exact prior to be set from cited measurements) instead of running free; the residual freedom is to be absorbed by omega Cen's
+present-day phase space (catalogue priors) and host parameters, not by an implausible bar.
+
 ## Stages
 
 **Stage 0 -- freeze the observables (data only, ~1 day of work, negligible CPU).**
