@@ -146,3 +146,49 @@ def age_ridge(age, l, b, extra, dage=15., age_max=450., h=1.0, rmatch=1.0, nmin=
         m = np.sum((pts-c)**2, axis=1) < rmatch**2
         rows.append(dict(age=a0+dage/2, l=float(c[0]), b=float(c[1]), n=int(len(s)), **{n: float(np.median(v[s][m])) for n, v in extra.items()}))
     return {key: np.array([r[key] for r in rows]) for key in rows[0]}
+
+
+def score_chi_kde(data, model, dchi=5., chi_max=None, nmin=20, age_max=700., floors=(0.5, 0.5, 0.2, 0.2), eps=0.05,
+                  bg=1/(55.*30.*900.), chunk=400):
+    """Dillamore+2022-style likelihood with the Gibbons phase chi as a latent along-stream coordinate.
+    model: dict l, b, pmra, pmdec, vlos, chi, age (trailing arm). Bins of width dchi in chi (chi > 0, age < age_max, >= nmin
+    particles). In each bin k a Gaussian KDE in x = (l, b, pmra, pmdec) with diagonal bandwidth H_k = max(Scott x std, floors)
+    (Scott factor n^(-1/(d+4)), d = 4); for each member the kernel covariance is H_k^2 + diag(0, 0, C_pm) (Gaia PM covariance
+    incl. correlation). Members with v_los get a 5th dimension (bandwidth max(Scott x std, 5 km/s) plus e_v^2).
+    L_i = (1 - eps) sum_k (1/K) KDE_k(x_i) + eps * bg  (flat weights in chi: along-stream density not used).
+    Returns dict: total lnL, K, per-bin mean likelihood share (which chi bins explain the data)."""
+    k = (model["chi"] > 0) & (model["age"] < age_max)
+    chi = model["chi"][k]; X = np.column_stack([model[q][k] for q in ("l", "b", "pmra", "pmdec")]); V = model["vlos"][k]
+    hi = chi.max() if chi_max is None else chi_max
+    edges = np.arange(0., hi+dchi, dchi)
+    bins = []
+    for e0, e1 in zip(edges[:-1], edges[1:]):
+        s = (chi >= e0) & (chi < e1)
+        if s.sum() >= nmin:
+            n = s.sum(); f = n**(-1/8.)
+            h = np.maximum(f*X[s].std(axis=0), floors); hv = max(f**(8/9.)*V[s].std(), 5.)
+            bins.append((X[s], V[s], h, hv, 0.5*(e0+e1)))
+    K = len(bins)
+    D = np.column_stack([data[q] for q in ("l", "b", "pmra", "pmdec")]); n = len(D)
+    hasv = np.isfinite(data["v"])
+    like = np.zeros((n, K))
+    for kk, (Xb, Vb, h, hv, _) in enumerate(bins):
+        for i0 in range(0, n, chunk):
+            sl = slice(i0, min(n, i0+chunk)); d = D[sl]
+            # sky part (diagonal)
+            q = ((d[:, None, 0]-Xb[None, :, 0])/h[0])**2+((d[:, None, 1]-Xb[None, :, 1])/h[1])**2
+            norm = 1/(2*np.pi*h[0]*h[1])
+            # PM part with Gaia covariance added
+            sx2 = h[2]**2+data["e_pmra"][sl]**2; sy2 = h[3]**2+data["e_pmdec"][sl]**2
+            cxy = data["rho"][sl]*data["e_pmra"][sl]*data["e_pmdec"][sl]; det = sx2*sy2-cxy**2
+            dx = d[:, None, 2]-Xb[None, :, 2]; dy = d[:, None, 3]-Xb[None, :, 3]
+            qp = (sy2[:, None]*dx**2-2*cxy[:, None]*dx*dy+sx2[:, None]*dy**2)/det[:, None]
+            val = np.exp(-0.5*(q+qp))*norm/(2*np.pi*np.sqrt(det))[:, None]
+            hv_i = np.where(hasv[sl], np.sqrt(hv**2+np.nan_to_num(data["e_v"][sl])**2), 1.)
+            vfac = np.where(hasv[sl][:, None], np.exp(-0.5*((np.nan_to_num(data["v"][sl])[:, None]-Vb[None, :])/hv_i[:, None])**2)/(np.sqrt(2*np.pi)*hv_i[:, None]), 1.)
+            like[sl, kk] = np.mean(val*vfac, axis=1)
+    bgv = np.where(hasv, bg/400., bg)
+    Li = (1-eps)*like.mean(axis=1)+eps*bgv
+    share = (like/np.maximum(like.sum(axis=1, keepdims=True), 1e-300)).mean(axis=0)
+    return dict(total=float(np.log(Li).sum()), K=K, chi_centres=[b[4] for b in bins], share=share.tolist(),
+                n_bg_dominated=int(np.sum((1-eps)*like.mean(axis=1) < eps*bgv)))
