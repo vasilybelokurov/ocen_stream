@@ -85,3 +85,60 @@ def save(path, fname):
 def load(fname):
     with open(fname) as f:
         return json.load(f)
+
+
+# ---------------- great-circle frame + low-order polynomial track (publishable form) ----------------
+def _unit(l, b):
+    l, b = np.radians(l), np.radians(b)
+    return np.stack((np.cos(b)*np.cos(l), np.cos(b)*np.sin(l), np.sin(b)), axis=-1)
+
+
+def gc_rotation(pole_lb, origin_lb):
+    """Rotation matrix from Galactic unit vectors to the stream frame: z = pole, x = origin projected onto the equator."""
+    z = _unit(*pole_lb); o = _unit(*origin_lb)
+    x = o-np.dot(o, z)*z; x /= np.linalg.norm(x); y = np.cross(z, x)
+    return np.vstack((x, y, z))
+
+
+def to_stream(l, b, Rm):
+    v = _unit(np.asarray(l), np.asarray(b)) @ Rm.T
+    return np.degrees(np.arctan2(v[..., 1], v[..., 0])), np.degrees(np.arcsin(np.clip(v[..., 2], -1, 1)))
+
+
+def fit_gc_frame(ridge_lb, origin_lb, max_deg=4, max_dev=1.0):
+    """Pole minimising sum phi2^2 of the ridge points (origin fixed at origin_lb), then the lowest-degree polynomial
+    phi2(phi1) with all ridge points within max_dev deg. Returns dict(pole, origin, coeffs (highest power first), degree, dev)."""
+    from scipy.optimize import minimize
+    rl, rb = ridge_lb[:, 0], ridge_lb[:, 1]
+    def cost(p):
+        Rm = gc_rotation(p, origin_lb); _, f2 = to_stream(rl, rb, Rm); return np.sum(f2**2)
+    best = min((minimize(cost, x0, method="Nelder-Mead", options=dict(xatol=1e-4, fatol=1e-6, maxiter=4000))
+                for x0 in ([-40., -40.], [140., 40.], [0., -50.], [100., 0.], [-120., 30.])), key=lambda r: r.fun)
+    pole = [float(((best.x[0]+180) % 360)-180), float(best.x[1])]
+    Rm = gc_rotation(pole, origin_lb); f1, f2 = to_stream(rl, rb, Rm)
+    for deg in range(1, max_deg+1):
+        c = np.polyfit(f1, f2, deg); dev = np.abs(np.polyval(c, f1)-f2).max()
+        if dev <= max_dev:
+            break
+    return dict(pole=pole, origin=list(origin_lb), coeffs=c.tolist(), degree=int(deg), max_dev=float(dev),
+                phi1_range=[float(f1.min()), float(f1.max())])
+
+
+def project_gc(l, b, frame):
+    """Along-stream phi1 and across-stream dphi2 = phi2 - poly(phi1) [deg]."""
+    Rm = gc_rotation(frame["pole"], frame["origin"]); f1, f2 = to_stream(l, b, Rm)
+    return f1, f2-np.polyval(frame["coeffs"], f1)
+
+
+def chord_gc_frame(ridge_lb, origin_lb, end_lb, max_deg=4, max_dev=1.0):
+    """Great circle through origin_lb and end_lb (chord frame: bisects the arc's turn), pole = origin x end; then the
+    lowest-degree polynomial phi2(phi1) with all ridge points within max_dev deg."""
+    z = np.cross(_unit(*origin_lb), _unit(*end_lb)); z /= np.linalg.norm(z)
+    pole = [float(np.degrees(np.arctan2(z[1], z[0]))), float(np.degrees(np.arcsin(z[2])))]
+    Rm = gc_rotation(pole, origin_lb); f1, f2 = to_stream(ridge_lb[:, 0], ridge_lb[:, 1], Rm)
+    for deg in range(1, max_deg+1):
+        c = np.polyfit(f1, f2, deg); dev = np.abs(np.polyval(c, f1)-f2).max()
+        if dev <= max_dev:
+            break
+    return dict(pole=pole, origin=list(origin_lb), end=list(end_lb), coeffs=c.tolist(), degree=int(deg), max_dev=float(dev),
+                phi1_range=[float(f1.min()), float(f1.max())])

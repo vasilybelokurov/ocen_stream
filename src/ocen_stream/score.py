@@ -1,4 +1,9 @@
-"""Per-star, sky-conditional likelihood of stream members given model particles (fitting campaign; design reviewed with Codex,
+"""Stream likelihoods of members given model particles. Contents: score() -- per-star sky-conditional likelihood (header below);
+score_chi_kde() -- chi-binned joint KDE (Dillamore+2022 style, latent chi; NOT density-free along the stream);
+score_conditional() -- chi-binned KDE conditioned on the observed along-stream coordinate u (density-free along u; adopted);
+display helpers chi_track, chi_ridge, age_ridge, chi_kde_track.
+
+score(): per-star, sky-conditional likelihood of stream members given model particles (fitting campaign; design reviewed with Codex,
 docs/codex_track_objective_2026-10-09.md; cf. Erkal+2019 per-star likelihood).
 
 For each member i at (l_i, b_i) and model trailing-arm particles j:
@@ -220,3 +225,51 @@ def chi_kde_track(model, dchi=5., chi_max=105., nmin=20, age_max=700., floors=(0
         rows.append(dict(chi=e0+dchi/2, l=mode[0], b=mode[1], pmra=mode[2], pmdec=mode[3], n=int(s.sum()),
                          **{q: float(np.median(model[q][k][s][near])) for q in extra}))
     return {key: np.array([r[key] for r in rows]) for key in rows[0]}
+
+
+
+def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 0.2, 0.2), hv=5., dchi=5., nmin=20,
+                      age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400):
+    """Conditional likelihood of members given model particles, density-free along the observed along-stream coordinate u
+    (design reviewed with Codex: docs/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
+    >= nmin particles), equal prior weight 1/K; in bin k a product-Gaussian KDE with FIXED bandwidths (same for every model):
+      f_k(u, w) = mean_j N(u - U_j; h_u) N(x - X_j; h_x) N_2(mu - MU_j; H + C_i) [N(v - V_j; hv^2 + e_v^2) if v measured]
+      f_k^u(u)  = mean_j N(u - U_j; h_u)
+    f = (1/K) sum_k f_k, f_u = (1/K) sum_k f_k^u. Background g(u, w) = g_u(u) g_w(w), uniform: g_u = 1/len(u_window),
+    g_w = 1/(w_box product) [x 1/v_box]. Per member
+      L_i = [(1 - eps) f(u_i, w_i) + eps g_u g_w] / [(1 - eps) f_u(u_i) + eps g_u],
+    i.e. the conditional p(w | u) of the joint model+background mixture (the model's density along u cancels; where the model
+    barely reaches u_i the background takes over smoothly).
+    Data: du (N,), dw (N, 3) = (x, pmra, pmdec), dv (N,) v_los or nan, dev (N,) its error, dcov (N, 2, 2) Gaia PM covariance.
+    Model: mu (M,), mw (M, 3), mv (M,), chi (M,), age (M,) [trailing-arm particles]. h = (h_u, h_x, h_pmra, h_pmdec).
+    Returns dict(total, per_star (N,), K, frac_bg (mean background share of the numerator))."""
+    du = np.asarray(du, float); dw = np.asarray(dw, float); n = len(du)
+    lo, hi = (du.min(), du.max()) if u_window is None else u_window
+    g_u = 1./(hi-lo); hasv = np.isfinite(dv)
+    g_w = np.where(hasv, 1./(np.prod(w_box)*v_box), 1./np.prod(w_box))
+    k = (chi > 0) & (age < age_max)
+    edges = np.arange(0., (chi[k].max() if k.any() else 0.)+dchi, dchi)
+    bins = [np.where(k & (chi >= e0) & (chi < e0+dchi))[0] for e0 in edges]
+    bins = [b_ for b_ in bins if len(b_) >= nmin]; K = len(bins)
+    if K == 0:
+        Li = np.full(n, (eps*g_u*g_w)/(eps*g_u))
+        return dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=0, frac_bg=1.0)
+    hu, hx, hpa, hpd = h
+    f = np.zeros(n); fu = np.zeros(n)
+    sx2 = hpa**2+dcov[:, 0, 0]; sy2 = hpd**2+dcov[:, 1, 1]; cxy = dcov[:, 0, 1]; det = sx2*sy2-cxy**2
+    sv = np.sqrt(hv**2+np.nan_to_num(dev)**2)
+    for idx in bins:
+        U, W, V = mu[idx], mw[idx], mv[idx]
+        for i0 in range(0, n, chunk):
+            sl = slice(i0, min(n, i0+chunk))
+            gu = np.exp(-0.5*((du[sl, None]-U[None, :])/hu)**2)/(np.sqrt(2*np.pi)*hu)
+            gx = np.exp(-0.5*((dw[sl, 0, None]-W[None, :, 0])/hx)**2)/(np.sqrt(2*np.pi)*hx)
+            dx = dw[sl, 1, None]-W[None, :, 1]; dy = dw[sl, 2, None]-W[None, :, 2]
+            q = (sy2[sl, None]*dx**2-2*cxy[sl, None]*dx*dy+sx2[sl, None]*dy**2)/det[sl, None]
+            gp = np.exp(-0.5*q)/(2*np.pi*np.sqrt(det[sl]))[:, None]
+            gv = np.where(hasv[sl, None], np.exp(-0.5*((np.nan_to_num(dv[sl])[:, None]-V[None, :])/sv[sl, None])**2)/(np.sqrt(2*np.pi)*sv[sl, None]), 1.)
+            f[sl] += np.mean(gu*gx*gp*gv, axis=1)/K
+            fu[sl] += np.mean(gu, axis=1)/K
+    num = (1-eps)*f+eps*g_u*g_w; den = (1-eps)*fu+eps*g_u
+    Li = num/den
+    return dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=K, frac_bg=float(np.mean(eps*g_u*g_w/num)))
