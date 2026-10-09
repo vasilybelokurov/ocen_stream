@@ -3,7 +3,7 @@
 Myr, >= 20 particles; Scott bandwidths with floors 0.5 deg, 0.2 mas/yr; v_los >= 5 km/s; distance kernel Scott with floor
 0.1 kpc for display). Projected into 2D panels as log-density images (each particle: Gaussian kernel with its bin's bandwidths,
 weight 1/(K n_k)); members overplotted. Row 1: all chi bins (as in the likelihood). Row 2: chi <= 105 only.
-Usage: python bin/streams/plot_kde_model.py om34.5_an24_am1.2 [--contours] -> plots/kde_model_<tag>[_contours].png
+Usage: python bin/streams/plot_kde_model.py om34.5_an24_am1.2 [--contours] [--dir=spray_grid4] -> plots/kde_model_<tag>[_contours].png
 """
 import json, sys
 from pathlib import Path
@@ -46,8 +46,9 @@ def kde_images(m, chi_max):
     return imgs, K
 
 
+SDIR = next((x.split("=", 1)[1] for x in sys.argv if x.startswith("--dir=")), "spray_grid2")  # --dir=spray_grid4
 for tag in [x for x in sys.argv[1:] if not x.startswith("--")]:
-    m = dict(np.load(ROOT/f"results/streams/spray_grid2/{tag}.npz"))
+    m = dict(np.load(ROOT/f"results/streams/{SDIR}/{tag}.npz"))
     fig, ax = plt.subplots(2, 6, figsize=(30, 9.5))
     for r, cm in enumerate((1e9, 105.)):
         imgs, K = kde_images(m, cm)
