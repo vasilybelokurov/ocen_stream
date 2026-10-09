@@ -11,15 +11,16 @@ from spray_bar_grid2 import load_data
 from ocen_dm.streams.score import score_chi_kde
 
 d = load_data()
+ROB = '--robust' in sys.argv
 G = json.loads((ROOT/"results/plot_data/spray_bar_grid2.json").read_text())["grid"]
 out = []
 for x in G:
     tag = f"om{x['omega']:g}_an{x['angle']:g}_am{x['amp']:g}"; m = dict(np.load(ROOT/f"results/streams/spray_grid2/{tag}.npz"))
-    t0 = time.time(); s = score_chi_kde(d, m)
+    t0 = time.time(); s = score_chi_kde(d, m, robust=ROB)
     out.append(dict(omega=x["omega"], angle=x["angle"], amp=x["amp"], chikde=s["total"], K=s["K"], n_bg=s["n_bg_dominated"],
                     share=s["share"], chi_centres=s["chi_centres"], sky_score=x["score"]["total"], overshoot=x["overshoot"]))
     print(f"{tag:22s} chiKDE lnL {s['total']:10.1f}  K {s['K']:3d}  bg-dominated {s['n_bg_dominated']:4d}   sky-score {x['score']['total']:9.1f}  [{time.time()-t0:.1f} s]", flush=True)
-(ROOT/"results/plot_data/spray_bar_grid2_chikde.json").write_text(json.dumps(out))
+(ROOT/f"results/plot_data/spray_bar_grid2_chikde{'_robust' if ROB else ''}.json").write_text(json.dumps(out))
 b1 = max(o["chikde"] for o in out); b2 = max(o["sky_score"] for o in out)
 from scipy.stats import spearmanr
 print("\nSpearman rank correlation chiKDE vs sky score:", round(spearmanr([o["chikde"] for o in out], [o["sky_score"] for o in out])[0], 3))

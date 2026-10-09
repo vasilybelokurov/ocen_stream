@@ -149,7 +149,8 @@ def age_ridge(age, l, b, extra, dage=15., age_max=450., h=1.0, rmatch=1.0, nmin=
 
 
 def score_chi_kde(data, model, dchi=5., chi_max=None, nmin=20, age_max=700., floors=(0.5, 0.5, 0.2, 0.2), eps=0.05,
-                  bg=1/(55.*30.*900.), chunk=400):
+                  bg=1/(55.*30.*900.), chunk=400, robust=False, rob_floors=(0.2, 0.2, 0.1, 0.1), rob_caps=(1., 1., 0.5, 0.5),
+                  rob_v=(3., 10.)):
     """Dillamore+2022-style likelihood with the Gibbons phase chi as a latent along-stream coordinate.
     model: dict l, b, pmra, pmdec, vlos, chi, age (trailing arm). Bins of width dchi in chi (chi > 0, age < age_max, >= nmin
     particles). In each bin k a Gaussian KDE in x = (l, b, pmra, pmdec) with diagonal bandwidth H_k = max(Scott x std, floors)
@@ -166,7 +167,12 @@ def score_chi_kde(data, model, dchi=5., chi_max=None, nmin=20, age_max=700., flo
         s = (chi >= e0) & (chi < e1)
         if s.sum() >= nmin:
             n = s.sum(); f = n**(-1/8.)
-            h = np.maximum(f*X[s].std(axis=0), floors); hv = max(f**(8/9.)*V[s].std(), 5.)
+            if robust:   # Scott factor x 1.4826 MAD, clipped (floors/caps), as plot_kde_model.py --robust
+                mad = 1.4826*np.median(np.abs(X[s]-np.median(X[s], axis=0)), axis=0)
+                h = np.clip(f*mad, rob_floors, rob_caps)
+                hv = float(np.clip(f**(8/9.)*1.4826*np.median(np.abs(V[s]-np.median(V[s]))), *rob_v))
+            else:
+                h = np.maximum(f*X[s].std(axis=0), floors); hv = max(f**(8/9.)*V[s].std(), 5.)
             bins.append((X[s], V[s], h, hv, 0.5*(e0+e1)))
     K = len(bins)
     D = np.column_stack([data[q] for q in ("l", "b", "pmra", "pmdec")]); n = len(D)
