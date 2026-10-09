@@ -15,7 +15,7 @@ from astropy.table import Table
 from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
 from ocen_dm.streams.frames import observables
 from ocen_dm.streams.spray import spray_unwrapped
-from ocen_dm.streams.score import score, overshoot_fraction, chi_track
+from ocen_dm.streams.score import score, overshoot_fraction, chi_track, score_chi_kde
 
 w = lambda x: np.where(x > 180, x-360, x)
 OMEGA = [30., 31.5, 33., 34.5, 36.]; ANGLE = [24., 28., 32.]; AMP = [0.8, 1.0, 1.2]
@@ -33,29 +33,35 @@ def load_data():
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--nrel", type=int, default=8000); ap.add_argument("--window", type=float, default=1000.)
+    ap.add_argument("--omega", type=float, nargs="+", default=OMEGA); ap.add_argument("--angle", type=float, nargs="+", default=ANGLE)
+    ap.add_argument("--amp", type=float, nargs="+", default=AMP); ap.add_argument("--summary", default="spray_bar_grid2.json")
     a = ap.parse_args()
     data = load_data()
     prof = json.loads((ROOT/"results/nbody/A_nodm/model_profiles.json").read_text()); r_kpc, M = np.array(prof["r_pc"])/1e3, np.array(prof["enclosed"]["total"])
     T = 1955.58/AGAMA_T_MYR; trel = np.linspace(T-a.window/AGAMA_T_MYR, T, a.nrel)
     outd = ROOT/"results/streams/spray_grid2"; outd.mkdir(parents=True, exist_ok=True); res = []
-    for om, an, am in itertools.product(OMEGA, ANGLE, AMP):
+    for om, an, am in itertools.product(a.omega, a.angle, a.amp):
         t0 = time.time()
-        host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am)
-        sp = spray_unwrapped(host, OCEN_TODAY.copy(), T, r_kpc, M, trel, seed=1)
-        tr = sp["arm"] == 1; o = observables(sp["xv"][tr]); l = w(o["l"])
+        tag = f"om{om:g}_an{an:g}_am{am:g}"
+        if (outd/f"{tag}.npz").exists():   # identical set-up (same release epochs and seed): reuse
+            m = dict(np.load(outd/f"{tag}.npz")); l = m["l"]; o = dict(b=m["b"], pmra=m["pmra"], pmdec=m["pmdec"], vlos=m["vlos"], dist=m["d"])
+            chi_tr, age_tr = m["chi"], m["age"]
+        else:
+            host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am)
+            sp = spray_unwrapped(host, OCEN_TODAY.copy(), T, r_kpc, M, trel, seed=1)
+            tr = sp["arm"] == 1; o = observables(sp["xv"][tr]); l = w(o["l"]); chi_tr, age_tr = sp["chi"][tr], sp["t_release_myr_ago"][tr]
+            np.savez_compressed(outd/f"{tag}.npz", l=l, b=o["b"], pmra=o["pmra"], pmdec=o["pmdec"], vlos=o["vlos"], d=o["dist"], chi=chi_tr, age=age_tr)
         mod = dict(l=l, b=o["b"], pmra=o["pmra"], pmdec=o["pmdec"], vlos=o["vlos"])
         sc = score(data, mod)
-        ov = overshoot_fraction(l, o["b"], sp["t_release_myr_ago"][tr], data["l"], data["b"])
-        k = sp["chi"][tr] > 0
-        ct = chi_track(sp["chi"][tr][k], dict(l=l[k], b=o["b"][k], pmra=o["pmra"][k], pmdec=o["pmdec"][k], vlos=o["vlos"][k], d=o["dist"][k],
-                                               age=sp["t_release_myr_ago"][tr][k]))
-        tag = f"om{om:g}_an{an:g}_am{am:g}"
-        np.savez_compressed(outd/f"{tag}.npz", l=l, b=o["b"], pmra=o["pmra"], pmdec=o["pmdec"], vlos=o["vlos"], d=o["dist"], chi=sp["chi"][tr],
-                            age=sp["t_release_myr_ago"][tr])
-        res.append(dict(omega=om, angle=an, amp=am, score=sc, overshoot=ov, chi_track=ct, seconds=time.time()-t0))
-        print(f"Omega {om:5.1f} angle {an:4.0f} amp {am:3.1f}: lnL {sc['total']:10.1f} (sky {sc['sky']:9.1f}, pm {sc['pm']:9.1f}, vlos {sc['vlos']:7.1f}; "
+        ck = score_chi_kde(data, dict(mod, chi=chi_tr, age=age_tr), robust=True)
+        ov = overshoot_fraction(l, o["b"], age_tr, data["l"], data["b"])
+        k = chi_tr > 0
+        ct = chi_track(chi_tr[k], dict(l=l[k], b=o["b"][k], pmra=o["pmra"][k], pmdec=o["pmdec"][k], vlos=o["vlos"][k], d=o["dist"][k], age=age_tr[k]))
+        res.append(dict(omega=om, angle=an, amp=am, score=sc, chikde=ck["total"], chikde_share=ck["share"], chikde_chi=ck["chi_centres"],
+                        overshoot=ov, chi_track=ct, seconds=time.time()-t0))
+        print(f"Omega {om:5.1f} angle {an:4.0f} amp {am:3.1f}: chiKDE {ck['total']:10.1f}  sky lnL {sc['total']:10.1f} (sky {sc['sky']:9.1f}, pm {sc['pm']:9.1f}, vlos {sc['vlos']:7.1f}; "
               f"bg-only sky {sc['n_bg_sky']}, pm {sc['n_bg_pm']})  overshoot {ov:.2f}  [{time.time()-t0:.0f} s]", flush=True)
-        (ROOT/"results/plot_data/spray_bar_grid2.json").write_text(json.dumps(dict(n_data=len(data["l"]), grid=res)))
+        (ROOT/"results/plot_data"/a.summary).write_text(json.dumps(dict(n_data=len(data["l"]), grid=res)))
 
 
 if __name__ == "__main__":
