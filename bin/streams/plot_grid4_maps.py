@@ -7,7 +7,8 @@ import itertools, json
 from pathlib import Path
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parents[2]
-g = json.loads((ROOT/"results/plot_data/grid4.json").read_text())["grid"]
+import sys; NAME = sys.argv[1] if len(sys.argv) > 1 else "grid4"  # e.g. grid4_spin
+g = json.loads((ROOT/f"results/plot_data/{NAME}.json").read_text())["grid"]
 names = ["omega", "angle", "amp", "d"]; lab = [r"$\Omega_b$ [km/s/kpc]", "bar angle [deg]", "bar amplitude", r"$d_{\omega Cen}$ [kpc]"]
 a = np.array([[r[n] for n in names]+[r["lnL"]] for r in g]); L = a[:, 4]-a[:, 4].max()
 fig, ax = plt.subplots(2, 3, figsize=(15, 9)); ax = ax.ravel()
@@ -24,6 +25,6 @@ for k, (i, j) in enumerate(itertools.combinations(range(4), 2)):
     ax[k].set_xlabel(lab[i]); ax[k].set_ylabel(lab[j])
 fig.colorbar(im, ax=ax, label=r"$\Delta\ln L$ (max over the other two parameters)", shrink=0.8)
 b = a[np.argmax(a[:, 4])]
-fig.suptitle(f"4D grid, conditional KDE likelihood (3681 members); best: Omega_b {b[0]:g}, angle {b[1]:g}, amp {b[2]:g}, d {b[3]:g}; "
+fig.suptitle(f"{NAME}, conditional KDE likelihood (3681 members); best: Omega_b {b[0]:g}, angle {b[1]:g}, amp {b[2]:g}, d {b[3]:g}; "
              f"PMs fixed (-3.2223, -6.7517)")
-out = ROOT/"plots/grid4_maps.png"; fig.savefig(out, dpi=110, bbox_inches="tight"); print(out)
+out = ROOT/f"plots/{NAME}_maps.png"; fig.savefig(out, dpi=110, bbox_inches="tight"); print(out)
