@@ -191,4 +191,26 @@ def score_chi_kde(data, model, dchi=5., chi_max=None, nmin=20, age_max=700., flo
     Li = (1-eps)*like.mean(axis=1)+eps*bgv
     share = (like/np.maximum(like.sum(axis=1, keepdims=True), 1e-300)).mean(axis=0)
     return dict(total=float(np.log(Li).sum()), K=K, chi_centres=[b[4] for b in bins], share=share.tolist(),
-                n_bg_dominated=int(np.sum((1-eps)*like.mean(axis=1) < eps*bgv)))
+                n_bg_dominated=int(np.sum((1-eps)*like.mean(axis=1) < eps*bgv)),
+                best_chi=np.array([b[4] for b in bins])[np.argmax(like, axis=1)].tolist(),
+                mean_chi=((like*np.array([b[4] for b in bins])[None, :]).sum(1)/np.maximum(like.sum(1), 1e-300)).tolist())
+
+
+def chi_kde_track(model, dchi=5., chi_max=105., nmin=20, age_max=700., floors=(0.5, 0.5, 0.2, 0.2), extra=("vlos", "d")):
+    """Model track from the per-chi-bin KDE of score_chi_kde: in each chi bin (chi <= chi_max), the mode of the 4D Gaussian KDE in
+    (l, b, pmra, pmdec) (same Scott bandwidths with floors), evaluated at the bin's particles; `extra` observables = medians over
+    particles within one bandwidth (scaled distance < 1) of the mode. Returns dict of arrays (chi, l, b, pmra, pmdec, extras, n)."""
+    k = (model["chi"] > 0) & (model["age"] < age_max)
+    chi = model["chi"][k]; X = np.column_stack([model[q][k] for q in ("l", "b", "pmra", "pmdec")])
+    rows = []
+    for e0 in np.arange(0., chi_max, dchi):
+        s = (chi >= e0) & (chi < e0+dchi)
+        if s.sum() < nmin:
+            continue
+        Xb = X[s]; h = np.maximum(s.sum()**(-1/8.)*Xb.std(axis=0), floors)
+        Z = Xb/h
+        dens = np.exp(-0.5*((Z[:, None, :]-Z[None, :, :])**2).sum(-1)).sum(1)
+        mode = Xb[np.argmax(dens)]; near = (((Xb-mode)/h)**2).sum(1) < 1.
+        rows.append(dict(chi=e0+dchi/2, l=mode[0], b=mode[1], pmra=mode[2], pmdec=mode[3], n=int(s.sum()),
+                         **{q: float(np.median(model[q][k][s][near])) for q in extra}))
+    return {key: np.array([r[key] for r in rows]) for key in rows[0]}
