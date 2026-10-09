@@ -52,6 +52,9 @@ def main():
                    "(../oCen_bar/agama_potentials/MWPotentialHunter24_full.ini) with constant pattern speed [km/s/kpc, >0 prograde]; "
                    "use --mw hunter24_axi for its axisymmetric control")
     p.add_argument("--bar-angle", type=float, default=28.0, help="present-day bar angle [deg] from the Sun-GC line (near end at l > 0)")
+    p.add_argument("--bar-amp", type=float, default=None, help="bar amplitude A: axi + A (barred - axisymmetrised baryons), as spray grids")
+    p.add_argument("--dist", type=float, default=None, help="today's omega Cen distance [kpc] (with --pm; catalogue RA/Dec/v_los, baumgardt frame)")
+    p.add_argument("--pm", type=float, nargs=2, default=None, help="today's omega Cen pmra pmdec [mas/yr] (with --dist)")
     p.add_argument("--frame", default=None, choices=("baumgardt", "ibata19"), help="solar frame + omega Cen distance "
                    "(src/ocen_dm/streams/frames.py) for today's centre; default: legacy OCEN_TODAY (= baumgardt within 0.6 km/s)")
     p.add_argument("--spin", type=Path, default=None, help="results/streams/spin/<model>.json from bin/streams/fit_spin.py: "
@@ -77,6 +80,9 @@ def main():
     rmax_pc = rmax_of_energy(sat, E)*1e3
     from ocen_dm.streams.frames import ocen_today
     today = OCEN_TODAY.copy() if args.frame is None else ocen_today(args.frame)
+    if args.dist is not None:
+        from ocen_dm.streams.frames import to_model, OCEN_OBS
+        today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], args.dist, args.pm[0], args.pm[1], OCEN_OBS["vlos"])[0]
     spin = None
     if args.spin is not None:
         from ocen_dm.streams.rotation import spin_up
@@ -90,7 +96,7 @@ def main():
           f"integrating {active.sum()}", flush=True)
 
     T = args.tback/AGAMA_T_MYR
-    host = host_potential(args.mw, bar_omega=args.bar_omega, bar_angle_deg=args.bar_angle, t_today=T)
+    host = host_potential(args.mw, bar_omega=args.bar_omega, bar_angle_deg=args.bar_angle, t_today=T, bar_amp=args.bar_amp)
     # backward from t = T (today) to 0: for a time-dependent (rotating-bar) host the clock must start at T
     _, traj = agama.orbit(potential=host, ic=today, timestart=T, time=-T, trajsize=2, accuracy=1e-12)   # default 1e-8 loses 5-12 pc per round trip
     start = traj[-1]
@@ -112,7 +118,7 @@ def main():
              species=np.zeros(active.sum(), np.int8), index=pick[active])
     FrozenCore(r_kpc, M_tot, {0: n_frozen*M_TRACER}).save(args.out/"frozen_core.npz")
     meta = dict(created_utc=datetime.now(timezone.utc).isoformat(), method="prescribed (frozen) satellite potential, "
-                "massless star tracers", model=args.model, bar_omega=args.bar_omega, bar_angle_deg=args.bar_angle if args.bar_omega else None, model_profiles=str(mdir/"model_profiles.json"),
+                "massless star tracers", model=args.model, bar_omega=args.bar_omega, bar_angle_deg=args.bar_angle if args.bar_omega else None, bar_amp=args.bar_amp, model_profiles=str(mdir/"model_profiles.json"),
                 ics=str(ics_path), mw=args.mw, tback_myr=args.tback, t_today_myr=args.tback, nstars=int(len(pick)),
                 n_integrated=int(active.sum()), n_counted_only=n_frozen, rfreeze_pc=args.rfreeze, seed=args.seed,
                 accuracy=args.accuracy, spin=spin, spin_file=str(args.spin) if args.spin else None, snap_times_myr=times.tolist(), start=start.tolist(), ocen_today=today.tolist(), frame=args.frame or "baumgardt",

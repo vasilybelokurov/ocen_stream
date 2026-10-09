@@ -39,8 +39,12 @@ def rj_vj_R(host, orbit, times, m_of_r, n_iter=30):
     return rj, Om*rj, R
 
 
-def release_ic(orbit, rj, vj, R, rng):
-    """Fardal+15 (gala-modified) initial conditions, interleaved (trailing, leading) per release point."""
+def release_ic(orbit, rj, vj, R, rng, spin=None):
+    """Fardal+15 (gala-modified) initial conditions, interleaved (trailing, leading) per release point.
+    spin (optional, our extension, not part of Fardal+15): dict(r_kpc, vrot_kms, s) = the cluster's mean rotation profile
+    v_rot(r) about the unit spin vector s (model frame, fixed in the Galactic frame), measured with e_phi = s x x / |s x x|
+    (bin/streams/spin_vrot_profile.py). Each released particle gets + v_rot(r_J) e_phi(x_offset): the mean streaming velocity
+    of the cluster at its tidal radius, in the rotation direction at the release point."""
     N = len(rj)
     s = np.tile([1., -1.], N)
     rj2, vj2, R2 = np.repeat(rj, 2)*s, np.repeat(vj, 2)*s, np.repeat(R, 2, axis=0)
@@ -52,6 +56,11 @@ def release_ic(orbit, rj, vj, R, rng):
     ic = np.repeat(orbit, 2, axis=0).copy()
     ic[:, :3] += np.einsum("ni,nij->nj", np.column_stack((rx, 0*rx, rz)), R2)
     ic[:, 3:] += np.einsum("ni,nij->nj", np.column_stack((0*rx, rvy, rvz)), R2)
+    if spin is not None:
+        off = ic[:, :3]-np.repeat(orbit[:, :3], 2, axis=0)
+        ephi = np.cross(np.asarray(spin["s"])[None, :], off); ephi /= np.linalg.norm(ephi, axis=1)[:, None]
+        vr = np.interp(np.abs(rj2), spin["r_kpc"], spin["vrot_kms"])
+        ic[:, 3:] += vr[:, None]*ephi
     return ic, s.astype(np.int8)
 
 
@@ -84,7 +93,7 @@ def spray(host, today, T, r_kpc, M_enc, n_release=2000, t_release=None, seed=1, 
                 centre_offset_pc=float(np.linalg.norm(orb[-1, :3]-today[:3])*1e3))
 
 
-def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, accuracy=1e-8):
+def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, accuracy=1e-8, spin=None):
     """Spray (as spray(), progenitor gravity included) with per-particle trajectories, returning stream-ordering coordinates:
       chi [kpc Myr]: Gibbons+2014 phase, integral over release->today of (|r| - |r_prog|) dt (their Eq. 3 sums over equal
             time steps; this is the time-weighted continuous form; > 0 trailing, < 0 leading);
@@ -92,7 +101,7 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
             psi = Psi_prog(t_rel) + [unwrapped particle angle change from t_rel to today] - Psi_prog(today), with Psi the
             unwrapped in-plane azimuth; psi < 0 trailing for prograde-in-plane motion.
     t_release: release epochs [AGAMA units] (two particles each). ntraj: trajectory samples per particle (equal steps over its own
-    duration)."""
+    duration). spin: optional cluster rotation (see release_ic)."""
     agama = agama_kpc()
     rng = np.random.default_rng(seed)
     _, back = agama.orbit(potential=host, ic=today, timestart=T, time=-T, trajsize=2, accuracy=1e-12)
@@ -103,7 +112,7 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     orbit_r = np.array([np.interp(tr, tc, orb[:, i]) for i in range(6)]).T
     m_of_r = lambda rr: np.interp(np.log(rr), np.log(r_kpc), M_enc)
     rj, vj, R = rj_vj_R(host, orbit_r, tr, m_of_r)
-    ic, arm = release_ic(orbit_r, rj, vj, R, rng)
+    ic, arm = release_ic(orbit_r, rj, vj, R, rng, spin=spin)
     t0 = np.repeat(tr, 2)
     sat = satellite_potential(np.zeros((0, 3)), np.zeros(0), core=FrozenCore(r_kpc, M_enc))
     total = agama.Potential(host, agama.Potential(potential=sat, center=np.column_stack((tc, orb))))
