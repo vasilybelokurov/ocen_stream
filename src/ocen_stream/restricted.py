@@ -37,7 +37,7 @@ def agama_kpc():
 HUNTER24_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "oCen_bar", "agama_potentials")
 
 
-def host_potential(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None):
+def host_potential(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None, bar_amp=None):
     """AGAMA host: a bundled potential name (McMillan17), a path to an .ini file (configs/potentials/DB98_Model1.ini),
     'hunter24_axi' (Hunter+2024 axisymmetrised MW, ../oCen_bar/agama_potentials), or, with bar_omega [km/s/kpc], the Hunter+2024
     barred MW rotating at constant pattern speed. Bar convention (verified 2026-10-08; as ../chevron_bar_subhalo): AGAMA
@@ -49,8 +49,16 @@ def host_potential(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_toda
             raise ValueError("a rotating bar needs t_today (AGAMA time units of the present day)")
         tt = np.linspace(-1., t_today+1., 4001)
         ang = np.deg2rad(bar_angle_deg) + bar_omega*(tt-t_today)
-        return agama.Potential(potential=agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_full.ini")),
-                               rotation=np.column_stack((tt, ang)))
+        if bar_amp is None:
+            return agama.Potential(potential=agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_full.ini")),
+                                   rotation=np.column_stack((tt, ang)))
+        # bar amplitude A (as ../oCen_bar make_potential): axisymmetric MW + A x (barred baryons - axisymmetrised baryons)
+        sc = np.array([[tt[0], bar_amp, 1.], [tt[-1], bar_amp, 1.]]); scn = sc.copy(); scn[:, 1] *= -1
+        return agama.Potential(
+            agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini")),
+            agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_baryon_full.ini"), scale=sc,
+                            rotation=np.column_stack((tt, ang))),
+            agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_baryon_axi.ini"), scale=scn))
     if name == "hunter24_axi":
         return agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini"))
     if os.path.isfile(name):
