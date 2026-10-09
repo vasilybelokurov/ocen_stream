@@ -82,3 +82,67 @@ def chi_track(chi, obs, nq=20):
         for k, v in obs.items():
             out[k].append(float(np.median(v[s])))
     return out
+
+
+def chi_ridge(chi, l, b, extra, nbins=40, h=1.0, rmatch=1.0, min_rel_density=0.05, nmax_kde=3000, max_jump=6.0):
+    """Ridge of a stream along the Gibbons phase chi (> 0): in each of nbins equal-number chi bins, the (l, b) point of maximum
+    2D Gaussian-kernel density (bandwidth h deg, evaluated at the bin's particles), and medians of the `extra` observables
+    (dict name -> array) over the bin's particles within rmatch deg of that point. The ridge is truncated at the first bin
+    whose peak density (particles per deg^2, from the kernel sum) falls below min_rel_density x the maximum over bins, or at the
+    second consecutive point more than max_jump deg (sky) from the last kept point; a single outlying bin (chi jumps at
+    pericentres) is skipped, two in a row mean the stream has left the coherent arm.
+    Returns dict of arrays: chi, l, b, density and each extra observable."""
+    from scipy.spatial import cKDTree
+    k = chi > 0
+    chi, l, b = chi[k], l[k], b[k]; ex = {n: v[k] for n, v in extra.items()}
+    qs = np.percentile(chi, np.linspace(0, 100, nbins+1))
+    rows = []
+    for lo, hi in zip(qs[:-1], qs[1:]):
+        s = np.where((chi >= lo) & (chi < hi))[0]
+        if len(s) < 10:
+            continue
+        pts = np.column_stack((l[s], b[s]))
+        cand = pts if len(s) <= nmax_kde else pts[np.linspace(0, len(s)-1, nmax_kde).astype(int)]
+        tree = cKDTree(pts)
+        dens = np.array([np.sum(np.exp(-0.5*np.sum((pts[j]-c)**2, axis=1)/h**2))
+                         for c, j in zip(cand, tree.query_ball_point(cand, 3*h))])/(2*np.pi*h**2)
+        c = cand[np.argmax(dens)]
+        m = np.sum((pts-c)**2, axis=1) < rmatch**2
+        rows.append(dict(chi=float(np.median(chi[s])), l=float(c[0]), b=float(c[1]), density=float(dens.max()),
+                         **{n: float(np.median(v[s][m])) for n, v in ex.items()}))
+    dmax = max(r["density"] for r in rows)
+    out = []
+    miss = 0
+    for r in rows:
+        if r["density"] < min_rel_density*dmax:
+            break
+        if out and np.hypot(r["l"]-out[-1]["l"], r["b"]-out[-1]["b"]) > max_jump:
+            miss += 1
+            if miss == 2:
+                break
+            continue
+        miss = 0
+        out.append(r)
+    return {key: np.array([r[key] for r in out]) for key in out[0]}
+
+
+def age_ridge(age, l, b, extra, dage=15., age_max=450., h=1.0, rmatch=1.0, nmin=15, centre=(-50.9, 15.0), r_excl=1.5, track=4.0):
+    """Display ridge of the trailing arm: in release-age bins of width dage [Myr] up to age_max, the (l, b) point of maximum 2D
+    Gaussian-kernel density (bandwidth h deg) and medians of `extra` observables within rmatch deg of it. Release age is monotonic
+    by construction; used for plotting/diagnosis only (not in the likelihood). Bins with < nmin particles are skipped.
+    Particles within r_excl deg of the cluster (still bound / recaptured) are excluded. Tracking: the peak maximises
+    density x exp(-|c - previous ridge point|^2 / (2 track^2)), starting from the cluster, so branches of debris released at
+    the same time do not make the ridge jump."""
+    from scipy.spatial import cKDTree
+    rows = []; prev = np.array(centre, float)
+    keep = np.hypot(l-centre[0], b-centre[1]) > r_excl
+    for a0 in np.arange(0., age_max, dage):
+        s = np.where(keep & (age >= a0) & (age < a0+dage))[0]
+        if len(s) < nmin:
+            continue
+        pts = np.column_stack((l[s], b[s])); tree = cKDTree(pts)
+        dens = np.array([np.sum(np.exp(-0.5*np.sum((pts[j]-c)**2, axis=1)/h**2)) for c, j in zip(pts, tree.query_ball_point(pts, 3*h))])
+        c = pts[np.argmax(dens*np.exp(-0.5*np.sum((pts-prev)**2, axis=1)/track**2))]; prev = c
+        m = np.sum((pts-c)**2, axis=1) < rmatch**2
+        rows.append(dict(age=a0+dage/2, l=float(c[0]), b=float(c[1]), n=int(len(s)), **{n: float(np.median(v[s][m])) for n, v in extra.items()}))
+    return {key: np.array([r[key] for r in rows]) for key in rows[0]}
