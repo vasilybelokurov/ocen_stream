@@ -4,10 +4,12 @@ Baseline: Hunter+2024 bar, angle 28 deg, Omega_b 35.5 (today), amplitude 1.2, d 
 release uniform over the last 1000 Myr, 32000 epochs, seed 1, scored with age < 700 Myr.
 Variants: M2 slowing bar eta = 0.002, 0.004, 0.008 (Omega_b and angle fixed today; bar size ~ 1/Omega);
 M3a Portail+2017 bar (amp 1.0, 1.2); M3b Hunter bar size x1.15, x1.3; M4 release window 1500 Myr (48000 epochs) scored with
-age < 1000 and < 1500 Myr; M4b release concentrated at pericentres (Gaussian sigma 10, 20 Myr; pericentres ~88 Myr apart),
+age < 1000 and < 1500 Myr; P1 (Phase 3 item 1) axisymmetric MW variants at fixed v_c(R0): halo flattening q 0.8, 0.9, 1.2;
+stellar discs x0.8, x1.2; and two combinations; M4b release concentrated at pericentres (Gaussian sigma 10, 20 Myr; pericentres ~88 Myr apart),
 also for the 16-deg reference. Reference: best 16-deg model (34.5, 16, 1.4, 5.6; grid PMs, 4x, seed 1).
 Per variant: lnL (score_conditional) total and per phi1 segment (< 4, 4-17, > 17) relative to the baseline; trailing debris
-(age cut, chi > 0) in the stream footprint (|dphi2| < 6): median pmra, pmdec per 2-deg phi1 bin vs the members' medians.
+(age cut, chi > 0) in the stream footprint (|dphi2| < 6): median pmra, pmdec per 2-deg phi1 bin vs the members' medians, and the
+median d/d_ocen per CMD-distance b bin (dist_ratio; results/plot_data/stream54_cmd_distance.json).
 Outputs results/plot_data/phase2_variants.json, plots/phase2_variants.png, sprays results/streams/phase2/.
 Usage: OMP_NUM_THREADS=8 python bin/streams/phase2_variants.py [names...]
 """
@@ -26,7 +28,12 @@ V = {"baseline": {},
      "ref 16 deg (grid PMs)": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517)),
      "M4b peri release s10": dict(release="peri", psig=10.), "M4b peri release s20": dict(release="peri", psig=20.),
      "M4b 16 deg peri s10": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517), release="peri", psig=10.),
-     "M4b 16 deg peri s20": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517), release="peri", psig=20.)}
+     "M4b 16 deg peri s20": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517), release="peri", psig=20.),
+     "P1 halo q 0.8": dict(host_kw=dict(axi_variant=dict(halo_q=0.8))), "P1 halo q 0.9": dict(host_kw=dict(axi_variant=dict(halo_q=0.9))),
+     "P1 halo q 1.2": dict(host_kw=dict(axi_variant=dict(halo_q=1.2))),
+     "P1 disc x0.8": dict(host_kw=dict(axi_variant=dict(disc_scale=0.8))), "P1 disc x1.2": dict(host_kw=dict(axi_variant=dict(disc_scale=1.2))),
+     "P1 q 0.8 disc x1.2": dict(host_kw=dict(axi_variant=dict(halo_q=0.8, disc_scale=1.2))),
+     "P1 q 1.2 disc x0.8": dict(host_kw=dict(axi_variant=dict(halo_q=1.2, disc_scale=0.8)))}
 SEG = [(-99, 4), (4, 17), (17, 99)]; outd = ROOT/"results/streams/phase2"; outd.mkdir(parents=True, exist_ok=True)
 names = [a for a in sys.argv[1:]] or list(V)
 edges = np.arange(np.floor(du.min()), np.ceil(du.max())+2, 2.); cen = 0.5*(edges[1:]+edges[:-1])
@@ -50,7 +57,10 @@ for nm in names:
     mu, mx = project_gc(m["l"], m["b"], GC); k = (np.abs(mx) < 6) & (m["age"] < c["age"]) & (m["chi"] > 0); ib = np.digitize(mu[k], edges)-1
     med = {q: [float(np.median(m[q][k][ib == j])) if (ib == j).sum() >= 10 else np.nan for j in range(len(cen))] for q in ("pmra", "pmdec")}
     cnt = np.bincount(ib[(ib >= 0) & (ib < len(cen))], minlength=len(cen)).tolist()
-    res[nm] = dict(lnL=s["total"], seg=[float(s["per_star"][(du >= a) & (du < b)].sum()) for a, b in SEG], med=med, n=cnt)
+    cmdb = json.loads((ROOT/"results/plot_data/stream54_cmd_distance.json").read_text())["bins"]
+    dist = [float(np.median(m["d"][k & (m["b"] >= c_["b"][0]) & (m["b"] < c_["b"][1])])/c["setup"][3])
+            if (k & (m["b"] >= c_["b"][0]) & (m["b"] < c_["b"][1])).sum() > 20 else None for c_ in cmdb]
+    res[nm] = dict(dist_ratio=dist, lnL=s["total"], seg=[float(s["per_star"][(du >= a) & (du < b)].sum()) for a, b in SEG], med=med, n=cnt)
     print(f"{nm:28s} lnL {s['total']:9.1f} [{time.time()-t0:.0f} s]", flush=True)
 (ROOT/"results/plot_data/phase2_variants.json").write_text(json.dumps(res, indent=1))
 if "baseline" in res:
