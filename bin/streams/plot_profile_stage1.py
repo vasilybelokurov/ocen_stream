@@ -41,7 +41,7 @@ for col, an in enumerate((28., 16.)):
         a.plot(du, dy, ".", color="0.55", ms=1.5, alpha=.5, zorder=1)
         a.contour(0.5*(xe[1:]+xe[:-1]), 0.5*(ye[1:]+ye[:-1]), Hc.T, levels=[0.1, 0.3, 0.6, 0.9], colors=["C0", "C2", "C1", "C3"], linewidths=1.2, zorder=2)
         a.set_ylabel(lab); a.set_ylim(lim)
-    ax[0, col].set_title(f"{an:g} deg  Om {b['om']:.1f}  amp {b['am']:.2f}  size {b['size']:.2f}  d {b['dist']:.2f}\nlnL {b['lnL']:.0f};"
-                         " (0.1/0.3/0.6/0.9 of peak; seeds 1-3); grey: members", fontsize=9)
+    ax[0, col].set_title(f"{an:g} deg  Om {b['om']:.1f}  amp {b['am']:.2f}  size {b['size']:.2f}  d {b['dist']:.2f}  lnL {b['lnL']:.0f}", fontsize=10)
     ax[2, col].set_xlabel("chord phi1 [deg]")
+fig.suptitle("contours: model density per phi1 column (0.1/0.3/0.6/0.9 of peak; seeds 1-3 pooled); grey: members", fontsize=10)
 fig.tight_layout(); fig.savefig(ROOT/"plots/profile_s1_best.png", dpi=110); print("saved")
