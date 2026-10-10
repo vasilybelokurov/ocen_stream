@@ -37,28 +37,44 @@ def agama_kpc():
 HUNTER24_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "oCen_bar", "agama_potentials")
 
 
-def host_potential(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None, bar_amp=None):
+def host_potential(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None, bar_amp=None, bar_eta=None, bar_size=1.0,
+                   bar_model="hunter24"):
     """AGAMA host: a bundled potential name (McMillan17), a path to an .ini file (configs/potentials/DB98_Model1.ini),
     'hunter24_axi' (Hunter+2024 axisymmetrised MW, ../oCen_bar/agama_potentials), or, with bar_omega [km/s/kpc], the Hunter+2024
     barred MW rotating at constant pattern speed. Bar convention (verified 2026-10-08; as ../chevron_bar_subhalo): AGAMA
     rotation angle = bar major axis measured anticlockwise from +x in the model frame (Sun at +x, Galactic rotation Lz > 0);
-    angle(t) = bar_angle + bar_omega (t - t_today) [AGAMA time units], so the bar is at bar_angle today."""
+    angle(t) = bar_angle + bar_omega (t - t_today) [AGAMA time units], so the bar is at bar_angle today.
+    bar_eta (optional): slowing bar with constant eta = -dOmega/dt / Omega^2 (late branch of Dillamore, Belokurov & Evans 2024,
+    arXiv:2402.14907, eq. C3), normalised to bar_omega and bar_angle today: Omega(t) = bar_omega / x, x = 1 + eta bar_omega (t - t_today),
+    angle(t) = bar_angle + ln(x)/eta; the bar size scales as S(t) = Omega_today/Omega(t) = x (shorter when faster), with the
+    non-axisymmetric potential amplitude kept fixed (AGAMA scale [A S, S], as ../oCen_bar make_potential).
+    bar_size (optional, default 1): static size factor S0 of the non-axisymmetric part (scale [A S0, S0]; longer bar for S0 > 1).
+    bar_model: 'hunter24' (default) or 'portail17' = Hunter+2024 axisymmetric MW + A x (Portail17.ini - Portail17_axi.ini), the
+    Portail+2017 bar as approximated by Sormani+2022 (../oCen_bar/agama_potentials; bar along x in the file, as Hunter's)."""
     agama = agama_kpc()
     if bar_omega is not None:
         if t_today is None:
             raise ValueError("a rotating bar needs t_today (AGAMA time units of the present day)")
         tt = np.linspace(-1., t_today+1., 4001)
-        ang = np.deg2rad(bar_angle_deg) + bar_omega*(tt-t_today)
-        if bar_amp is None:
+        if bar_eta:
+            x = 1.+bar_eta*bar_omega*(tt-t_today)
+            if np.any(x <= 0):
+                raise ValueError("slowing bar: pattern speed diverges inside the time table (eta too large)")
+            ang = np.deg2rad(bar_angle_deg) + np.log(x)/bar_eta; S = bar_size*x
+        else:
+            ang = np.deg2rad(bar_angle_deg) + bar_omega*(tt-t_today); S = np.full_like(tt, bar_size)
+        if bar_amp is None and not bar_eta and bar_size == 1.0 and bar_model == "hunter24":
             return agama.Potential(potential=agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_full.ini")),
                                    rotation=np.column_stack((tt, ang)))
+        A = 1.0 if bar_amp is None else bar_amp
         # bar amplitude A (as ../oCen_bar make_potential): axisymmetric MW + A x (barred baryons - axisymmetrised baryons)
-        sc = np.array([[tt[0], bar_amp, 1.], [tt[-1], bar_amp, 1.]]); scn = sc.copy(); scn[:, 1] *= -1
+        sc = np.column_stack((tt, A*S, S)); scn = sc.copy(); scn[:, 1] *= -1
+        full, axi = dict(hunter24=("MWPotentialHunter24_baryon_full.ini", "MWPotentialHunter24_baryon_axi.ini"),
+                         portail17=("Portail17.ini", "Portail17_axi.ini"))[bar_model]
         return agama.Potential(
             agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini")),
-            agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_baryon_full.ini"), scale=sc,
-                            rotation=np.column_stack((tt, ang))),
-            agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_baryon_axi.ini"), scale=scn))
+            agama.Potential(file=os.path.join(HUNTER24_DIR, full), scale=sc, rotation=np.column_stack((tt, ang))),
+            agama.Potential(file=os.path.join(HUNTER24_DIR, axi), scale=scn))
     if name == "hunter24_axi":
         return agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini"))
     if os.path.isfile(name):
