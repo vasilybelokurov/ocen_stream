@@ -4,7 +4,7 @@
 Reference: stream stars at b = 15-20 deg (next to omega Cen). For each b bin, fit the magnitude shift dm (bin = reference + dm)
 maximising sum log p_ref(c - dc, G - dm) / N(dm) (dm and colour shift dc fitted jointly), where p_ref is a Gaussian KDE of the reference CMD and N(dm) = fraction of
 reference stars with G + dm < G_lim (G_lim = 20, the catalogue's hard limit) -- the truncation correction. Bootstrap errors
-(200 resamples of the bin). Distance ratio d/d_ref = 10^(dm/5). CMD window: 0.55 < BP-RP < 1.3, 15.5 < G < 20.
+(50 resamples of the bin; docstring corrected 2026-10-10). Distance ratio d/d_ref = 10^(dm/5). CMD window: 0.55 < BP-RP < 1.3, 15.5 < G < 20.
 Usage: python bin/streams/stream54_cmd_distance.py  -> plots/stream54_cmd_distance.png, results/plot_data/stream54_cmd_distance.json
 """
 import json, os
