@@ -59,7 +59,7 @@ for r, col in zip(runs, ("C0", "C3")):
             v = m[q][ib == j]
             if len(v) < 10:
                 med.append(np.nan); err.append(np.nan); continue
-            med.append(np.median(v)); err.append(np.std([np.median(np.random.default_rng(j).choice(v, len(v))) for _ in range(200)]))
+            med.append(np.median(v)); err.append(np.std([np.median(np.random.default_rng(1000*j+b_).choice(v, len(v))) for b_ in range(200)]))
         a.errorbar(cen+(0.15 if col == "C3" else -0.15), med, yerr=err, color=col, fmt="o-", ms=3, lw=1); out[r][q] = [float(v) for v in med]
 dib = np.where(dsel, np.digitize(du, edges)-1, -1)
 for a, q in zip(ax[1:], Q):

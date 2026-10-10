@@ -27,14 +27,14 @@ def spray(path):
 
 
 def meds(m, boot=False):
-    ib = np.digitize(m["u"], edges)-1; out = {}
+    ib = np.digitize(m["u"], edges)-1; out = {}; rng = np.random.default_rng(0)
     for q in Q:
         md, er = [], []
         for j in range(len(cen)):
             v = m[q][ib == j]
             if len(v) < 8:
                 md.append(np.nan); er.append(np.nan); continue
-            md.append(np.median(v)); er.append(np.std([np.median(np.random.default_rng(j).choice(v, len(v))) for _ in range(200)]) if boot else 0.)
+            md.append(np.median(v)); er.append(np.std([np.median(rng.choice(v, len(v))) for _ in range(200)]) if boot else 0.)
         out[q] = (np.array(md), np.array(er))
     out["n"] = np.bincount(ib[(ib >= 0) & (ib < len(cen))], minlength=len(cen)); return out
 
