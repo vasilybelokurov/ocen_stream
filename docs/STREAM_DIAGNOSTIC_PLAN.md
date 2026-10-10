@@ -63,9 +63,9 @@ Sormani+2022, MNRAS 514, L5 (reference given in ../oCen_bar/agama_potentials/exa
 - **The misfit is two separate problems in the knee:**
   1. pmra at phi1 15-21: the 28-deg model is ~1 mas/yr too negative. This is all that the low angle fixes; it is the whole
      angle preference.
-  2. pmdec and distance at phi1 > 19: every model, at any angle, is ~1 mas/yr too shallow in pmdec AND puts the debris 7-10%
-     too close (CMD track 0.88-0.92 of omega Cen's distance vs 0.76-0.85 in the models; 5-7 sigma). That is a tangential-velocity
-     deficit of ~35 km/s, far beyond rotation (~1 km/s) or the omega Cen PM errors (~0.7 km/s).
+  2. pmdec at phi1 > 19: every model, at any angle, is ~1 mas/yr too shallow in pmdec. (An earlier claim that the models also
+     put the knee too close rested on our CMD distance track; it is WITHDRAWN: the literature puts the knee at ~0.70-0.75 of
+     omega Cen's distance, and the track's normalisation is flawed -- see codex_distances_and_misfit_2026-10-10.md.)
 - **Partial fixes at 28 deg:** longer bar (x1.15-1.3: +622/+698); more negative omega Cen PMs (-2 sigma: +518, optimum beyond 2 sigma).
 
 ## Phase 3 -- next (adopted 2026-10-10)
@@ -73,7 +73,8 @@ Sormani+2022, MNRAS 514, L5 (reference given in ../oCen_bar/agama_potentials/exa
 **Strategy: avoid unrealistic bar angles.**
 - **S1. Give the model the freedom it lacks.** The angle is currently the only knob that bends the knee, so the fit uses it.
   Test whether a longer bar + omega Cen PMs + re-scanned Omega_b reach the 16-deg fit level at 28 deg (Phase 2b grid, running).
-- **S2. Add the distance track to the likelihood.** At present models are not penalised for putting the knee too close, and
+- **S2. DROPPED (2026-10-10).** The fit stays distance-free (user decision; CMD track not a calibration, member parallaxes
+  biased high). Original text kept for the record. **Add the distance track to the likelihood.** At present models are not penalised for putting the knee too close, and
   16 deg is barely better there. Including the CMD distance track constrains the model where the angle does not help.
   Design (to agree):
   - (a) binned term: model median d/d_ocen of footprint debris per CMD b-bin vs the CMD ratio, with the CMD error plus the
@@ -93,7 +94,12 @@ Sormani+2022, MNRAS 514, L5 (reference given in ../oCen_bar/agama_potentials/exa
    - Cost: ~1 h of wiring, then minutes of sprays per variant. Diagnostics: D1 segments, knee PM medians, distance track.
 2. **Combine the partial fixes** (longer bar, omega Cen PMs, Omega_b; slowing bar with Omega_b re-scanned) and measure how
    much of the gap to 16 deg remains. This is the Phase 2b grid; the pericentre-concentrated release (M4b) is queued after it.
-3. **Add the distance track to the likelihood** (S2), once its form is agreed.
+3. ~~Add the distance track to the likelihood (S2)~~ -- dropped.
+4. **Solar frame x omega Cen distance (Codex, 2026-10-10; next).** baumgardt (R0 8.178, V_sun,y 252.24) vs ibata19 (R0 8.122,
+   V_sun,y 232.24) x d_ocen 5.43/5.6/5.8 at the working model (28 deg, bar x1.15, Omega_b 36, amp 1.2) and the 16-deg model;
+   4x particles; compare knee PM medians and D1 segment lnL. ~12 sprays, ~10 min at 8 threads.
+5. **Coupled bar angle x longer bar grid** (Codex): does the 16-deg preference survive once the longer bar is free?
+6. LMC + reflex; alternative progenitor profiles -- expensive, only if 4-5 fail.
 
 ## Phase 4 -- calibration and statistic (after Phase 3)
 
