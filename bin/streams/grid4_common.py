@@ -37,15 +37,16 @@ def peri_release_times(host, today, nrel, window_myr=1000., sigma_myr=50.):
     return np.sort(T-ages/AGAMA_T_MYR), peri
 
 
-def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10.):
+def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10., frame="baumgardt"):
     """Trailing-arm spray (observables, chi, age). host_kw: extra host_potential options (bar_eta, bar_size, bar_model).
     release: 'uniform' (epochs uniform over the last window_myr) or 'peri' (concentrated at pericentres, peri_release_times,
-    Gaussian width peri_sigma_myr; omega Cen's pericentres are ~88 Myr apart)."""
+    Gaussian width peri_sigma_myr; omega Cen's pericentres are ~88 Myr apart). frame: solar frame (frames.FRAMES) used both
+    to place omega Cen in the model and to project the debris back to observables."""
     pa, pd = (PMRA, PMDEC) if pm is None else pm
     host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am, **(host_kw or {}))
-    today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], dist, pa, pd, OCEN_OBS["vlos"])[0]
+    today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], dist, pa, pd, OCEN_OBS["vlos"], frame)[0]
     trel = np.linspace(T-window_myr/AGAMA_T_MYR, T, nrel) if release == "uniform" else peri_release_times(host, today, nrel, window_myr, peri_sigma_myr)[0]
-    sp = spray_unwrapped(host, today, T, r_kpc, M, trel, seed=seed, spin=spin); tr = sp["arm"] == 1; o = observables(sp["xv"][tr])
+    sp = spray_unwrapped(host, today, T, r_kpc, M, trel, seed=seed, spin=spin); tr = sp["arm"] == 1; o = observables(sp["xv"][tr], frame)
     return dict(l=w(o["l"]), b=o["b"], pmra=o["pmra"], pmdec=o["pmdec"], vlos=o["vlos"], d=o["dist"], chi=sp["chi"][tr], age=sp["t_release_myr_ago"][tr])
 
 
