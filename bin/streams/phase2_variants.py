@@ -4,7 +4,8 @@ Baseline: Hunter+2024 bar, angle 28 deg, Omega_b 35.5 (today), amplitude 1.2, d 
 release uniform over the last 1000 Myr, 32000 epochs, seed 1, scored with age < 700 Myr.
 Variants: M2 slowing bar eta = 0.002, 0.004, 0.008 (Omega_b and angle fixed today; bar size ~ 1/Omega);
 M3a Portail+2017 bar (amp 1.0, 1.2); M3b Hunter bar size x1.15, x1.3; M4 release window 1500 Myr (48000 epochs) scored with
-age < 1000 and < 1500 Myr. Reference: best 16-deg model (34.5, 16, 1.4, 5.6; grid PMs, 4x, seed 1).
+age < 1000 and < 1500 Myr; M4b release concentrated at pericentres (Gaussian sigma 10, 20 Myr; pericentres ~88 Myr apart),
+also for the 16-deg reference. Reference: best 16-deg model (34.5, 16, 1.4, 5.6; grid PMs, 4x, seed 1).
 Per variant: lnL (score_conditional) total and per phi1 segment (< 4, 4-17, > 17) relative to the baseline; trailing debris
 (age cut, chi > 0) in the stream footprint (|dphi2| < 6): median pmra, pmdec per 2-deg phi1 bin vs the members' medians.
 Outputs results/plot_data/phase2_variants.json, plots/phase2_variants.png, sprays results/streams/phase2/.
@@ -14,14 +15,18 @@ import json, sys, time
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from grid4_common import ROOT, make_spray, score, project_gc, GC, du, dx, d, OCEN_OBS
 
-CAT = (OCEN_OBS["pmra"], OCEN_OBS["pmdec"]); BASE = dict(setup=(35.5, 28., 1.2, 5.6), pm=CAT, host_kw=None, window=1000., nrel=32000, age=700.)
+CAT = (OCEN_OBS["pmra"], OCEN_OBS["pmdec"]); BASE = dict(setup=(35.5, 28., 1.2, 5.6), pm=CAT, host_kw=None, window=1000., nrel=32000, age=700.,
+                                             release="uniform", psig=10.)
 V = {"baseline": {},
      "M2 eta 0.002": dict(host_kw=dict(bar_eta=0.002)), "M2 eta 0.004": dict(host_kw=dict(bar_eta=0.004)), "M2 eta 0.008": dict(host_kw=dict(bar_eta=0.008)),
      "M3a Portail amp 1.0": dict(host_kw=dict(bar_model="portail17"), setup=(35.5, 28., 1.0, 5.6)),
      "M3a Portail amp 1.2": dict(host_kw=dict(bar_model="portail17")),
      "M3b size 1.15": dict(host_kw=dict(bar_size=1.15)), "M3b size 1.3": dict(host_kw=dict(bar_size=1.3)),
      "M4 window 1500, age<1000": dict(window=1500., nrel=48000, age=1000.), "M4 window 1500, age<1500": dict(window=1500., nrel=48000, age=1500.),
-     "ref 16 deg (grid PMs)": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517))}
+     "ref 16 deg (grid PMs)": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517)),
+     "M4b peri release s10": dict(release="peri", psig=10.), "M4b peri release s20": dict(release="peri", psig=20.),
+     "M4b 16 deg peri s10": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517), release="peri", psig=10.),
+     "M4b 16 deg peri s20": dict(setup=(34.5, 16., 1.4, 5.6), pm=(-3.2223, -6.7517), release="peri", psig=20.)}
 SEG = [(-99, 4), (4, 17), (17, 99)]; outd = ROOT/"results/streams/phase2"; outd.mkdir(parents=True, exist_ok=True)
 names = [a for a in sys.argv[1:]] or list(V)
 edges = np.arange(np.floor(du.min()), np.ceil(du.max())+2, 2.); cen = 0.5*(edges[1:]+edges[:-1])
@@ -39,7 +44,8 @@ for nm in names:
     if f.exists():
         m = dict(np.load(f))
     else:
-        m = make_spray(*c["setup"], nrel=c["nrel"], seed=1, pm=c["pm"], host_kw=c["host_kw"], window_myr=c["window"]); np.savez_compressed(f, **m)
+        m = make_spray(*c["setup"], nrel=c["nrel"], seed=1, pm=c["pm"], host_kw=c["host_kw"], window_myr=c["window"],
+                          release=c["release"], peri_sigma_myr=c["psig"]); np.savez_compressed(f, **m)
     s = score(m, age_max=c["age"]); per[nm] = s["per_star"]
     mu, mx = project_gc(m["l"], m["b"], GC); k = (np.abs(mx) < 6) & (m["age"] < c["age"]) & (m["chi"] > 0); ib = np.digitize(mu[k], edges)-1
     med = {q: [float(np.median(m[q][k][ib == j])) if (ib == j).sum() >= 10 else np.nan for j in range(len(cen))] for q in ("pmra", "pmdec")}
