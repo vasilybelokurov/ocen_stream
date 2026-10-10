@@ -22,10 +22,11 @@ _vr = json.loads((ROOT/"results/streams/spin/A_nodm_vrot.json").read_text())
 SPIN = dict(r_kpc=np.array(_vr["r_pc"])/1e3, vrot_kms=np.array(_vr["vrot_kms"]), s=np.array(_vr["spin_vector_model"]))
 
 
-def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None):
+def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None):
+    pa, pd = (PMRA, PMDEC) if pm is None else pm
     trel = np.linspace(T-1000/AGAMA_T_MYR, T, nrel)
     host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am)
-    today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], dist, PMRA, PMDEC, OCEN_OBS["vlos"])[0]
+    today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], dist, pa, pd, OCEN_OBS["vlos"])[0]
     sp = spray_unwrapped(host, today, T, r_kpc, M, trel, seed=seed, spin=spin); tr = sp["arm"] == 1; o = observables(sp["xv"][tr])
     return dict(l=w(o["l"]), b=o["b"], pmra=o["pmra"], pmdec=o["pmdec"], vlos=o["vlos"], d=o["dist"], chi=sp["chi"][tr], age=sp["t_release_myr_ago"][tr])
 
