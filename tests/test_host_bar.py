@@ -49,3 +49,13 @@ def test_bar_size_lengthens_bar():
         p = host_potential("x", bar_omega=35., bar_angle_deg=0., t_today=T, bar_amp=1.0, bar_size=s)
         v = p.potential(pts, t=T); amp.append(v.max()-v.min())
     assert amp[1] > amp[0]
+
+
+def test_mass_scale_scales_whole_host():
+    from ocen_dm.streams.restricted import host_potential
+    import numpy as np
+    x = np.array([[1., 0.5, 0.2], [3., -1., 0.5], [6.3, -4.2, 1.4]])
+    p1 = host_potential("x", bar_omega=36., bar_angle_deg=28., t_today=2., bar_amp=1.2, bar_size=1.15)
+    pk = host_potential("x", bar_omega=36., bar_angle_deg=28., t_today=2., bar_amp=1.2, bar_size=1.15, mass_scale=0.92)
+    for t in (0., 1.3, 2.):
+        assert np.allclose(pk.force(x, t=t), 0.92*p1.force(x, t=t), rtol=1e-6, atol=1e-9)

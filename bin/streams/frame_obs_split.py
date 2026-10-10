@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""Which observable carries the frame gain? Per-observable conditional scores (d1_segments.single_scores, copied here because
-d1_segments runs on import) for the W model at d 5.6: baumgardt vs ibata19 vs baumgardt with V_sun,y 232.24 vs the IC/projection
+"""Which observable carries the frame gain? Per-observable conditional scores (obs_split.single_scores) for the W model at d 5.6: baumgardt vs ibata19 vs baumgardt with V_sun,y 232.24 vs the IC/projection
 crosses. Sums per phi1 segment relative to baumgardt/baumgardt."""
 import numpy as np
 from grid4_common import ROOT, score, du
-import importlib.util, sys, types
-src = open(ROOT/"bin/streams/d1_segments.py").read().split("\nS = {}")[0]
-mod = types.ModuleType("d1f"); exec(src, mod.__dict__); single_scores = mod.single_scores
+from obs_split import single_scores
 P = ROOT/"results/streams"
 F = {"B/B": P/"sun_dist_bar/T1_W_om36_an28_am1.2_sz1.15_baumgardt_d5.6.npz", "I/I": P/"sun_dist_bar/T1_W_om36_an28_am1.2_sz1.15_ibata19_d5.6.npz",
      "vy232": P/"frame_decomp_edges/C_om36_an28_am1.2_sz1.15_ic-b_vy232_proj-b_vy232.npz",

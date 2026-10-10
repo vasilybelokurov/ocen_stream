@@ -22,3 +22,9 @@ def test_keep_vc_and_flattening():
     flat = axisymmetric_variant(HUNTER24_DIR, 0.8, 1.0)[0]; rnd = axisymmetric_variant(HUNTER24_DIR, 1.0, 1.0)[0]
     x = np.array([[5., 0, 3.]])
     assert abs(flat.force(x)[0, 2]) > abs(rnd.force(x)[0, 2])     # flattened halo pulls harder towards the plane at z = 3 kpc
+
+
+def test_vc_target():
+    for vc in (220., 240.):
+        pot, info = axisymmetric_variant(HUNTER24_DIR, vc_target=vc)
+        assert abs(info["vc_R0"]-vc) < 0.05

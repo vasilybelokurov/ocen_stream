@@ -24,8 +24,9 @@ def _vc2(pot, R=R0_KPC):
     return float(-R*pot.force(np.array([[R, 0., 0.]]))[0, 0])
 
 
-def axisymmetric_variant(hunter_dir, halo_q=1.0, disc_scale=1.0, keep_vc=True):
-    """Return (axisymmetric agama.Potential, info dict). See module docstring."""
+def axisymmetric_variant(hunter_dir, halo_q=1.0, disc_scale=1.0, keep_vc=True, vc_target=None):
+    """Return (axisymmetric agama.Potential, info dict). See module docstring. vc_target [km/s] (optional): choose the halo
+    normalisation c so that v_c(R0) = vc_target instead (overrides keep_vc; baryons unchanged)."""
     from .restricted import agama_kpc
     agama = agama_kpc()
     bary = agama.Potential(file=os.path.join(hunter_dir, "MWPotentialHunter24_baryon_axi.ini"))
@@ -36,7 +37,11 @@ def axisymmetric_variant(hunter_dir, halo_q=1.0, disc_scale=1.0, keep_vc=True):
     base = agama.Potential(*comps)
     halo1 = agama.Potential(density=agama.Density(**dict(PARAMS_DARK, axisRatioZ=halo_q)), **dict(MUL, symmetry="Axisymmetric"))
     c = 1.0
-    if keep_vc:
+    if vc_target is not None:
+        c = (vc_target**2-_vc2(base))/_vc2(halo1)
+        if c <= 0:
+            raise ValueError("cannot reach vc_target: baryons alone exceed it")
+    elif keep_vc:
         orig = agama.Potential(file=os.path.join(hunter_dir, "MWPotentialHunter24_axi.ini"))
         c = (_vc2(orig)-_vc2(base))/_vc2(halo1)
         if c <= 0:
