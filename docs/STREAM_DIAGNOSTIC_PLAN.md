@@ -1,4 +1,4 @@
-# Stream 54 fit: diagnostic and model-extension plan (2026-10-10)
+# Stream 54 fit: diagnostic and model-extension plan (2026-10-10; Phase 3 adopted the same day)
 
 Built from: [STREAM_FIT_CAMPAIGN_PLAN.md](STREAM_FIT_CAMPAIGN_PLAN.md), [STREAM_FIT_METHODS_REVIEW.md](STREAM_FIT_METHODS_REVIEW.md),
 Codex reviews [codex_likelihood_calibration_2026-10-09.md](codex_likelihood_calibration_2026-10-09.md),
@@ -52,7 +52,50 @@ Literature for M2/M3: Dillamore, Belokurov & Evans 2024, MNRAS 532, 4389 (arXiv:
 Sormani+2022, MNRAS 514, L5 (reference given in ../oCen_bar/agama_potentials/example_mw_bar_potential.py); Portail+2017 (MNRAS 465,
 1621; UNVERIFIED citation details). Present-day bar deceleration rates from the literature are to be looked up before choosing eta (UNVERIFIED).
 
-## Phase 3 -- calibration and statistic (after Phases 1-2)
+## Status after Phases 1-2 (2026-10-10; numbers in JOURNAL.md)
+
+- **Not the cause:**
+  - code: audits and end-to-end checks pass;
+  - method: D2 mocks recover the true angle (28 -> 28 in 100/100; 20 -> 20/24);
+  - STREAMFINDER selection: M5 recovers the knee PMs independently to phi1 ~ 24;
+  - these ingredients: cluster rotation (even x10), spray release (M1 tracer run is further from the knee), Portail bar,
+    older debris, slowing bar at today's Omega_b.
+- **The misfit is two separate problems in the knee:**
+  1. pmra at phi1 15-21: the 28-deg model is ~1 mas/yr too negative. This is all that the low angle fixes; it is the whole
+     angle preference.
+  2. pmdec and distance at phi1 > 19: every model, at any angle, is ~1 mas/yr too shallow in pmdec AND puts the debris 7-10%
+     too close (CMD track 0.88-0.92 of omega Cen's distance vs 0.76-0.85 in the models; 5-7 sigma). That is a tangential-velocity
+     deficit of ~35 km/s, far beyond rotation (~1 km/s) or the omega Cen PM errors (~0.7 km/s).
+- **Partial fixes at 28 deg:** longer bar (x1.15-1.3: +622/+698); more negative omega Cen PMs (-2 sigma: +518, optimum beyond 2 sigma).
+
+## Phase 3 -- next (adopted 2026-10-10)
+
+**Strategy: avoid unrealistic bar angles.**
+- **S1. Give the model the freedom it lacks.** The angle is currently the only knob that bends the knee, so the fit uses it.
+  Test whether a longer bar + omega Cen PMs + re-scanned Omega_b reach the 16-deg fit level at 28 deg (Phase 2b grid, running).
+- **S2. Add the distance track to the likelihood.** At present models are not penalised for putting the knee too close, and
+  16 deg is barely better there. Including the CMD distance track constrains the model where the angle does not help.
+  Design (to agree):
+  - (a) binned term: model median d/d_ocen of footprint debris per CMD b-bin vs the CMD ratio, with the CMD error plus the
+    model error of the mean; or
+  - (b) per-star photometric distances.
+  Note: next to 3681 per-star terms, a 6-bin term is inert unless the likelihood is calibrated (S3).
+- **S3. Make the angle prior count.** With the overconfident likelihood the N(27, 2) prior has no effect. Defensible options:
+  - (a) fix the angle at the literature value and report the remaining misfit as model systematics;
+  - (b) temper the likelihood with an effective sample size calibrated on mocks (D2 machinery). **Needs the user's approval.**
+
+**Physics: improve the stream fit (priority order).**
+1. **Potential shape and mass where the knee lies (was M6; moved up).** A 3D mismatch -- too close and too slow in the same
+   region -- points at the force field there, not at the bar's present orientation.
+   - Variants: disc-to-halo mass ratio at fixed v_c(R0), and halo flattening q.
+   - Build them with ../oCen_bar/agama_potentials/example_mw_potential_hunter24.py; its densities are exposed, and the
+     halo is bunched with the central components in one Multipole, so variants need re-construction.
+   - Cost: ~1 h of wiring, then minutes of sprays per variant. Diagnostics: D1 segments, knee PM medians, distance track.
+2. **Combine the partial fixes** (longer bar, omega Cen PMs, Omega_b; slowing bar with Omega_b re-scanned) and measure how
+   much of the gap to 16 deg remains. This is the Phase 2b grid; the pericentre-concentrated release (M4b) is queued after it.
+3. **Add the distance track to the likelihood** (S2), once its form is agreed.
+
+## Phase 4 -- calibration and statistic (after Phase 3)
 
 - Calibrate parameter errors and model comparisons with mocks (D2 machinery). Use seed-averaged densities; use 4x particles in all grids.
 - DM test (on hold by user decision): choose between track-only (conditional) and track+density along the stream (needs a selection model).
