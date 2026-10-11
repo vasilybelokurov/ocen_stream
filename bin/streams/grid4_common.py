@@ -37,20 +37,30 @@ def peri_release_times(host, today, nrel, window_myr=1000., sigma_myr=50.):
     return np.sort(T-ages/AGAMA_T_MYR), peri
 
 
-def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10., frame="baumgardt", proj_frame=None, mass_factor=1.0):
+def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10., frame="baumgardt", proj_frame=None, mass_factor=1.0, max_age_myr=None, accuracy=1e-8):
     """Trailing-arm spray (observables, chi, age). host_kw: extra host_potential options (bar_eta, bar_size, bar_model).
     release: 'uniform' (epochs uniform over the last window_myr) or 'peri' (concentrated at pericentres, peri_release_times,
     Gaussian width peri_sigma_myr; omega Cen's pericentres are ~88 Myr apart). frame: solar frame (frames.FRAMES) used both
     to place omega Cen in the model and to project the debris back to observables; proj_frame (default = frame) overrides the
-    projection frame only. mass_factor scales omega Cen's enclosed-mass profile M(<r) at fixed radii (model A: 3.26e6 Msun)."""
+    projection frame only. mass_factor scales omega Cen's enclosed-mass profile M(<r) at fixed radii (model A: 3.26e6 Msun).
+    Speed: only the trailing arm is integrated (it is all that is returned; output identical to before). max_age_myr (opt-in,
+    e.g. 700 = score()'s default age cut, ~2x faster again): integrate/return only debris released < max_age_myr ago; the kept
+    particles are identical to the same particles of a full run, and the dict then carries age_cut_myr, which score() checks.
+    accuracy: AGAMA orbit tolerance of the particles (default 1e-8 as before)."""
     pa, pd = (PMRA, PMDEC) if pm is None else pm
     host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am, **(host_kw or {}))
     today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], dist, pa, pd, OCEN_OBS["vlos"], frame)[0]
     trel = np.linspace(T-window_myr/AGAMA_T_MYR, T, nrel) if release == "uniform" else peri_release_times(host, today, nrel, window_myr, peri_sigma_myr)[0]
-    sp = spray_unwrapped(host, today, T, r_kpc, M*mass_factor, trel, seed=seed, spin=spin); tr = sp["arm"] == 1; o = observables(sp["xv"][tr], proj_frame or frame)
-    return dict(l=w(o["l"]), b=o["b"], pmra=o["pmra"], pmdec=o["pmdec"], vlos=o["vlos"], d=o["dist"], chi=sp["chi"][tr], age=sp["t_release_myr_ago"][tr])
+    sp = spray_unwrapped(host, today, T, r_kpc, M*mass_factor, trel, seed=seed, spin=spin, arm_only=1, max_age_myr=max_age_myr,
+                         accuracy=accuracy, with_psi=False); tr = sp["arm"] == 1; o = observables(sp["xv"][tr], proj_frame or frame)
+    out = dict(l=w(o["l"]), b=o["b"], pmra=o["pmra"], pmdec=o["pmdec"], vlos=o["vlos"], d=o["dist"], chi=sp["chi"][tr], age=sp["t_release_myr_ago"][tr])
+    if max_age_myr is not None:
+        out["age_cut_myr"] = np.float64(max_age_myr)
+    return out
 
 
 def score(m, **kw):
+    if "age_cut_myr" in m and kw.get("age_max", 700.) > float(m["age_cut_myr"]):
+        raise ValueError(f"spray integrated only to {float(m['age_cut_myr']):g} Myr (make_spray max_age_myr) < age_max")
     mu, mx = project_gc(m["l"], m["b"], GC)
     return score_conditional(du, dW, d["v"], d["e_v"], cov, mu, np.column_stack((mx, m["pmra"], m["pmdec"])), m["vlos"], m["chi"], m["age"], u_window=win, **kw)

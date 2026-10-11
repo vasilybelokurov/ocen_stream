@@ -93,7 +93,8 @@ def spray(host, today, T, r_kpc, M_enc, n_release=2000, t_release=None, seed=1, 
                 centre_offset_pc=float(np.linalg.norm(orb[-1, :3]-today[:3])*1e3))
 
 
-def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, accuracy=1e-8, spin=None):
+def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, accuracy=1e-8, spin=None, arm_only=None,
+                    max_age_myr=None, with_psi=True):
     """Spray (as spray(), progenitor gravity included) with per-particle trajectories, returning stream-ordering coordinates:
       chi [kpc Myr]: Gibbons+2014 phase, integral over release->today of (|r| - |r_prog|) dt (their Eq. 3 sums over equal
             time steps; this is the time-weighted continuous form; > 0 trailing, < 0 leading);
@@ -101,7 +102,11 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
             psi = Psi_prog(t_rel) + [unwrapped particle angle change from t_rel to today] - Psi_prog(today), with Psi the
             unwrapped in-plane azimuth; psi < 0 trailing for prograde-in-plane motion.
     t_release: release epochs [AGAMA units] (two particles each). ntraj: trajectory samples per particle (equal steps over its own
-    duration). spin: optional cluster rotation (see release_ic)."""
+    duration). spin: optional cluster rotation (see release_ic).
+    arm_only (+1 / -1) and max_age_myr: integrate and return only particles of that arm and/or released less than max_age_myr
+    ago. All initial conditions are drawn first and then subset, and particles are independent (no mutual gravity), so the
+    kept particles are bit-identical to the same particles of the full run (tests/test_spray_subset.py).
+    with_psi=False skips psi (returned as zeros); chi and everything else are unchanged."""
     agama = agama_kpc()
     rng = np.random.default_rng(seed)
     _, back = agama.orbit(potential=host, ic=today, timestart=T, time=-T, trajsize=2, accuracy=1e-12)
@@ -114,6 +119,12 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     rj, vj, R = rj_vj_R(host, orbit_r, tr, m_of_r)
     ic, arm = release_ic(orbit_r, rj, vj, R, rng, spin=spin)
     t0 = np.repeat(tr, 2)
+    keep = np.ones(len(ic), bool)
+    if arm_only is not None:
+        keep &= arm == arm_only
+    if max_age_myr is not None:
+        keep &= (T-t0)*AGAMA_T_MYR < max_age_myr
+    ic, arm, t0 = ic[keep], arm[keep], t0[keep]
     sat = satellite_potential(np.zeros((0, 3)), np.zeros(0), core=FrozenCore(r_kpc, M_enc))
     total = agama.Potential(host, agama.Potential(potential=sat, center=np.column_stack((tc, orb))))
     res = agama.orbit(potential=total, ic=ic, timestart=t0, time=T-t0, trajsize=ntraj, accuracy=accuracy, verbose=False)
@@ -129,6 +140,8 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
         xv[i] = tj[-1]
         dr = np.linalg.norm(tj[:, :3], axis=1)-np.interp(tt, tc, rprog)
         chi[i] = np.trapezoid(dr, tt)*AGAMA_T_MYR
+        if not with_psi:
+            continue
         a = np.unwrap(ang(tj[:, :3]))
         psi[i] = np.degrees(np.interp(tt[0], tc, Psi_prog)+(a[-1]-a[0])-Psi_prog[-1])
     return dict(xv=xv, arm=arm, chi=chi, psi=psi, t_release_myr_ago=(T-t0)*AGAMA_T_MYR, centre_today=orb[-1])
