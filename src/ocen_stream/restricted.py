@@ -37,7 +37,20 @@ def agama_kpc():
 HUNTER24_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "oCen_bar", "agama_potentials")
 
 
-def host_potential(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None, bar_amp=None, bar_eta=None, bar_size=1.0,
+def host_potential(*args, lmc=None, **kw):
+    """Host potential (see _host_potential_base). lmc (optional): dict(mass=[Msun], ...) -> the host in the MW-centred
+    non-inertial frame with the LMC on its mutual orbit with the MW and the MW reflex field (lmc.with_lmc; needs t_today)."""
+    host = _host_potential_base(*args, **kw)
+    if lmc is None:
+        return host
+    t_today = kw.get("t_today", args[3] if len(args) > 3 else None)
+    if t_today is None:
+        raise ValueError("the LMC needs t_today (AGAMA time units of the present day)")
+    from .lmc import with_lmc
+    return with_lmc(host, t_today, **lmc)
+
+
+def _host_potential_base(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None, bar_amp=None, bar_eta=None, bar_size=1.0,
                    bar_model="hunter24", axi_variant=None, mass_scale=1.0):
     """AGAMA host: a bundled potential name (McMillan17), a path to an .ini file (configs/potentials/DB98_Model1.ini),
     'hunter24_axi' (Hunter+2024 axisymmetrised MW, ../oCen_bar/agama_potentials), or, with bar_omega [km/s/kpc], the Hunter+2024
