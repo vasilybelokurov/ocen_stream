@@ -1,5 +1,6 @@
 """Order-of-magnitude: LMC tidal (differential) acceleration on omega Cen's orbit over the last 1 Gyr.
-Usage: PYTHONPATH=src python bin/streams/lmc_tidal_estimate.py   (1 core, ~10 s)LMC orbit: AGAMA example_lmc_mw_interaction.py recipe (rigid MW + rigid LMC, Chandrasekhar DF on LMC), MW = Hunter24 axi.
+Usage: PYTHONPATH=src python bin/streams/lmc_tidal_estimate.py   (1 core, ~10 s)
+LMC orbit: AGAMA example_lmc_mw_interaction.py recipe (rigid MW + rigid LMC, Chandrasekhar DF on LMC), MW = Hunter24 axi.
 omega Cen orbit: Hunter24 axi only (no bar, no LMC) -- estimate only."""
 import os, numpy as np, scipy.integrate, scipy.special
 from ocen_dm.streams.restricted import agama_kpc, HUNTER24_DIR, AGAMA_T_MYR
