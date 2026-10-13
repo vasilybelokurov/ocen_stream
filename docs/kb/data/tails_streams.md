@@ -49,7 +49,7 @@ Shorthands are defined on the [Data products](index.md) page.
 - **Product.** `proc/tails/fimbulthul_members.ecsv` (37,618 B; 309 rows). Columns `name`, `ra`, `dec`, `pmra/pmdec(_error)`, `parallax(_error)`, `g0_mag`, `bp_rp0`.
 - **Metadata rule.** "stream-track constraint only; no absolute density likelihood without a STREAMFINDER selection model".
 - **Consumers.** `plotting/data_overview.py:224` only.
-- **Status.** d. Superseded for stream modelling by S1 (all 309 are in Ibata+2021 stream 16; 264 are in Ibata+2024 stream 54, per `configs/data.yaml` and JOURNAL.md:6240).
+- **Status.** d. Superseded for stream modelling by S1 (all 309 are in Ibata+2021 stream 16; 264 are in Ibata+2024 stream 54, per `configs/data.yaml` and the project journal).
 
 ## S1. STREAMFINDER Gaia DR3 atlas (Ibata et al. 2024): the stream-54 sample
 
@@ -69,14 +69,14 @@ Shorthands are defined on the [Data products](index.md) page.
 - **Scoring.** `src/ocen_dm/streams/score.py`.
 - **Restrictions.**
   - Track-only (STREAMFINDER selection, as for T4).
-  - Ibata+2024 exclude stream 54 from their own potential fit (JOURNAL.md:6246, 6618).
-  - Member parallaxes are biased by +0.063 mas relative to the cluster (JOURNAL.md:7208ff).
+  - Ibata+2024 exclude stream 54 from their own potential fit (the project journal, 6618).
+  - Member parallaxes are biased by +0.063 mas relative to the cluster (the project journal).
 - **Status.** c.
 
 ## S2. Gaia DR3 errors and correlations for stream-54/55 members
 
 - **Product.** `results/plot_data/stream5455_gaia_errors.npz` (168,341 B; 5,458 rows). Keys `source_id`, `pmra_error`, `pmdec_error`, `pmra_pmdec_corr`, `parallax_error`, `ruwe`, `g`.
-- **Builder.** **None in the repo**: it was an ad hoc WSDB `source_id` join, recorded only at JOURNAL.md:6752.
+- **Builder.** **None in the repo**: it was an ad hoc WSDB `source_id` join, recorded only at the project journal.
 - **Consumers.** Every `load_data` user; `measure_track.py:21`.
 - **Status.** c. This is a reproducibility gap.
 
@@ -104,9 +104,9 @@ The cluster mass profile used by the spray is `results/nbody/A_nodm/model_profil
 
 - **S5, Gaia XP [M/H].**
   - Products: `results/plot_data/stream_xp_metallicity_members.npz` (74,969 B; 5,481 rows) and `ocen_members_andrae.npz` (34,416 B; 3,993 rows).
-  - Built by q3c joins to `koposov.andrae2023_v21_table1` on WSDB (JOURNAL.md:6649–6664). **There is no builder script.**
+  - Built by q3c joins to `koposov.andrae2023_v21_table1` on WSDB (the project journal). **There is no builder script.**
   - Consumer: `bin/streams/plot_stream_xp_metallicity.py`.
-  - Status: d. JOURNAL calls the result inconclusive.
+  - Status: d. The project journal calls the result inconclusive.
   - The Andrae+2023 paper reference (arXiv or DOI) is not recorded: **UNVERIFIED**.
   - Large local XP/Andrae files in `CAT` (`gaia_xp_andrae_parallax01.fits` 1.89 GB, `gc_members_vasiliev_XP.fits` 280 MB, `xp_rvs_andrae_*`) are not referenced by repo code.
 - **S6, Gaia DR3 rotation pull.**
