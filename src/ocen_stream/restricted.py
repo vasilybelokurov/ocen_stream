@@ -37,17 +37,24 @@ def agama_kpc():
 HUNTER24_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "oCen_bar", "agama_potentials")
 
 
-def host_potential(*args, lmc=None, **kw):
+def host_potential(*args, lmc=None, spiral=None, **kw):
     """Host potential (see _host_potential_base). lmc (optional): dict(mass=[Msun], ...) -> the host in the MW-centred
-    non-inertial frame with the LMC on its mutual orbit with the MW and the MW reflex field (lmc.with_lmc; needs t_today)."""
+    non-inertial frame with the LMC on its mutual orbit with the MW and the MW reflex field (lmc.with_lmc; needs t_today).
+    spiral (optional): parameters of spiral.with_spiral, adding the reflected Hunter spiral with an independent phase and
+    pattern speed. Both extensions require t_today. The default host is unchanged."""
     host = _host_potential_base(*args, **kw)
-    if lmc is None:
+    if lmc is None and spiral is None:
         return host
     t_today = kw.get("t_today", args[3] if len(args) > 3 else None)
     if t_today is None:
-        raise ValueError("the LMC needs t_today (AGAMA time units of the present day)")
-    from .lmc import with_lmc
-    return with_lmc(host, t_today, **lmc)
+        raise ValueError("the LMC or spiral needs t_today (AGAMA time units of the present day)")
+    if spiral is not None:
+        from .spiral import with_spiral
+        host = with_spiral(host, t_today, **spiral)
+    if lmc is not None:
+        from .lmc import with_lmc
+        host = with_lmc(host, t_today, **lmc)
+    return host
 
 
 def _host_potential_base(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None, bar_amp=None, bar_eta=None, bar_size=1.0,

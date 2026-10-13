@@ -47,3 +47,57 @@ across the measured sky track and testing whether the stars with radial
 velocities can reach physically plausible escape locations in the barred
 host. These are distinct from comparing a star orbit with the cluster orbit
 using arbitrary position/velocity scales.
+
+## PM geometry diagnostic
+
+`bin/streams/diagnose_pm_profiles.py` predicts PMs with particles weighted
+only by their agreement with each member's sky position. It retains the
+existing chi-bin weights, and never uses an observed PM to select a model
+particle. The diagnostic plot uses a declared two-degree tube around the
+measured ridge; the fit still uses all members. Each bin records its member
+count and model PM/distance percentiles. This avoids attributing a change
+in broad distribution shape to a shift of the ridge.
+
+The initial diagnostic, before the local fits finished, suggests two
+different errors. Around phi1=11-17 degrees, the PM vector direction differs
+by several degrees. At the distal knee, phi1=23-27, the vector direction is
+much closer, but its magnitude is too small. A purely local distance
+rescaling at fixed relative space velocity would remove most of that distal
+PM residual. This is a decomposition of the error, not a measured distance
+or a new freedom in the dynamical model: changing the actual cluster
+distance also changes the orbit, and must be forward-modelled.
+
+## Separate physical hypothesis: spiral arms
+
+The stream host omits the spiral potential supplied with the local Hunter
+model. The published model contains independently rotating bar and spiral
+patterns. The reference spiral speed is 22.5 km/s/kpc and the reported test
+range is 17.5-25. The original setup uses both components at phase -25
+degrees today, in a frame with Sun at negative x.
+
+Sources: [Hunter et al. 2024, Sections 2.1.6 and 2.2.2](https://arxiv.org/html/2403.18000v2),
+and [the authors' AGAMA implementation](https://github.com/GalacticDynamics-Oxford/Agama/blob/master/py/example_mw_potential_hunter24.py).
+The local exported potential and construction script are the numerical
+inputs; they are not assumed to equal every parameter in the published text.
+
+`src/ocen_dm/streams/spiral.py` reflects the exported CylSpline tables into
+this project's x_model=-x_source frame by applying the exact real-Fourier
+parity to potential and derivative coefficients. It then adds independent
+positive pattern rotation. A sign change of pattern speed alone would
+leave the spiral winding wrong. Original and transformed hashes are saved
+under `results/streams/spiral_potential/`.
+
+`bin/streams/diagnose_spiral_forcing.py check` verifies force/potential
+reflection, zero-amplitude identity, force addition, and past/present phase.
+The reflection force error is 9.5e-16 relative to the largest checked spiral
+force. Phase/addition errors are below 4e-14. The source has a numerical
+azimuthal-monopole remainder of 1.17e-7 of the spiral potential amplitude;
+reflection preserves it to 8e-17. An initial absolute-zero threshold rejected
+that source remainder; the check now verifies preservation of the source
+monopole explicitly. No measured-data errors or likelihood widths changed.
+
+The pilot is a paired on/off experiment at fixed cluster/bar parameters,
+fixed present spiral phase 25 degrees, and a fresh spray seed. A source
+snapshot is frozen before each pilot. A gain in one seed is only a lead:
+check the PM tracks, independent seeds, and nuisance refitting before
+interpreting it as an explanation for the angle preference.
