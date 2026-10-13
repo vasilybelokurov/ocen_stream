@@ -29,7 +29,7 @@ def min_dist(track_sgr, trajs):
 
 def main():
     ag = agama_kpc(); rng = np.random.default_rng(3); S = draw(catalogue("NGC 6715"), 201, rng)
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits"))
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits"))
     v = np.asarray(t["VHel"], float); ev = np.asarray(t["e_VHel"], float); hv = np.isfinite(v) & (ev < 300)
     gb = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic.b.deg
     cmd = json.loads((ROOT/"results/plot_data/stream54_cmd_distance.json").read_text())["bins"]

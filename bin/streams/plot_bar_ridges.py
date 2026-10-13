@@ -36,7 +36,7 @@ def profiles(l, b, pmra, pmdec):
 
 def main():
     runs = sys.argv[1:]
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
     g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic
     gl, gb = w(g.l.deg), g.b.deg; k = (gb > 12) & (gl < -20) & (gl > -75)
     res = {"Ibata+2024 54": profiles(gl[k], gb[k], np.asarray(t["pmRA"], float)[k], np.asarray(t["pmDE"], float)[k])}

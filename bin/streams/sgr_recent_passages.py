@@ -18,7 +18,7 @@ from ocen_dm.streams.analysis import load
 
 
 def catalogue(name):
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/gc_catalog_full.fits"))
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/gc_catalog_full.fits"))
     r = t[[str(n).strip() == name for n in t["NAME"]]][0]
     return {k: float(r[k]) for k in ("RA", "DEC", "DIST", "PMRA", "PMDEC", "RV", "DIST_ERR", "PMRA_ERR", "PMDEC_ERR", "RV_ERR")}
 
@@ -81,7 +81,7 @@ def knee_members(tback=600., dists=(4.4, 4.8, 5.2)):
     back in the same host at fixed distances bracketing the CMD-shift distance (~4.8 kpc at b = 33-42)."""
     import astropy.coordinates as coord
     ag = agama_kpc(); rng = np.random.default_rng(3)
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
     v = np.asarray(t["VHel"], float); ev = np.asarray(t["e_VHel"], float)
     b = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic.b.deg
     k = np.isfinite(v) & (ev < 300) & (b > 32); t, v = t[k], v[k]

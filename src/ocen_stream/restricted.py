@@ -34,7 +34,7 @@ def agama_kpc():
     return agama
 
 
-HUNTER24_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "oCen_bar", "agama_potentials")
+HUNTER24_DIR = os.path.join(os.environ.get("OCEN_BAR_DIR", "$OCEN_BAR_DIR"), "agama_potentials")   # clone of github.com/adllmr/oCen_bar
 
 
 def host_potential(*args, lmc=None, spiral=None, **kw):

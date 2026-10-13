@@ -19,7 +19,7 @@ def box(l, b, B):
     return (w(l) > B["l"][0]) & (w(l) < B["l"][1]) & (b > B["b"][0]) & (b < B["b"][1])
 
 
-t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
 g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic
 for name, B in (("knee", KNEE), ("arm b20-30", ARM)):
     k = box(g.l.deg, g.b.deg, B); v = np.asarray(t["VHel"], float)[k]; v = v[np.isfinite(v) & (v < 900)]

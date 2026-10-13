@@ -83,11 +83,11 @@ class FileRecord:
 
         For downloaded files this is ``data/raw/<dataset>/<name>``. A record with
         ``local_path`` set refers to a file kept in the user's canonical
-        catalogue store (``$OCEN_CATALOGUES/``) and is verified in place, never
+        catalogue store (``$OCEN_CATALOGUES``) and is verified in place, never
         copied into the repository.
         """
         if self.local_path:
-            return Path(self.local_path).expanduser()
+            return Path(os.path.expandvars(self.local_path))
         return raw_dir() / self.dataset / self.name
 
     @property
@@ -269,7 +269,7 @@ def verify_file(record: FileRecord, path: Path | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {
         "dataset": record.dataset,
         "name": record.name,
-        "path": str(path),
+        "path": portable_path(path),
         "exists": path.is_file(),
         "bytes": None,
         "md5": None,
@@ -311,6 +311,24 @@ def verify_file(record: FileRecord, path: Path | None = None) -> dict[str, Any]:
     return out
 
 
+def portable_path(path: Path) -> str:
+    """Path as recorded in tracked files: repository-relative, or under an
+    environment-variable root (``$OCEN_CATALOGUES``), never an absolute local path."""
+    path = Path(path)
+    try:
+        return path.resolve().relative_to(raw_dir().parents[1].resolve()).as_posix()
+    except ValueError:
+        pass
+    for var in ("OCEN_CATALOGUES",):
+        root = os.environ.get(var)
+        if root:
+            try:
+                return f"${var}/" + path.resolve().relative_to(Path(root).resolve()).as_posix()
+            except ValueError:
+                pass
+    return path.name
+
+
 def environment_record() -> dict[str, Any]:
     """Return interpreter/platform and key package versions for the manifest."""
     versions: dict[str, str] = {}
@@ -322,7 +340,7 @@ def environment_record() -> dict[str, Any]:
             versions[module] = "missing"
     return {
         "python": sys.version.split()[0],
-        "executable": sys.executable,
+        "executable": Path(sys.executable).name,
         "platform": platform.platform(),
         "packages": versions,
     }

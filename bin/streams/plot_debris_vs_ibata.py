@@ -23,7 +23,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/"src"))
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/ocen-df-mpl")
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(os.environ.get("TMPDIR", "/tmp"), "ocen-df-mpl"))
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -85,7 +85,7 @@ def main():
         k = sep_deg(o["l"], o["b"]) < RAD
         cols.append((lab, col, {q: v[k] for q, v in o.items()}, oc))
         out[key] = dict(n_within=int(k.sum()), cluster={q: float(v[0]) for q, v in oc.items()})
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits"))
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits"))
     st = np.asarray(t["Stream"])
     ra, de = np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float)
     g = coord.SkyCoord(ra, de, unit="deg").galactic

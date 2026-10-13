@@ -29,7 +29,7 @@ for k, tk in enumerate(times):
     _, x = load(R, tk) if k < len(times)-1 else load(R, name="snap_today.npz")
     last = np.where(np.linalg.norm(x[sel, :3]-cen[k], axis=1) < 0.2, tk, last)
 age = T-last
-t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
 g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic
 gl, gb = w(g.l.deg), g.b.deg
 v = np.asarray(t["VHel"], float); ev = np.asarray(t["e_VHel"], float); hv = np.isfinite(v) & (ev < 300)

@@ -43,7 +43,7 @@ def main():
             ax[1, jj].errorbar(np.array(tr["b"])+0.15*a.tgyr.index(tg), tr[q]["mu"], yerr=tr[q]["sig_mu"], fmt="^", color=c, ms=4, label=f"spray {tg} Gyr")
     import os, astropy.coordinates as coord
     from astropy.table import Table
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
     g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic
     ax[0, 0].plot(w(g.l.deg), g.b.deg, ".", ms=1.5, color="k", alpha=0.3, label="stream 54")
     ax[0, 0].set_xlim(-20, -80); ax[0, 0].set_ylim(10, 50); ax[0, 0].set_xlabel("l"); ax[0, 0].set_ylabel("b"); ax[0, 0].legend(fontsize=8, markerscale=6)

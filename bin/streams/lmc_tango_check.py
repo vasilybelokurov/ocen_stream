@@ -6,7 +6,7 @@ $OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977. omega Cen orbit integrated in t
 Usage: python bin/streams/lmc_tango_check.py potentials_axisym|potentials_triax   (1 core, ~1 min)"""
 import os, sys, numpy as np, agama
 agama.setUnits(mass=232500, length=1, velocity=1)
-D = os.path.expanduser("$OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977/") + sys.argv[1]
+D = os.path.expandvars("$OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977/") + sys.argv[1]
 os.chdir(D)
 full = agama.Potential("potential_evolving.ini")
 # components (AGAMA reorders them): Evolving halo, DiskAnsatz, UniformAcceleration, Multipole (bulge+disc residual), Shifted Evolving LMC

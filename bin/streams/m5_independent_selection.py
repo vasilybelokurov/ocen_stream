@@ -24,7 +24,7 @@ from ocen_dm.streams.path import project_gc
 
 w = lambda x: np.where(x > 180, x-360, x)
 GC = json.loads((ROOT/"results/plot_data/stream54_gc_frame_chord.json").read_text())
-t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
 ra, dec = np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float); g = coord.SkyCoord(ra, dec, unit="deg").galactic
 l, b = w(g.l.deg), g.b.deg; keep = (b > 15) & (l < -20) & (l > -75)
 mem = dict(sid=np.asarray(t["Gaia"], np.int64)[keep], ra=ra[keep], dec=dec[keep], l=l[keep], b=b[keep], pmra=np.asarray(t["pmRA"], float)[keep],

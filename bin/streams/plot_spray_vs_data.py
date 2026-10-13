@@ -18,7 +18,7 @@ w = lambda x: np.where(x > 180, x-360, x)
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--pts", nargs="+", default=["34.5,32,1.2"]); ap.add_argument("--nrel", type=int, default=20000)
     ap.add_argument("--tgyr", type=float, default=1.95558); a = ap.parse_args()
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
     g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic; gl, gb = w(g.l.deg), g.b.deg
     v = np.asarray(t["VHel"], float); ev = np.asarray(t["e_VHel"], float); hv = np.isfinite(v) & (ev < 300)
     cmd = json.loads((ROOT/"results/plot_data/stream54_cmd_distance.json").read_text())["bins"]

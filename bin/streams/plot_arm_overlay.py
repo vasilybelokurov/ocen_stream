@@ -12,7 +12,7 @@ from plot_debris_vs_ibata import observables, MODELS
 from ocen_dm.streams.analysis import load, run_core, run_particles
 from ocen_dm.streams.restricted import OCEN_TODAY, bound_set
 w = lambda x: np.where(x > 180, x-360, x)
-t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
 g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic
 fig, ax = plt.subplots(2, 3, figsize=(16, 10))
 for j, (key, lab, col) in enumerate(MODELS):

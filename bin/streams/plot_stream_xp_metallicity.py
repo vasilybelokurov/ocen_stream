@@ -13,7 +13,7 @@ from astropy.table import Table
 from scipy.stats import ks_2samp
 
 ROOT = Path(__file__).resolve().parents[2]
-t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.isin(np.asarray(t["Stream"]), [54, 55])]
+t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.isin(np.asarray(t["Stream"]), [54, 55])]
 d = np.load(ROOT/"results/plot_data/stream_xp_metallicity_members.npz"); oc = np.load(ROOT/"results/plot_data/ocen_members_andrae.npz")
 ok = (d["source_id"] == np.asarray(t["Gaia"], np.int64)[d["xid"]]) & np.isfinite(d["mh"])
 x = d["xid"][ok]; mh = d["mh"][ok]; G = d["g"][ok]

@@ -26,7 +26,7 @@ G = 4.300917e-6
 
 
 def catalogue(name):
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/gc_catalog_full.fits"))
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/gc_catalog_full.fits"))
     r = t[[str(n).strip() == name for n in t["NAME"]]][0]
     return {k: float(r[k]) for k in ("RA", "DEC", "DIST", "PMRA", "PMDEC", "RV", "DIST_ERR", "PMRA_ERR", "PMDEC_ERR", "RV_ERR")}
 

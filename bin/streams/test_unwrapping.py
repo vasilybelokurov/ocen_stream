@@ -21,7 +21,7 @@ w = lambda x: np.where(x > 180, x-360, x)
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--pts", nargs="+", default=["33,28,1.0"]); ap.add_argument("--nrel", type=int, default=6000)
     ap.add_argument("--window", type=float, default=800., help="release over the last <window> Myr"); a = ap.parse_args()
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
     g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic; gl, gb = w(g.l.deg), g.b.deg
     prof = json.loads((ROOT/"results/nbody/A_nodm/model_profiles.json").read_text()); r_kpc, M = np.array(prof["r_pc"])/1e3, np.array(prof["enclosed"]["total"])
     T = 1955.58/AGAMA_T_MYR

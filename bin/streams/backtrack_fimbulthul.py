@@ -25,7 +25,7 @@ def to_model(ra, de, d, pmra, pmde, vlos):
 
 def main():
     ag = agama_kpc()
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits"))
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits"))
     v = np.asarray(t["VHel"], float); ev = np.asarray(t["e_VHel"], float)
     k = (np.asarray(t["Stream"]) == 54) & np.isfinite(v) & (ev < 300)
     t = t[k]; v = v[k]

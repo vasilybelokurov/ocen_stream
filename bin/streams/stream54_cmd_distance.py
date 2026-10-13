@@ -44,7 +44,7 @@ def fit(ref, c, g, kde, joint=True):
 
 
 def main():
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
     G = np.asarray(t["Gmag"], float); C = np.asarray(t["(B-R)"], float)
     b = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic.b.deg
     win = (C > CW[0]) & (C < CW[1]) & (G > GW[0]) & (G < GW[1])

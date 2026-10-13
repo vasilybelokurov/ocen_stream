@@ -22,7 +22,7 @@ OMEGA = [30., 31.5, 33., 34.5, 36.]; ANGLE = [24., 28., 32.]; AMP = [0.8, 1.0, 1
 
 
 def load_data():
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.isin(np.asarray(t["Stream"]), [54, 55])]
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.isin(np.asarray(t["Stream"]), [54, 55])]
     er = np.load(ROOT/"results/plot_data/stream5455_gaia_errors.npz"); assert np.all(er["source_id"] == np.asarray(t["Gaia"], np.int64))
     g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic; l, b = w(g.l.deg), g.b.deg
     k = (np.asarray(t["Stream"]) == 54) & (b > 15) & (l < -20) & (l > -75)

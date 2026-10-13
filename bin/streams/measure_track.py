@@ -16,7 +16,7 @@ w = lambda x: np.where(x > 180, x-360, x)
 
 
 def main():
-    t = Table.read(os.path.expanduser("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); st = np.asarray(t["Stream"])
+    t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); st = np.asarray(t["Stream"])
     sel = np.isin(st, [54, 55]); t = t[sel]
     er = np.load(ROOT/"results/plot_data/stream5455_gaia_errors.npz")
     assert np.all(er["source_id"] == np.asarray(t["Gaia"], np.int64))

@@ -14,7 +14,7 @@ from scipy.integrate import cumulative_trapezoid
 from ocen_dm.streams.restricted import AGAMA_T_MYR
 from ocen_dm.streams.lmc import mw_lmc_orbit
 
-ROOT = Path(__file__).resolve().parents[2]; TD = Path(os.path.expanduser("$OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977"))
+ROOT = Path(__file__).resolve().parents[2]; TD = Path(os.path.expandvars("$OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977"))
 T = 1955.58/AGAMA_T_MYR; MIR = np.array([-1, 1, 1])
 
 
