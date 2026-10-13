@@ -229,7 +229,8 @@ def chi_kde_track(model, dchi=5., chi_max=105., nmin=20, age_max=700., floors=(0
 
 
 def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 0.2, 0.2), hv=5., dchi=5., nmin=20,
-                      age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400):
+                      age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400,
+                      return_components=False):
     """Conditional likelihood of members given model particles, density-free along the observed along-stream coordinate u
     (design reviewed with Codex: docs/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
     >= nmin particles), equal prior weight 1/K; in bin k a product-Gaussian KDE with FIXED bandwidths (same for every model):
@@ -238,8 +239,9 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     f = (1/K) sum_k f_k, f_u = (1/K) sum_k f_k^u. Background g(u, w) = g_u(u) g_w(w), uniform: g_u = 1/len(u_window),
     g_w = 1/(w_box product) [x 1/v_box]. Per member
       L_i = [(1 - eps) f(u_i, w_i) + eps g_u g_w] / [(1 - eps) f_u(u_i) + eps g_u],
-    i.e. the conditional p(w | u) of the joint model+background mixture (the model's density along u cancels; where the model
-    barely reaches u_i the background takes over smoothly).
+    i.e. the conditional p(w | u) of the joint model+background mixture. The foreground's density along u cancels in f/f_u,
+    but the foreground/background mixing weight still depends on f_u; where the model barely reaches u_i the background
+    takes over smoothly. return_components=True exposes these densities for diagnostics without changing the score.
     Data: du (N,), dw (N, 3) = (x, pmra, pmdec), dv (N,) v_los or nan, dev (N,) its error, dcov (N, 2, 2) Gaia PM covariance.
     Model: mu (M,), mw (M, 3), mv (M,), chi (M,), age (M,) [trailing-arm particles]. h = (h_u, h_x, h_pmra, h_pmdec).
     Returns dict(total, per_star (N,), K, frac_bg (mean background share of the numerator))."""
@@ -253,7 +255,10 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     bins = [b_ for b_ in bins if len(b_) >= nmin]; K = len(bins)
     if K == 0:
         Li = np.full(n, (eps*g_u*g_w)/(eps*g_u))
-        return dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=0, frac_bg=1.0)
+        result = dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=0, frac_bg=1.0)
+        if return_components:
+            result.update(foreground_joint=np.zeros(n), foreground_u=np.zeros(n), background_u=g_u, background_w=g_w)
+        return result
     hu, hx, hpa, hpd = h
     f = np.zeros(n); fu = np.zeros(n)
     sx2 = hpa**2+dcov[:, 0, 0]; sy2 = hpd**2+dcov[:, 1, 1]; cxy = dcov[:, 0, 1]; det = sx2*sy2-cxy**2
@@ -272,4 +277,7 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
             fu[sl] += np.mean(gu, axis=1)/K
     num = (1-eps)*f+eps*g_u*g_w; den = (1-eps)*fu+eps*g_u
     Li = num/den
-    return dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=K, frac_bg=float(np.mean(eps*g_u*g_w/num)))
+    result = dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=K, frac_bg=float(np.mean(eps*g_u*g_w/num)))
+    if return_components:
+        result.update(foreground_joint=f, foreground_u=fu, background_u=g_u, background_w=g_w)
+    return result

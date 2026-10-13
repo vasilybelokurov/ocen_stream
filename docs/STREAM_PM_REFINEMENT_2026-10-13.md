@@ -101,3 +101,72 @@ fixed present spiral phase 25 degrees, and a fresh spray seed. A source
 snapshot is frozen before each pilot. A gain in one seed is only a lead:
 check the PM tracks, independent seeds, and nuisance refitting before
 interpreting it as an explanation for the angle preference.
+
+## First numerical findings
+
+The exploratory local searches were stopped after 19 evaluations at 16
+degrees and 27 at 28, when an independent 8,000-epoch seed shift exceeded
+the residual angle gap. They are **not converged profile maxima**. Their
+checkpoints and every evaluated spray remain available. Three independent
+32,000-epoch sprays (seeds 4, 5, 6) were run for each selected candidate and
+its initial reference.
+
+| Angle | Initial mean ln L | Refined mean ln L | Gain |
+| --- | ---: | ---: | ---: |
+| 16 deg | -22394.7 | -22178.6 | +216.1 |
+| 28 deg | -22957.9 | -22463.6 | +494.3 |
+
+The paired 16-minus-28 differences are 314.5, 172.4, and 368.1: mean
+285.0, seed scatter 101.0. These quantify simulation noise at two candidates;
+they are not observational errors or a significance for the bar angle.
+The 28-degree candidate compensates with D=5.801 kpc and pmdec=-6.8256
+mas/yr, near the imposed -3-sigma PM boundary. Its distance is 7.4 sigma
+above the adopted 5.43 +/- 0.05 measurement (2.5 sigma under the older
+stream prior of +/- 0.15). This is unresolved external-measurement tension,
+not a successful removal of the angle problem.
+
+The fixed-parameter spiral pilot at 28 degrees, seed 4, improves ln L by
+277.1 (fiducial) or 317.2 (fast), versus 41.0 for the slow pattern. The
+gain is mostly distal. Its sky-conditioned PMDEC shifts are only about
+0.1-0.25 mas/yr; a 1-2 mas/yr residual remains in the distal bins. This
+pilot does not solve either requested problem and still needs denser,
+independent seeds before treating its gain as reliable.
+
+## Likelihood density audit
+
+Writing the implemented score as
+
+`L(w|u) = pi(u) [f(u,w)/f_u(u)] + [1-pi(u)] g_w(w)`
+
+gives `pi(u) = (1-eps) f_u / [(1-eps) f_u + eps g_u]`. The foreground
+conditional is density-free, but its mixture weight is not. This is an
+intentional coverage behavior in the original formula and should not be
+described as complete independence from the model's along-stream density.
+
+`bin/streams/audit_conditional_density.py` isolates that dependency by
+rescoring with a fixed conditional mixing weight, while retaining all
+kernels and background constants. Production scoring is unchanged;
+`return_components=True` only exposes densities for this audit. Every
+saved validation/pilot score replays with zero difference.
+
+The change does **not** remove the low-angle ranking. In the original
+56-candidate grid the best 28-degree deficit changes from 1447.3 to
+1443.9. In the independent refined candidates it strengthens the average
+16-degree advantage from 285.0 to about 392.0. The density mixing issue is
+real, but is not an explanation of the angle preference in these tests.
+The original background-support normalization issue remains separate.
+
+## RV-star connection diagnostic
+
+`bin/streams/backtrack_barred_release.py` integrates the RV stars backward
+in the actual fitted barred host plus the moving progenitor potential.
+It scans distances and compares encounters in units of the model's
+time-dependent tidal radius and release velocity. Model stars chosen by
+sky position provide a reference check. It includes a small number of
+observable-error draws, and records edge hits. This is a diagnostic at
+two fitted states, not a complete ancestry exclusion or posterior.
+
+This addresses a question the earlier axisymmetric backtrack could not:
+whether the measured PM/RV combinations can originate near the cluster
+in the model that is actually being fitted, rather than whether another
+optimizer can improve an uncalibrated scalar score.

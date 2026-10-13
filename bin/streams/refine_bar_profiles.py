@@ -127,7 +127,8 @@ def fit(args):
 
 def validate(args):
     directory = ROOT / "results/plot_data" / args.label
-    outfile = directory / "heldout.json"
+    suffix = f"_an{args.angles[0]:g}" if len(args.angles) == 1 else ""
+    outfile = directory / f"heldout{suffix}.json"
     rows = json.loads(outfile.read_text()) if outfile.exists() else []
     done = {(r["angle"], r["candidate"], r["seed"], r["nrel"]) for r in rows}
     archive = ROOT / "results/streams" / args.label
