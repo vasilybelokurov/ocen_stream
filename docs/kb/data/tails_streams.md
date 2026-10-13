@@ -2,6 +2,28 @@
 
 Shorthands are defined on the [Data products](index.md) page.
 
+## Figures
+
+![Tail datasets on the sky](../../../plots/sky_overview.png)
+
+*Every ingested periphery and tail dataset on the sky. Left: the Kuzma & Ishigaki 2025 Gaia+Pristine footprint (5°) and the Fimbulthul candidates of Ibata+2019, 15–27° to the north. Right: the periphery field and members (P > 0.5) with the Kuzma+2026 FLAMES fields (members and non-members).*
+
+![Periphery proper motions](../../../plots/kuzma2025_proper_motions.png)
+
+*Kuzma & Ishigaki 2025: proper-motion density of the field and the 2,737 members with P > 0.5.*
+
+![Tail radial velocities](../../../plots/kuzma2026_vlos_along_tails.png)
+
+*Kuzma+2026 FLAMES line-of-sight velocities along the tails (signed distance from the centre, trailing negative): 157 members in six fields, with field means against the systemic 232.6 km/s.*
+
+![Fimbulthul candidates](../../../plots/fimbulthul.png)
+
+*Fimbulthul candidates of Ibata+2019 (309 stars): sky positions with proper-motion vectors relative to NGC 5139, and the dereddened CMD.*
+
+![Stream 54 data](../../../plots/data_stream54.png)
+
+*STREAMFINDER (Ibata+2024) stream 54, the data the stream models are fitted to: 3,724 members on the sky (colour: G); proper motions along the stream in the chord great-circle frame φ1, showing the steepening beyond φ1 ≈ 15° (the "knee"); and the 29 radial velocities.*
+
 ## T1/T2. Kuzma & Ishigaki 2025 Pristine periphery and its Gaia covariance
 
 - **Source.**
