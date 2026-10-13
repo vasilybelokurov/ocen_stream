@@ -1,0 +1,51 @@
+**The premise needs one correction:** the score is computed for each star conditional on its observed \(u\), but the bootstrap does not hold those \(u\) positions fixed. It resamples fixed-width spatial blocks, changing the resampled star count when blocks contain different numbers of members. That matters because the conditional score deliberately omits density along \(u\) ([`score.py:231–245`](<src/ocen_dm/streams/score.py:231>), [`bootstrap_grid4.py:30–40`](<bin/streams/bootstrap_grid4.py:30>)).
+
+## Q1. Block bootstrap
+
+The block bootstrap is a useful **sensitivity analysis**, but these results do not establish a calibrated standard error. The reported uncertainty rises across the tested block widths, while the score-difference autocorrelation remains substantial at the longest tested lag; the 4-degree resample has only nine blocks. The script tests five fixed widths and does not select one from a defensible criterion ([`bootstrap_grid4.py:22–24`](<bin/streams/bootstrap_grid4.py:22>), [`bootstrap_grid4.py:30–48`](<bin/streams/bootstrap_grid4.py:30>)). Standard block-bootstrap inference depends on block length; automatic selectors target a specified statistic and dependence setting, not a universal “correct” block width ([Bühlmann & Künsch](https://www.sciencedirect.com/science/article/pii/S0167947399000146)).
+
+I would **not choose one width for the paper from this scan**. Keep the untempered score and report the observed score difference, alongside the 1–4-degree sensitivity range, explicitly labeled as resampling sensitivity rather than a calibrated error bar. For inferential uncertainty, use mock calibration as the primary method. As a secondary estimate, form segment-level score and score-gradient vectors and estimate their long-run covariance; a Godambe/sandwich adjustment is relevant when the working likelihood treats dependent contributions as independent ([composite-likelihood overview](https://www3.stat.sinica.edu.tw/statistica/oldpdf/A21n11.pdf)). It will still need mock coverage checks, and the current grid’s discrete argmax makes local curvature estimates fragile.
+
+Miller–Dunson coarsening and generalized-Bayes learning rates are possible frameworks for tempered inference, but they require a calibration target; choosing \(N/N_{\rm eff}\) from this diagnostic would be an ad hoc rule, not a consequence of the code or these results. Coarsened posteriors can approximate fractional likelihoods and provide a calibration procedure, but that does not make an arbitrary power justified here ([Miller & Dunson](https://pmc.ncbi.nlm.nih.gov/articles/PMC6961963/)). A stream-segment score is useful for diagnosing *where* models differ, but normalizing each segment’s contribution would change the target score, not merely its uncertainty; the current code sums per-star log scores ([`score.py:273–275`](<src/ocen_dm/streams/score.py:273>)).
+
+There is also a bootstrap design issue to fix before presenting it as inferential: the script resamples as many blocks as observed, giving each block equal draw probability regardless of its member count, then sums all its stars. The contrast is between the two models selected on the original data, and those models are held fixed in each replicate ([`bootstrap_grid4.py:17–20`](<bin/streams/bootstrap_grid4.py:17>), [`bootstrap_grid4.py:35–45`](<bin/streams/bootstrap_grid4.py:35>)). So its reported \(P(\Delta\ln L\le0)\) is not a calibrated probability that the 20-degree model is better after refitting or reselecting.
+
+## Q2. Spray-seed noise
+
+The seed check is a useful start, but it does **not** isolate particle-number Monte Carlo error. It compares two parameter combinations, uses five seeds at 8,000 release epochs but only three at 32,000, and the release times are newly spaced `linspace`s at each particle count ([`seed_test.py:11–22`](<bin/streams/seed_test.py:11>), [`grid4_common.py:23–28`](<bin/streams/grid4_common.py:23>)). Thus the reported 550-lnL increase combines particle resolution, changed release-time quadrature, and the logarithm of a finite-sample KDE. It is consistent with finite-KDE bias, but it does not prove that explanation or show the bias cancels in model differences.
+
+For a numerical approximation to each model density, average the **per-member density contributions across independent sprays before taking the logarithm**, then sum the resulting per-member log scores. Also compare rankings using paired seeds across the full candidate set, and increase particles until score differences stabilize. The current seed test reports log scores per spray, not a seed-averaged density ([`seed_test.py:21–30`](<bin/streams/seed_test.py:21>)).
+
+Do not combine the supplied seed and block standard deviations by simple quadrature yet. They were not measured in a crossed design, and the seed experiment uses only two models. To separate uncertainties, evaluate the same model grid over several seeds and several mock/resampled data realizations; estimate seed, data-block, and interaction components from that crossed set. Add variances only if those components are estimated for the same contrast and the independence/additivity assumption is supported.
+
+## Q3. Cluster–knee tension
+
+The opposite regional preferences are evidence of tension with this fitted setup, but do **not yet identify model misfit as the cause**. The grid fixes the present-day cluster proper motions at values that differ from the catalog values in `OCEN_OBS`; the code already has a fit path that varies both proper motions with Gaussian priors ([`grid4_common.py:14–27`](<bin/streams/grid4_common.py:14>), [`frames.py:9–20`](<src/ocen_dm/streams/frames.py:9>), [`fit_bar_ocen.py:26–35`](<bin/streams/fit_bar_ocen.py:26>)). Also, the grid result lies at the lowest sampled bar angle, so the grid has not tested whether the optimum continues below that edge ([`grid4.py:20`](<bin/streams/grid4.py:20>)).
+
+A cheap sequence:
+
+1. Re-score the same models with per-segment contributions and multiple seeds, to establish whether the regional contrast is stable.
+2. Refit with present-day proper motions free under their measurement priors; test radial velocity only if its measurement uncertainty permits a meaningful nuisance fit. The existing optimizer varies PMs but fixes the radial velocity ([`fit_bar_ocen.py:27–30`](<bin/streams/fit_bar_ocen.py:27>), [`fit_bar_ocen.py:56–63`](<bin/streams/fit_bar_ocen.py:56>)).
+3. Extend the angle scan below 16 degrees and profile the other grid parameters. This tests the known boundary issue before adding more model complexity.
+4. Compare the spray track with compatible tracer runs to test the release prescription. The spray uses Fardal-style randomized offsets and carries the progenitor potential along the orbit ([`spray.py:3–12`](<src/ocen_dm/streams/spray.py:3>), [`spray.py:42–55`](<src/ocen_dm/streams/spray.py:42>)).
+5. Only then test bar slowdown or halo changes, one at a time, against the stable regional residual pattern.
+
+## Q4. Dark-matter detectability
+
+Calibrate the A/B/C comparison with end-to-end mocks from each model: generate mock members with the same selection and measurement process, inject plausible bar, orbit, and release-model departures, then repeat the nuisance fits and A/B/C comparison. Measure false-positive rates under A and power for B and C. Use multiple spray seeds in the mocks so particle noise is represented too.
+
+The per-star conditional KDE can be a **ranking score**, but treating its sum as an ordinary independent-star likelihood is not justified by the code: it sums one log score per member and has no joint dependence model ([`score.py:231–245`](<src/ocen_dm/streams/score.py:231>), [`score.py:273–275`](<src/ocen_dm/streams/score.py:273>)). It also deliberately conditions away the along-stream density. If DM’s detectable signature is mainly in stripping rate or density along the tail, this statistic can discard that information. Mock calibration should therefore assess the conditional statistic’s power and false positives, and a density-sensitive statistic should be considered if A/B/C differ principally in counts along the stream.
+
+## Q5. Code weaknesses and tests
+
+- `score_conditional` has no explicit checks for compatible array shapes, a positive-width `u_window`, or a valid positive PM covariance determinant before division ([`score.py:246–260`](<src/ocen_dm/streams/score.py:246>)). Add edge-case tests before using it on altered catalogues or mock inputs.
+- The background is described by finite `w_box` and `v_box` widths, but the code applies the constant background density without restricting observations to those boxes. If any scored datum lies outside a box, this is not a normalized finite-box uniform component ([`score.py:236–245`](<src/ocen_dm/streams/score.py:236>), [`score.py:250–256`](<src/ocen_dm/streams/score.py:250>)).
+- The existing score tests cover background-only cases, cancellation of \(u\)-density, duplicating a chi bin, and a kinematic shift; they do not test v_los handling, invalid covariance/window inputs, finite background support, bootstrap coverage, or seed convergence ([`test_score_conditional.py:24–65`](<tests/test_score_conditional.py:24>)).
+
+## Verified vs assumed
+
+Verified by reading: the grid fixes the PMs, the conditional score sums per-star logs, the bootstrap fixes its full-data-selected contrast, and the seed test changes release-epoch spacing with particle count. The reported uncertainties, rankings, regional contrasts, sample size and astrophysical interpretation are taken from the packet; I did not reproduce those runs.
+
+**Strongest argument against this assessment:** the task may only be to compare a fixed set of candidate spray models for this one observed catalogue. For that descriptive ranking, the per-star conditional KDE and block-resampling sensitivity may be adequate, and a fully generative mock calibration could add assumptions that dominate the result.
+
+**To be sure:** inspect the actual `grid4_perstar` inputs and their provenance; check all members against the stated background boxes; reproduce the block and seed diagnostics with fixed-\(u\) and crossed resampling designs; and compare the regional result after freeing PMs and extending the angle grid. I did not run tests or recompute the reported results.

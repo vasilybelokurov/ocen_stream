@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Codex follow-up (docs/codex_T1T2_next_steps_2026-10-10.md). 4x particles, seed 1, d 5.6.
+"""Codex follow-up (docs/reviews/codex_T1T2_next_steps_2026-10-10.md). 4x particles, seed 1, d 5.6.
   F  IC-frame x projection-frame cross terms at W (28 deg, size 1.15, Omega_b 36, amp 1.2, catalogue PMs); the diagonal cells
      are the T1 runs (sun_dist_bar_grids.py)                                                   -- 2 sprays;
   C  one-at-a-time frame controls at W (same frame for IC and projection): baumgardt with V_sun,y 232.24 / R0 8.122 / z_sun 17 pc

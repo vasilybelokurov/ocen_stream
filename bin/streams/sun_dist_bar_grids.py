@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Codex follow-ups (docs/codex_distances_and_misfit_2026-10-10.md; plan steps 4-5). 32000 epochs (4x), seed 1, catalogue PMs
+"""Codex follow-ups (docs/reviews/codex_distances_and_misfit_2026-10-10.md; plan steps 4-5). 32000 epochs (4x), seed 1, catalogue PMs
 unless noted.
   T1 solar frame x omega Cen distance: frames baumgardt / ibata19 (frames.FRAMES) x d 5.43, 5.6, 5.8 kpc, for
      W   = working literature-angle model (Omega_b 36, 28 deg, amp 1.2, bar size 1.15, catalogue PMs) and

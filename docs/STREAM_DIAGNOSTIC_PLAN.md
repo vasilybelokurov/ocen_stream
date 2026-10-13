@@ -1,9 +1,9 @@
 # Stream 54 fit: diagnostic and model-extension plan (2026-10-10; Phase 3 adopted the same day)
 
 Built from: [STREAM_FIT_CAMPAIGN_PLAN.md](STREAM_FIT_CAMPAIGN_PLAN.md), [STREAM_FIT_METHODS_REVIEW.md](STREAM_FIT_METHODS_REVIEW.md),
-Codex reviews [codex_likelihood_calibration_2026-10-09.md](codex_likelihood_calibration_2026-10-09.md),
-[codex_diagnostic_experiments_2026-10-10.md](codex_diagnostic_experiments_2026-10-10.md),
-[codex_code_review_2026-10-10.md](codex_code_review_2026-10-10.md), and the journal (2026-10-09/10).
+Codex reviews [codex_likelihood_calibration_2026-10-09.md](reviews/codex_likelihood_calibration_2026-10-09.md),
+[codex_diagnostic_experiments_2026-10-10.md](reviews/codex_diagnostic_experiments_2026-10-10.md),
+[codex_code_review_2026-10-10.md](reviews/codex_code_review_2026-10-10.md), and the journal (2026-10-09/10).
 
 ## Where we are
 

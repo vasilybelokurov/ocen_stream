@@ -1,7 +1,7 @@
 # Fitting campaign: omega Cen's stream in a barred Milky Way, then the DM test (plan, 2026-10-08)
 
 Status: **plan, not started.** Inputs: [STREAM_KNEE_INVESTIGATION.md](STREAM_KNEE_INVESTIGATION.md) (all tests so far) and the
-Codex literature pass [codex_research_fit_campaign_2026-10-08.md](codex_research_fit_campaign_2026-10-08.md) (fallback web
+Codex literature pass [codex_research_fit_campaign_2026-10-08.md](reviews/codex_research_fit_campaign_2026-10-08.md) (fallback web
 research; arXiv IDs checked against the arXiv API: two errors in that report -- Koposov+2019 Orphan is arXiv:1812.08172, not
 1812.08192 (= Erkal+2019 LMC mass); the 2026 omega Cen spectroscopy paper is Kuzma et al., arXiv:2605.23474).
 

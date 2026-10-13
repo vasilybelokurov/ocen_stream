@@ -4,7 +4,7 @@ score_conditional() -- chi-binned KDE conditioned on the observed along-stream c
 display helpers chi_track, chi_ridge, age_ridge, chi_kde_track.
 
 score(): per-star, sky-conditional likelihood of stream members given model particles (fitting campaign; design reviewed with Codex,
-docs/codex_track_objective_2026-10-09.md; cf. Erkal+2019 per-star likelihood).
+docs/reviews/codex_track_objective_2026-10-09.md; cf. Erkal+2019 per-star likelihood).
 
 For each member i at (l_i, b_i) and model trailing-arm particles j:
   sky:   p(l_i | b_i)         = sum_j K(b_i-b_j; h_b) N(l_i | l_j, h_l^2) / sum_j K(b_i-b_j; h_b)
@@ -232,7 +232,7 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
                       age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400,
                       return_components=False):
     """Conditional likelihood of members given model particles, density-free along the observed along-stream coordinate u
-    (design reviewed with Codex: docs/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
+    (design reviewed with Codex: docs/reviews/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
     >= nmin particles), equal prior weight 1/K; in bin k a product-Gaussian KDE with FIXED bandwidths (same for every model):
       f_k(u, w) = mean_j N(u - U_j; h_u) N(x - X_j; h_x) N_2(mu - MU_j; H + C_i) [N(v - V_j; hv^2 + e_v^2) if v measured]
       f_k^u(u)  = mean_j N(u - U_j; h_u)

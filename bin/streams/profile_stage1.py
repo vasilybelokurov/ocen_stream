@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Profile-likelihood stage 1 (docs/codex_profile_likelihood_plan_2026-10-10.md): broad space-filling search at fixed bar angle.
+"""Profile-likelihood stage 1 (docs/reviews/codex_profile_likelihood_plan_2026-10-10.md): broad space-filling search at fixed bar angle.
 For each angle (28, 16 deg): 40 scrambled-Sobol points in
   Omega_b 30-40 km/s/kpc, amp 0.8-1.6, bar size 0.9-1.4, omega Cen d 5.3-5.9 kpc, pmra/pmdec catalogue +- 3 sigma (0.027 mas/yr),
 subject to the bar ending inside corotation: size x 5.0 kpc <= R_CR(Omega_b) of the axisymmetric host (R_bar0 = 5.0 kpc is the

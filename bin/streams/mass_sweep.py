@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Host-mass sweep at the W model (28 deg, bar size 1.15, Omega_b 36, amp 1.2, catalogue PMs, d 5.6, baumgardt frame), 4x
-particles, seeds 1-3 (docs/codex_frame_decomp_next_2026-10-10.md).
+particles, seeds 1-3 (docs/reviews/codex_frame_decomp_next_2026-10-10.md).
   H  halo-only: axisymmetric part = mw_variants.axisymmetric_variant(vc_target) for v_c(R0) = 220, 225, 228.8 (reference), 235,
      240 km/s; baryons and bar term unchanged (so the bar's share of the force changes)           -- 15 sprays;
   S  whole host x mass_scale = (v_c/vc0)^2 for v_c = 220, 225, 235, 240 (bar share unchanged; reference = H at vc0) -- 12 sprays.
