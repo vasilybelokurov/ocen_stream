@@ -105,7 +105,7 @@ interpreting it as an explanation for the angle preference.
 ## First numerical findings
 
 The exploratory local searches were stopped after 19 evaluations at 16
-degrees and 27 at 28, when an independent 8,000-epoch seed shift exceeded
+degrees and 28 at 28, when an independent 8,000-epoch seed shift exceeded
 the residual angle gap. They are **not converged profile maxima**. Their
 checkpoints and every evaluated spray remain available. Three independent
 32,000-epoch sprays (seeds 4, 5, 6) were run for each selected candidate and
@@ -170,3 +170,40 @@ This addresses a question the earlier axisymmetric backtrack could not:
 whether the measured PM/RV combinations can originate near the cluster
 in the model that is actually being fitted, rather than whether another
 optimizer can improve an uncalibrated scalar score.
+
+Completed: 29 RV stars plus 29 sky-matched model controls at each angle.
+For phi1<17, the median nominal encounter diagnostic is 0.80 for the data
+at either angle, versus 1.05/0.99 for model controls. For the 13 knee RV
+stars, data medians are 1.99/1.86 at 16/28 degrees, versus 1.11/1.13 for
+controls. Selecting the best of four small observational-error draws gives
+1.96/1.76 for the knee data. Some distal stars have relative velocities of
+several release-velocity scales even at their best encounter.
+
+This identifies a physical mismatch in the tested recent fixed-potential
+models beyond the scoring choice. It does not exclude ancestry: the distance
+grid is coarse, error sampling is sparse, only two cluster states/bar
+histories are tested, and the encounter metric is not a release likelihood.
+
+## Escape-law pilot
+
+The current Fardal/Gala release has zero relative radial motion. Its
+implementation matches the local AGAMA tutorial, so this is not a sign or
+transcription bug. [Chen et al. 2024](https://arxiv.org/html/2408.01496v2)
+provide a calibrated alternative with radial escape motion, correlated
+escape radius/direction, and integration in the progenitor potential.
+The code uses their five-dimensional Gaussian prescription and the actual
+spherical satellite escape speed. This is a controlled alternative;
+Chen's tests do not certify it for Omega Cen's massive, central, barred orbit.
+
+`src/ocen_dm/streams/escape.py` implements the new prescription. The
+Fardal default is bitwise identical to the committed reference; Chen
+isolated escape energies close to zero to 2.8e-15 relative precision, and
+sample moments/correlation agree with the stated parameters. Spin is not
+silently added to the new calibrated prescription.
+
+`bin/streams/compare_escape_recipes.py` makes a paired comparison of release
+law and launch-arm selection. Both launch arms can contribute positive
+Gibbons chi after integration, so filtering on the initial outer-arm label
+is an additional assumption. The four pilot cases isolate these effects;
+the old default is preserved. All bar/cluster parameters and likelihood
+kernels stay fixed; new-case metadata and source hashes are recorded.

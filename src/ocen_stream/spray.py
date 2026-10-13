@@ -39,12 +39,19 @@ def rj_vj_R(host, orbit, times, m_of_r, n_iter=30):
     return rj, Om*rj, R
 
 
-def release_ic(orbit, rj, vj, R, rng, spin=None):
+def release_ic(orbit, rj, vj, R, rng, spin=None, escape_recipe="fardal", escape_speed=None):
     """Fardal+15 (gala-modified) initial conditions, interleaved (trailing, leading) per release point.
     spin (optional, our extension, not part of Fardal+15): dict(r_kpc, vrot_kms, s) = the cluster's mean rotation profile
     v_rot(r) about the unit spin vector s (model frame, fixed in the Galactic frame), measured with e_phi = s x x / |s x x|
     (bin/streams/spin_vrot_profile.py). Each released particle gets + v_rot(r_J) e_phi(x_offset): the mean streaming velocity
     of the cluster at its tidal radius, in the rotation direction at the release point."""
+    if escape_recipe == "chen24":
+        if escape_speed is None or spin is not None:
+            raise ValueError("Chen release requires escape_speed and currently supports no extra spin")
+        from .escape import chen_release_ic
+        return chen_release_ic(orbit, rj, R, rng, escape_speed)
+    if escape_recipe != "fardal":
+        raise ValueError("Unknown escape recipe")
     N = len(rj)
     s = np.tile([1., -1.], N)
     rj2, vj2, R2 = np.repeat(rj, 2)*s, np.repeat(vj, 2)*s, np.repeat(R, 2, axis=0)
@@ -94,7 +101,7 @@ def spray(host, today, T, r_kpc, M_enc, n_release=2000, t_release=None, seed=1, 
 
 
 def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, accuracy=1e-8, spin=None, arm_only=None,
-                    max_age_myr=None, with_psi=True):
+                    max_age_myr=None, with_psi=True, escape_recipe="fardal"):
     """Spray (as spray(), progenitor gravity included) with per-particle trajectories, returning stream-ordering coordinates:
       chi [kpc Myr]: Gibbons+2014 phase, integral over release->today of (|r| - |r_prog|) dt (their Eq. 3 sums over equal
             time steps; this is the time-weighted continuous form; > 0 trailing, < 0 leading);
@@ -106,7 +113,8 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     arm_only (+1 / -1) and max_age_myr: integrate and return only particles of that arm and/or released less than max_age_myr
     ago. All initial conditions are drawn first and then subset, and particles are independent (no mutual gravity), so the
     kept particles are bit-identical to the same particles of the full run (tests/test_spray_subset.py).
-    with_psi=False skips psi (returned as zeros); chi and everything else are unchanged."""
+    with_psi=False skips psi (returned as zeros); chi and everything else are unchanged.
+    escape_recipe='chen24' replaces Fardal offsets by Chen+2024, using the actual satellite escape speed. Default unchanged."""
     agama = agama_kpc()
     rng = np.random.default_rng(seed)
     _, back = agama.orbit(potential=host, ic=today, timestart=T, time=-T, trajsize=2, accuracy=1e-12)
@@ -117,7 +125,12 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     orbit_r = np.array([np.interp(tr, tc, orb[:, i]) for i in range(6)]).T
     m_of_r = lambda rr: np.interp(np.log(rr), np.log(r_kpc), M_enc)
     rj, vj, R = rj_vj_R(host, orbit_r, tr, m_of_r)
-    ic, arm = release_ic(orbit_r, rj, vj, R, rng, spin=spin)
+    if escape_recipe == "chen24":
+        sat = satellite_potential(np.zeros((0, 3)), np.zeros(0), core=FrozenCore(r_kpc, M_enc))
+        escape_speed = lambda rr: np.sqrt(-2 * sat.potential(np.column_stack((rr, rr*0, rr*0))))
+    else:
+        escape_speed = None
+    ic, arm = release_ic(orbit_r, rj, vj, R, rng, spin=spin, escape_recipe=escape_recipe, escape_speed=escape_speed)
     t0 = np.repeat(tr, 2)
     keep = np.ones(len(ic), bool)
     if arm_only is not None:
@@ -125,7 +138,8 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     if max_age_myr is not None:
         keep &= (T-t0)*AGAMA_T_MYR < max_age_myr
     ic, arm, t0 = ic[keep], arm[keep], t0[keep]
-    sat = satellite_potential(np.zeros((0, 3)), np.zeros(0), core=FrozenCore(r_kpc, M_enc))
+    if escape_recipe != "chen24":
+        sat = satellite_potential(np.zeros((0, 3)), np.zeros(0), core=FrozenCore(r_kpc, M_enc))
     total = agama.Potential(host, agama.Potential(potential=sat, center=np.column_stack((tc, orb))))
     res = agama.orbit(potential=total, ic=ic, timestart=t0, time=T-t0, trajsize=ntraj, accuracy=accuracy, verbose=False)
     # orbital-plane basis from the progenitor's present angular momentum
