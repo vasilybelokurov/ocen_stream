@@ -37,16 +37,24 @@ def main():
     ap.add_argument("--angle", type=int, required=True, choices=(16, 28))
     ap.add_argument("--label", default="bar_profile_refinement_20261013")
     ap.add_argument("--back-myr", type=float, default=700.)
+    ap.add_argument("--eta", type=float, default=0., help="dimensionless bar deceleration, using the existing host prescription")
+    ap.add_argument("--catalogue-state", action="store_true", help="use D=5.43 and catalogue PMs instead of the fitted cluster state")
     ap.add_argument("--draws", type=int, default=4)
     ap.add_argument("--distance-step", type=float, default=.05)
     a = ap.parse_args()
     directory = ROOT / "results/plot_data" / a.label
-    output = directory / f"barred_backtrack_an{a.angle}.json"
+    suffix = (f"_b{a.back_myr:g}" if a.back_myr != 700 else "") + (f"_eta{a.eta:g}" if a.eta else "") + ("_catalogue" if a.catalogue_state else "")
+    output = directory / f"barred_backtrack_an{a.angle}{suffix}.json"
     if output.exists():
         raise FileExistsError(output)
     fit = json.loads((directory / f"fit_an{a.angle}.json").read_text())
-    p = fit["best"]
-    host = host_potential("x", bar_omega=p["omega"], bar_angle_deg=a.angle, bar_amp=p["amp"], bar_size=p["size"], t_today=T)
+    p = dict(fit["best"])
+    if a.catalogue_state:
+        p.update(dist=5.43, pmra=OCEN_OBS["pmra"], pmdec=OCEN_OBS["pmdec"])
+    hk = dict(bar_size=p["size"])
+    if a.eta:
+        hk["bar_eta"] = a.eta
+    host = host_potential("x", bar_omega=p["omega"], bar_angle_deg=a.angle, bar_amp=p["amp"], t_today=T, **hk)
     ag = agama_kpc()
     today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], p["dist"], p["pmra"], p["pmdec"], OCEN_OBS["vlos"])[0]
     n_fine = int(round(a.back_myr / .05)) + 1
@@ -61,7 +69,18 @@ def main():
     data_sky = coord.SkyCoord(l=d["l"] * u.deg, b=d["b"] * u.deg, frame="galactic").icrs
     rv_indices = np.where(np.isfinite(d["v"]) & np.isfinite(d["e_v"]))[0]
     # Reference particles are chosen only by proximity on the sky, never by PM/RV.
-    m = dict(np.load(ROOT / f"results/streams/{a.label}/heldout_an{a.angle}_refined_n32000_s4.npz"))
+    if not a.eta and not a.catalogue_state:
+        control_file = ROOT / f"results/streams/{a.label}/heldout_an{a.angle}_refined_n32000_s4.npz"
+        m = dict(np.load(control_file))
+    else:
+        from grid4_common import make_spray
+        control_file = ROOT / f"results/streams/{a.label}/backtrack_control_an{a.angle}{suffix}.npz"
+        if control_file.exists():
+            m = dict(np.load(control_file))
+        else:
+            m = make_spray(p["omega"], a.angle, p["amp"], p["dist"], nrel=8000, seed=4,
+                           pm=(p["pmra"], p["pmdec"]), host_kw=hk, max_age_myr=700.)
+            np.savez_compressed(control_file, **m)
     mu, mx = project_gc(m["l"], m["b"], GC)
     keep = (m["chi"] > 0) & (m["age"] < a.back_myr)
     candidates = np.where(keep)[0]
@@ -71,7 +90,7 @@ def main():
     payload = dict(args=vars(a), cluster_parameters={k: p[k] for k in ("omega", "amp", "size", "dist", "pmra", "pmdec")},
                    diagnostic="min sqrt[(r/(2 rJ))^2+(dv/(2 Omega rJ))^2]; not a likelihood",
                    distances=distances.tolist(), back_myr=a.back_myr, sample_step_myr=.5,
-                   error_draw_seed=20261013, rows=rows)
+                   error_draw_seed=20261013, control_file=str(control_file.relative_to(ROOT)), rows=rows)
     rng = np.random.default_rng(20261013)
 
     def backtrack(ra, dec, pmra, pmdec, velocity):

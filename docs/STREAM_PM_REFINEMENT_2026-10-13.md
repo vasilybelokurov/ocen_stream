@@ -207,3 +207,19 @@ Gibbons chi after integration, so filtering on the initial outer-arm label
 is an additional assumption. The four pilot cases isolate these effects;
 the old default is preserved. All bar/cluster parameters and likelihood
 kernels stay fixed; new-case metadata and source hashes are recorded.
+
+The fixed-state, seed-4 pilot does not fix the mismatch. At 28 degrees,
+Fardal -> Chen increases the sky-conditioned PM-ridge RMS from 1.44 to
+1.51 mas/yr and lowers ln L by 465. Including both launch arms adds about
+200 positive-chi particles to Fardal (~4%) and only 50 to Chen; its score
+changes are small and its PM shifts do not resolve the residual. The
+outer-arm subset from the both-arm Fardal run matches the default in every
+saved observable and chi/age array exactly. These are tests at frozen
+Fardal-fitted states, not a rejection of every refitted Chen model.
+
+Next connection controls: extend the backward interval to 2 Gyr while
+retaining the same present state/potential. The 700 Myr foreground cut is
+a modelling assumption, not an age measurement for the mismatched knee.
+If needed, the script also supports the existing slowing-bar prescription
+and the actual catalogue cluster state, with independently generated model
+controls. These are distinct tests, not a change to the active likelihood.
