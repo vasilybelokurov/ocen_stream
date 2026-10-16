@@ -38,6 +38,7 @@ if FREE_ANGLE:   # user decision 2026-10-09: soft prior N(27, 2) deg (Wegg & Ger
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--maxfev", type=int, default=45); ap.add_argument("--free-angle", action="store_true")
+    ap.add_argument("--conditional", action="store_true")
     a = ap.parse_args()
     d = load_data()
     prof = json.loads((ROOT/"results/nbody/A_nodm/model_profiles.json").read_text()); r_kpc, M = np.array(prof["r_pc"])/1e3, np.array(prof["enclosed"]["total"])
