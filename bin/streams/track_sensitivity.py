@@ -20,8 +20,12 @@ bar parameters. Reported: chi2 = r^T C^-1 r before and after (overall and per se
 24-28), the fraction of chi2 removed, dtheta; with and without phi_b. Linearised: dtheta outside the step range is a
 direction, not a prediction.
 
+Check of the linearisation (``verify``): sprays at theta0 + dtheta (measurement-prior solution; angle fixed and angle
+free), seeds 4-6, scored with the same C; chi2 compared with the linear prediction.
+
 Usage: OMP_NUM_THREADS=1 PYTHONPATH=src python bin/streams/track_sensitivity.py run --workers 8
        PYTHONPATH=src python bin/streams/track_sensitivity.py analyse
+       OMP_NUM_THREADS=1 PYTHONPATH=src python bin/streams/track_sensitivity.py verify --workers 8
 Output: results/plot_data/track_sensitivity_20261016.json (tracks per spray, analysis), plots/track_sensitivity_20261016.png
 """
 from __future__ import annotations
@@ -188,6 +192,43 @@ def analyse(args):
             print("   components:", {k: (round(v["chi2_before"]), round(v["chi2_after_prior"]), round(v["chi2_after_free"])) for k, v in a["components"].items()})
 
 
+def verify(args):
+    rec = json.loads(OUT.read_text())
+    an = rec["analysis"]
+    jobs = []
+    for name, o in an["points"].items():
+        for key in ("fixed_angle", "with_angle"):
+            p = dict(o["params"])
+            for q, v in zip(o[key]["parameters"], o[key]["dtheta_prior"]):
+                p[q] = p[q]+v
+            for seed in SEEDS:
+                jobs.append((name, key, p, seed))
+    print(f"{len(jobs)} verification sprays on {args.workers} workers", flush=True)
+    with Pool(args.workers) as pool:
+        res = list(pool.imap_unordered(task, jobs))
+    m_obs = np.array(an["observed"]); out = {}
+    for name, o in an["points"].items():
+        ok = np.array(o["fixed_angle"]["ok_index"]); sig = np.array(o["sigma"])
+        w = 1/sig[ok]**2
+        for key in ("fixed_angle", "with_angle"):
+            rows = [r for r in res if r["point"] == name and r["label"] == key]
+            mods = np.array([vec(r["tracks"]) for r in rows])
+            m = np.nanmean(mods, axis=0)
+            rr = (m_obs-m)[ok]
+            good = np.isfinite(rr)
+            chi2 = float(np.sum((w*rr**2)[good]))
+            centre = np.tile(0.5*(EDGES[:-1]+EDGES[1:]), 3)[ok]
+            seg = {f"{a}-{b}": float(np.sum((w*rr**2)[good & (centre >= a) & (centre < b)])) for a, b in SEGMENTS}
+            out[f"{name}/{key}"] = dict(params=rows[0]["params"], chi2_actual=chi2, n_used=int(good.sum()), n_expected=int(len(ok)),
+                                         chi2_linear=o[key]["chi2_after_prior"], chi2_before=o[key]["chi2_before"], segments=seg,
+                                         track=m.tolist())
+            print(f"{name} {key}: chi2 before {o[key]['chi2_before']:.0f}, linear prediction {o[key]['chi2_after_prior']:.0f}, "
+                  f"actual {chi2:.0f} ({good.sum()}/{len(ok)} comps); segments {dict((k, round(v)) for k, v in seg.items())}; "
+                  + ", ".join(f"{q} {rows[0]['params'][q]:.3f}" for q in NAMES), flush=True)
+    rec["verify"] = out
+    OUT.write_text(json.dumps(rec, indent=1))
+
+
 def plot(rec):
     import matplotlib
     matplotlib.use("Agg")
@@ -224,11 +265,11 @@ def plot(rec):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("action", choices=("run", "analyse"))
+    ap.add_argument("action", choices=("run", "analyse", "verify"))
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--only-time", action="store_true")
     args = ap.parse_args()
-    run(args) if args.action == "run" else analyse(args)
+    dict(run=run, analyse=analyse, verify=verify)[args.action](args)
 
 
 if __name__ == "__main__":
