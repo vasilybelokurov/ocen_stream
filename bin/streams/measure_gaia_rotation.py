@@ -5,12 +5,13 @@ Selection: within 0.6 deg of (201.69683, -47.47958), ruwe < 1.3, PM errors < 0.1
 component. PMs relative to the sample median. Pull cached in results/plot_data/gaia_dr3_ocen_rotation_pull.npz.
 Usage: python bin/streams/measure_gaia_rotation.py  -> results/plot_data/gaia_dr3_ocen_rotation.json
 """
-import json
+import json, sys
 from pathlib import Path
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[2]
-RA0, DE0 = 201.69683, -47.47958
+ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
+from ocen_dm.cluster import OCEN_DEC, OCEN_RA  # noqa: E402
+RA0, DE0 = OCEN_RA, OCEN_DEC
 EDGES = [3, 6, 10, 15, 25, 36]
 
 

@@ -7,7 +7,7 @@ reference stars with G + dm < G_lim (G_lim = 20, the catalogue's hard limit) -- 
 (50 resamples of the bin; docstring corrected 2026-10-10). Distance ratio d/d_ref = 10^(dm/5). CMD window: 0.55 < BP-RP < 1.3, 15.5 < G < 20.
 Usage: python bin/streams/stream54_cmd_distance.py  -> plots/stream54_cmd_distance.png, results/plot_data/stream54_cmd_distance.json
 """
-import json, os
+import json, os, sys
 from pathlib import Path
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
@@ -24,7 +24,8 @@ def gaussian_kde(data, bw_method):
     f = RegularGridInterpolator((cg, gg), z, bounds_error=False, fill_value=0.)
     return lambda x: f(np.asarray(x).T)
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
+from ocen_dm.cluster import OCEN_DISTANCE_KPC  # noqa: E402
 GLIM, CW, GW = 20.0, (0.55, 1.3), (15.5, 20.0)
 BINS = [(20, 25), (25, 30), (30, 33), (33, 36), (36, 39), (39, 42)]
 DM = np.arange(-1.5, 1.01, 0.02)
@@ -69,8 +70,8 @@ def main():
         boots = np.array([fit(ref, C[k][s], G[k][s], kde) for s in (rng.integers(0, k.sum(), k.sum()) for _ in range(50))])
         e, ec = float(np.std(boots[:, 0])), float(np.std(boots[:, 1])); ratio = 10**(dm/5)
         out["bins"].append(dict(b=[lo, hi], n=int(k.sum()), dm=float(dm), dm_err=e, dc=float(dc), dc_err=ec, dm_magonly=float(dm0), d_ratio=float(ratio),
-                                d_kpc_if_ref_5p43=float(5.43*ratio)))
-        print(f"b {lo}-{hi}: N = {k.sum():4d}  joint dm = {dm:+.2f} +- {e:.2f}, dc = {dc:+.3f} +- {ec:.3f}  (mag-only dm {dm0:+.2f})  d/d_ref = {ratio:.2f}  (d = {5.43*ratio:.2f} kpc if ref at 5.43)")
+                                d_kpc_if_ref_5p43=float(OCEN_DISTANCE_KPC*ratio)))
+        print(f"b {lo}-{hi}: N = {k.sum():4d}  joint dm = {dm:+.2f} +- {e:.2f}, dc = {dc:+.3f} +- {ec:.3f}  (mag-only dm {dm0:+.2f})  d/d_ref = {ratio:.2f}  (d = {OCEN_DISTANCE_KPC*ratio:.2f} kpc if ref at 5.43)")
         a = ax[j+1]; a.plot(C[r]+dc, G[r]+dm, ".", ms=2, color="0.75", label=f"ref shifted dm {dm:+.2f}, dc {dc:+.2f}")
         a.plot(C[k], G[k], ".", ms=3, color="C3", label=f"b {lo}-{hi} (N={k.sum()})"); a.legend(fontsize=7, loc="upper left")
     for a in ax:

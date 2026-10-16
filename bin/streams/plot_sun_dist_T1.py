@@ -4,6 +4,7 @@
 import json
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from grid4_common import ROOT, d, du
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 
 R = [r for r in json.loads((ROOT/"results/plot_data/sun_dist_bar_grids.json").read_text()) if r["test"] == "T1"]
 cen = np.array(R[0]["phi1"]); edges = np.append(cen-1, cen[-1]+1); ib = np.digitize(du, edges)-1; rng = np.random.default_rng(0)
@@ -19,7 +20,7 @@ for col, mod in enumerate(("W", "R16")):
             if r["model"] != mod:
                 continue
             y = np.array([np.nan if v is None else v for v in r["med"][q]])
-            a.plot(cen, y, ls="-" if r["frame"] == "baumgardt" else "--", color={5.43: "C0", 5.6: "C1", 5.8: "C2"}[r["dist"]],
+            a.plot(cen, y, ls="-" if r["frame"] == "baumgardt" else "--", color={OCEN_DISTANCE_KPC: "C0", 5.6: "C1", 5.8: "C2"}[r["dist"]],
                    label=f"{r['frame']} d={r['dist']:g}  lnL {r['lnL']:.0f}")
         a.set_ylabel(f"{q} [mas/yr]"); a.set_title(f"{mod}: " + ("28 deg, size 1.15, Om 36, amp 1.2" if mod == "W" else "16 deg, Om 34.5, amp 1.4"))
         a.grid(alpha=.3)

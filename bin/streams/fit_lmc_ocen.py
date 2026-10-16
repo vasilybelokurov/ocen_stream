@@ -10,6 +10,7 @@ Usage: OMP_NUM_THREADS=1 PYTHONPATH=src python bin/streams/fit_lmc_ocen.py --mas
 import argparse, json, time, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 import numpy as np
 from scipy.optimize import minimize
 from grid4_common import ROOT, make_spray, score, OCEN_OBS
@@ -20,7 +21,7 @@ ap.add_argument("--an", type=float, default=16.); ap.add_argument("--om", type=f
 ap.add_argument("--size", type=float, default=1.0); ap.add_argument("--amp", type=float, default=1.2); ap.add_argument("--seed", type=int, default=1)
 a = ap.parse_args()
 NAMES = ("d", "pmra", "pmdec")
-PRIOR = dict(d=(5.43, 0.15), pmra=(OCEN_OBS["pmra"], 0.027), pmdec=(OCEN_OBS["pmdec"], 0.027))
+PRIOR = dict(d=(OCEN_DISTANCE_KPC, 0.15), pmra=(OCEN_OBS["pmra"], 0.027), pmdec=(OCEN_OBS["pmdec"], 0.027))
 BOUNDS = dict(d=(5.0, 5.9), pmra=(OCEN_OBS["pmra"]-0.15, OCEN_OBS["pmra"]+0.15), pmdec=(OCEN_OBS["pmdec"]-0.15, OCEN_OBS["pmdec"]+0.15))
 SCALE = np.array([0.05, 0.02, 0.02])     # simplex step scale (as fit_bar_ocen.py)
 hk = dict(bar_size=a.size, **(dict(lmc=dict(mass=a.mass)) if a.mass > 0 else {}))

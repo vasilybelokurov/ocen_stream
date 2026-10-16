@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 
 d = load_data()
 cmd = json.loads((ROOT/"results/plot_data/stream54_cmd_distance.json").read_text())["bins"]
@@ -60,8 +61,8 @@ for tag in [x for x in sys.argv[1:] if not x.startswith("--")]:
             if yq in ("vlos",):
                 hv = np.isfinite(d["v"]); a.errorbar(d["b"][hv], d["v"][hv], yerr=d["e_v"][hv], fmt="o", color="C3", mfc="w", ms=5, lw=0.8)
             elif yq == "d":
-                a.errorbar([17.5]+[0.5*(c_["b"][0]+c_["b"][1]) for c_ in cmd], [5.43]+[5.43*c_["d_ratio"] for c_ in cmd],
-                           yerr=[0]+[5.43*c_["d_ratio"]*np.log(10)/5*c_["dm_err"] for c_ in cmd], fmt="s", color="C3", mfc="w", ms=6)
+                a.errorbar([17.5]+[0.5*(c_["b"][0]+c_["b"][1]) for c_ in cmd], [OCEN_DISTANCE_KPC]+[OCEN_DISTANCE_KPC*c_["d_ratio"] for c_ in cmd],
+                           yerr=[0]+[OCEN_DISTANCE_KPC*c_["d_ratio"]*np.log(10)/5*c_["dm_err"] for c_ in cmd], fmt="s", color="C3", mfc="w", ms=6)
             else:
                 a.plot(d[xq], d[yq], ".", color="0.35" if CONT else "C3", ms=1.5 if CONT else 1.2, alpha=0.6 if CONT else 0.5, zorder=1)
             if CONT:

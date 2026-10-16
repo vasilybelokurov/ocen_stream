@@ -27,6 +27,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from grid4_common import OCEN_OBS, make_spray, score
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 from ocen_dm.streams.restricted import HUNTER24_DIR, agama_kpc
 
 NAMES = ("omega", "amp", "size", "dist", "pmra", "pmdec")
@@ -48,7 +49,7 @@ def coordinates(row):
 
 
 def measurement_term(x, distance_sigma):
-    return float(-.5 * (((x[3] - 5.43) / distance_sigma)**2
+    return float(-.5 * (((x[3] - OCEN_DISTANCE_KPC) / distance_sigma)**2
                         + ((x[4] - OCEN_OBS["pmra"]) / .027)**2
                         + ((x[5] - OCEN_OBS["pmdec"]) / .027)**2))
 
@@ -81,7 +82,7 @@ def fit(args):
     payload = dict(args=vars(args), names=NAMES, bounds=[LOW.tolist(), HIGH.tolist()],
                    parameter_offset=OFFSET.tolist(), parameter_scale=SCALE.tolist(),
                    score="grid4_common.score / unchanged score_conditional",
-                   distance_measurement=[5.43, args.distance_sigma], pm_sigma=.027,
+                   distance_measurement=[OCEN_DISTANCE_KPC, args.distance_sigma], pm_sigma=.027,
                    nrel=args.nrel, seed=args.seed, log=log)
 
     def objective(y, stage="local"):

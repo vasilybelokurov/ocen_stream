@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/str
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
 sys.path.insert(0, str(ROOT/'src'))
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 from ocen_dm.streams.score import chi_kde_track
 
 d = load_data()
@@ -43,8 +44,8 @@ for tag in [a for a in sys.argv[1:] if not a.startswith("--")]:
         if q == "vlos":
             hv = np.isfinite(d["v"]); a.errorbar(d["b"][hv], d["v"][hv], yerr=d["e_v"][hv], fmt="o", color="k", mfc="w", ms=6, label="members with v_los")
         if q == "d":
-            a.errorbar([17.5]+[0.5*(c["b"][0]+c["b"][1]) for c in cmd], [5.43]+[5.43*c["d_ratio"] for c in cmd],
-                       yerr=[0]+[5.43*c["d_ratio"]*np.log(10)/5*c["dm_err"] for c in cmd], fmt="s", color="k", mfc="w", ms=7,
+            a.errorbar([17.5]+[0.5*(c["b"][0]+c["b"][1]) for c in cmd], [OCEN_DISTANCE_KPC]+[OCEN_DISTANCE_KPC*c["d_ratio"] for c in cmd],
+                       yerr=[0]+[OCEN_DISTANCE_KPC*c["d_ratio"]*np.log(10)/5*c["dm_err"] for c in cmd], fmt="s", color="k", mfc="w", ms=7,
                        label="CMD-shift distance (ref 5.43 at b 15-20)")
         a.plot(T["b"], T[q], "r.-", lw=2, ms=6, zorder=5, label="model track (chi <= 105)" + (": KDE mode per chi bin" if KDE else ": medians per chi bin"))
         a.set_xlim(10, 45); a.set_ylim(*yl); a.set_xlabel("b [deg]"); a.set_ylabel(lab); a.legend(fontsize=7)

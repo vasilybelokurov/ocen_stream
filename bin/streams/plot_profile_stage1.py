@@ -7,6 +7,7 @@ Usage: python bin/streams/plot_profile_stage1.py"""
 import json
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from grid4_common import ROOT, project_gc, GC, du, dx, d
+from ocen_dm.cluster import MU_SYS, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC
 
 R = json.loads((ROOT/"results/plot_data/profile_stage1.json").read_text())
 P = {a: [r for r in R if r["an"] == a] for a in (28., 16.)}
@@ -18,9 +19,10 @@ for a, (k, lab) in zip(ax.flat, labs.items()):
         a.errorbar(x, y, e, fmt="o", color=c, ms=4, alpha=.8, label=f"{an:g} deg")
     a.set_xlabel(lab); a.set_ylim(ymax-3500, ymax+300); a.grid(alpha=.3)
     if k == "dist":
-        a.axvspan(5.38, 5.48, color="g", alpha=.15, label="catalogue 5.43+-0.05")
+        a.axvspan(OCEN_DISTANCE_KPC-OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC+OCEN_DISTANCE_ERR_KPC, color="g", alpha=.15,
+                   label=f"catalogue {OCEN_DISTANCE_KPC}+-{OCEN_DISTANCE_ERR_KPC}")
     if k in ("pmra", "pmdec"):
-        a.axvline(-3.2499 if k == "pmra" else -6.7461, color="g", ls="--")
+        a.axvline(MU_SYS[0] if k == "pmra" else MU_SYS[1], color="g", ls="--")
 for a in ax[:, 0]:
     a.set_ylabel("lnL (mean of 3 seeds)")
 ax[0, 0].legend(fontsize=8); ax[1, 0].legend(fontsize=8); fig.suptitle("Profile stage 1: 40 shared nuisance points, 1x particles")

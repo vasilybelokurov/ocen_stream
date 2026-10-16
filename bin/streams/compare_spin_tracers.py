@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data, w
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 from ocen_dm.streams.frames import observables
 from ocen_dm.streams.path import project_gc
 
@@ -37,8 +38,8 @@ for a, (xq, yq, xr, yr) in zip(ax, PANELS):
     if yq == "vlos":
         hv = np.isfinite(d["v"]); a.errorbar(d["b"][hv], d["v"][hv], yerr=d["e_v"][hv], fmt="o", color="k", mfc="w", ms=5, lw=0.8, zorder=5)
     elif yq == "d":
-        a.errorbar([17.5]+[0.5*(c_["b"][0]+c_["b"][1]) for c_ in cmd], [5.43]+[5.43*c_["d_ratio"] for c_ in cmd],
-                   yerr=[0]+[5.43*c_["d_ratio"]*np.log(10)/5*c_["dm_err"] for c_ in cmd], fmt="s", color="k", mfc="w", ms=6, zorder=5)
+        a.errorbar([17.5]+[0.5*(c_["b"][0]+c_["b"][1]) for c_ in cmd], [OCEN_DISTANCE_KPC]+[OCEN_DISTANCE_KPC*c_["d_ratio"] for c_ in cmd],
+                   yerr=[0]+[OCEN_DISTANCE_KPC*c_["d_ratio"]*np.log(10)/5*c_["dm_err"] for c_ in cmd], fmt="s", color="k", mfc="w", ms=6, zorder=5)
     else:
         a.plot(d[xq], d[yq], ".", color="0.5", ms=1.2, alpha=0.5, zorder=1)
     for r, col in zip(runs, ("C0", "C3")):            # tracers are few (~450 in the footprint): points, not density contours

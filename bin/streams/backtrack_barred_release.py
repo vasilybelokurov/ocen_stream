@@ -26,6 +26,7 @@ import astropy.units as u
 import numpy as np
 
 from grid4_common import T, d, du, dx, GC, project_gc, r_kpc, M
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 from ocen_dm.streams.frames import OCEN_OBS, to_model
 from ocen_dm.streams.restricted import AGAMA_T_MYR, FrozenCore, agama_kpc, host_potential, satellite_potential
 from ocen_dm.streams.spray import rj_vj_R
@@ -50,7 +51,7 @@ def main():
     fit = json.loads((directory / f"fit_an{a.angle}.json").read_text())
     p = dict(fit["best"])
     if a.catalogue_state:
-        p.update(dist=5.43, pmra=OCEN_OBS["pmra"], pmdec=OCEN_OBS["pmdec"])
+        p.update(dist=OCEN_DISTANCE_KPC, pmra=OCEN_OBS["pmra"], pmdec=OCEN_OBS["pmdec"])
     hk = dict(bar_size=p["size"])
     if a.eta:
         hk["bar_eta"] = a.eta

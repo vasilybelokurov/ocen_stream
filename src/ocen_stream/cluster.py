@@ -1,4 +1,26 @@
-"""The cluster's centre and systemic motion: one definition, derived from the data.
+"""The cluster's position, motion and distance: the single reference for the whole repository.
+
+Every other module and script imports these values; typing any of them anywhere else is
+forbidden and caught by ``tests/test_cluster_centre.py::test_no_cluster_reference_value_is_typed_in``
+(results of our own fits, e.g. stream best-fit PMs, are not reference values and are unaffected).
+
+Adopted set (2026-10-16), matching the choices of the oMEGACat papers, all peer-reviewed:
+
+* **Centre**: oMEGACat / Anderson & van der Marel (2010, ApJ 710, 1032; 2010ApJ...710.1032A),
+  recovered from the catalogue by :func:`centre` (see below).
+* **Systemic proper motion**: Vasiliev & Baumgardt (2021, MNRAS 505, 5978; 2021MNRAS.505.5978V),
+  Table A1 (VizieR J/MNRAS/505/5978): (-3.250, -6.746) +- 0.022 mas/yr, correlation 0.01. Used by
+  oMEGACat I. The value previously here, (-3.257, -6.730), was labelled VB21 but matches no source.
+* **Systemic line-of-sight velocity**: Baumgardt & Hilker (2018, MNRAS 478, 1520;
+  2018MNRAS.478.1520B), table 2: 232.7 +- 0.2 km/s (5096 stars). Used by oMEGACat I.
+* **Distance**: Baumgardt & Vasiliev (2021, MNRAS 505, 5957; 2021MNRAS.505.5957B):
+  5.43 +- 0.05 kpc. Used by oMEGACat I and II. A default only; the DF fits keep it free.
+
+Alternatives on record, not adopted: oMEGACat I MUSE systemic velocity 232.99 +- 0.06 km/s
+(Nitschai et al. 2023, central field); oMEGACat VI kinematic distance 5.494 +- 0.061 kpc
+(Haeberle et al. 2025); Baumgardt's undated website orbit table PM (-3.236, -6.731) +- 0.011.
+
+The centre: one definition, derived from the data.
 
 Until 2026-09-19 the centre was hard-coded in four separate modules as
 ``(201.696833, -47.476583)`` with the comment "Baumgardt catalogue centre". That declination
@@ -26,15 +48,33 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["OCEN_RA", "OCEN_DEC", "OCEN_VSYS_KMS", "MU_SYS", "centre"]
+__all__ = ["OCEN_RA", "OCEN_DEC", "OCEN_VSYS_KMS", "OCEN_VSYS_ERR_KMS", "MU_SYS", "MU_SYS_ERR", "MU_SYS_CORR",
+           "OCEN_DISTANCE_KPC", "OCEN_DISTANCE_ERR_KPC", "OCEN_DISTANCE_OMEGACAT_KPC", "galactic", "centre"]
 
 #: adopted centre (deg), = ``centre("omegacat")``; verified by ``tests/test_cluster_centre.py``
 OCEN_RA = 201.69683333
 OCEN_DEC = -47.47956944
-#: systemic line-of-sight velocity, km/s
+#: systemic line-of-sight velocity and its error (km/s), Baumgardt & Hilker 2018
 OCEN_VSYS_KMS = 232.7
-#: systemic proper motion (mas/yr), Vasiliev & Baumgardt 2021
-MU_SYS = (-3.257, -6.730)
+OCEN_VSYS_ERR_KMS = 0.2
+#: systemic proper motion (pmra*, pmdec), error per component and correlation (mas/yr), Vasiliev & Baumgardt 2021
+MU_SYS = (-3.250, -6.746)
+MU_SYS_ERR = 0.022
+MU_SYS_CORR = 0.01
+#: heliocentric distance and its error (kpc), Baumgardt & Vasiliev 2021
+OCEN_DISTANCE_KPC = 5.43
+OCEN_DISTANCE_ERR_KPC = 0.05
+#: oMEGACat VI kinematic distance (kpc), Haeberle et al. 2025 (alternative, used only where stated)
+OCEN_DISTANCE_OMEGACAT_KPC = 5.494
+
+
+def galactic() -> tuple[float, float]:
+    """Galactic (l, b) of the adopted centre, in degrees."""
+    import astropy.coordinates as coord
+    import astropy.units as u
+
+    g = coord.SkyCoord(OCEN_RA*u.deg, OCEN_DEC*u.deg, frame="icrs").galactic
+    return float(g.l.deg), float(g.b.deg)
 
 
 def centre(source: str = "omegacat") -> tuple[float, float]:

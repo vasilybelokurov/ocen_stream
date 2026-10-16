@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
 from ocen_dm.streams.frames import observables
 from ocen_dm.streams.spray import spray
@@ -42,8 +43,8 @@ def main():
         x = ax[i, 3]; x.scatter(o["b"][kt], o["vlos"][kt], **kw); x.plot(gb[hv], v[hv], "o", color="k", mfc="w", ms=6, zorder=5)
         x.set_xlim(10, 45); x.set_ylim(120, 300); x.set_xlabel("b [deg]"); x.set_ylabel("v_los [km/s]")
         x = ax[i, 4]; x.scatter(o["b"][kt], o["dist"][kt], **kw)
-        x.errorbar([0.5*(c["b"][0]+c["b"][1]) for c in cmd]+[17.5], [5.43*c["d_ratio"] for c in cmd]+[5.43],
-                   yerr=[5.43*c["d_ratio"]*np.log(10)/5*c["dm_err"] for c in cmd]+[0], fmt="s", color="k", mfc="w", ms=7, zorder=5)
+        x.errorbar([0.5*(c["b"][0]+c["b"][1]) for c in cmd]+[17.5], [OCEN_DISTANCE_KPC*c["d_ratio"] for c in cmd]+[OCEN_DISTANCE_KPC],
+                   yerr=[OCEN_DISTANCE_KPC*c["d_ratio"]*np.log(10)/5*c["dm_err"] for c in cmd]+[0], fmt="s", color="k", mfc="w", ms=7, zorder=5)
         x.set_xlim(10, 45); x.set_ylim(3, 7); x.set_xlabel("b [deg]"); x.set_ylabel("distance [kpc] (data: CMD shift, ref 5.43)")
         for x in ax[i]:
             x.grid(alpha=0.3)

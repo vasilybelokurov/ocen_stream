@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/str
 import numpy as np
 from scipy.optimize import minimize
 from spray_bar_grid2 import load_data, w
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 from ocen_dm.streams.restricted import AGAMA_T_MYR, host_potential
 from ocen_dm.streams.frames import observables, to_model, OCEN_OBS
 from ocen_dm.streams.spray import spray_unwrapped
@@ -24,7 +25,7 @@ from ocen_dm.streams.score import score_chi_kde, score_conditional
 from ocen_dm.streams.path import project_gc
 
 ANGLE = 28.
-PRIOR = dict(amp=(1.0, 0.1), d=(5.43, 0.15), pmra=(OCEN_OBS["pmra"], 0.027), pmdec=(OCEN_OBS["pmdec"], 0.027))
+PRIOR = dict(amp=(1.0, 0.1), d=(OCEN_DISTANCE_KPC, 0.15), pmra=(OCEN_OBS["pmra"], 0.027), pmdec=(OCEN_OBS["pmdec"], 0.027))
 BOUNDS = dict(omega=(33., 37.), amp=(0.8, 1.2), d=(5.0, 5.9), pmra=(OCEN_OBS["pmra"]-0.15, OCEN_OBS["pmra"]+0.15),
               pmdec=(OCEN_OBS["pmdec"]-0.15, OCEN_OBS["pmdec"]+0.15))
 NAMES = ("omega", "amp", "d", "pmra", "pmdec")
@@ -75,7 +76,7 @@ def main():
         b = [35.04, 1.178, 5.508, -3.2367, -6.7700]
         starts = [np.array(b+[24.14]), np.array(b+[28.]), np.array(b+[22.])] if COND else [np.array(b+[28.]), np.array(b+[24.]), np.array(b+[32.])]
     else:
-        starts = [np.array([34.5, 1.0, 5.43, OCEN_OBS["pmra"], OCEN_OBS["pmdec"]]),
+        starts = [np.array([34.5, 1.0, OCEN_DISTANCE_KPC, OCEN_OBS["pmra"], OCEN_OBS["pmdec"]]),
                   np.array([35.5, 1.1, 5.53, OCEN_OBS["pmra"], OCEN_OBS["pmdec"]-0.02])]
     for i, x0 in enumerate(starts):
         n = len(x0); simplex = np.vstack([x0]+[x0+SCALE*np.eye(n)[j] for j in range(n)])

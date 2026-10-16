@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 from spray_bar_grid2 import load_data, w
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 from ocen_dm.streams.restricted import AGAMA_T_MYR, host_potential
 from ocen_dm.streams.frames import observables, to_model, OCEN_OBS
 from ocen_dm.streams.spray import spray_unwrapped
@@ -20,7 +21,7 @@ d = load_data()
 prof = json.loads((ROOT/"results/nbody/A_nodm/model_profiles.json").read_text()); r_kpc, M = np.array(prof["r_pc"])/1e3, np.array(prof["enclosed"]["total"])
 T = 1955.58/AGAMA_T_MYR; trel = np.linspace(T-1000/AGAMA_T_MYR, T, 8000)
 host = host_potential("x", bar_omega=OM, bar_angle_deg=AN, t_today=T, bar_amp=AM)
-base = dict(d=5.43, pmra=OCEN_OBS["pmra"], pmdec=OCEN_OBS["pmdec"], vlos=OCEN_OBS["vlos"])
+base = dict(d=OCEN_DISTANCE_KPC, pmra=OCEN_OBS["pmra"], pmdec=OCEN_OBS["pmdec"], vlos=OCEN_OBS["vlos"])
 cases = [("baseline", {})]
 for q, s in (("d", 0.05), ("pmra", 0.011), ("pmdec", 0.011), ("vlos", 0.21)):
     cases += [(f"{q} +2sig", {q: 2*s}), (f"{q} -2sig", {q: -2*s})]

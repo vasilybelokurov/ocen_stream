@@ -6,18 +6,23 @@ Frames:
              (Baumgardt orbits_table.txt) used by all runs before 2026-10-08 evening.
   ibata19    Ibata+2019 (arXiv:1902.09544, Methods): R0 = 8.122 kpc, z_sun = 17 pc, v_c(R0) = 220 km/s plus the Schoenrich+2010
              peculiar motion (11.1, 12.24, 7.25) -> Vsun = (11.1, 232.24, 7.25); omega Cen d = 5.63 kpc.
-omega Cen observables (both frames): ICRS (201.69683, -47.47958), PM (-3.2499, -6.7461) mas/yr, v_los 232.78 km/s
-(Vasiliev & Baumgardt 2021 / Baumgardt catalogue values as in bin/nbody/analyse_tails.py).
+omega Cen observables (both frames): position, systemic PM and v_los from ocen_dm.cluster (the single reference;
+Vasiliev & Baumgardt 2021 PM, Baumgardt & Hilker 2018 v_los). Until 2026-10-16 they were typed in here as the
+Baumgardt orbit-table values (201.69683, -47.47958), PM (-3.2499, -6.7461), v_los 232.78: the same within
+0.04 arcsec, 0.0001 mas/yr and 0.08 km/s, so runs before that date start from a state differing at that level.
+Only the solar parameters, and the ibata19 frame's own omega Cen distance (Ibata+2019's 5.63 kpc), live here.
 """
 from __future__ import annotations
 
 import numpy as np
 
+from ..cluster import MU_SYS, OCEN_DEC, OCEN_DISTANCE_KPC, OCEN_RA, OCEN_VSYS_KMS
+
 FRAMES = {
-    "baumgardt": dict(r0_kpc=8.178, z_sun_pc=0.0, v_sun=(11.1, 252.24, 7.25), d_ocen_kpc=5.43),
+    "baumgardt": dict(r0_kpc=8.178, z_sun_pc=0.0, v_sun=(11.1, 252.24, 7.25), d_ocen_kpc=OCEN_DISTANCE_KPC),
     "ibata19": dict(r0_kpc=8.122, z_sun_pc=17.0, v_sun=(11.1, 232.24, 7.25), d_ocen_kpc=5.63),
 }
-OCEN_OBS = dict(ra=201.69683, dec=-47.47958, pmra=-3.2499, pmdec=-6.7461, vlos=232.78)
+OCEN_OBS = dict(ra=OCEN_RA, dec=OCEN_DEC, pmra=MU_SYS[0], pmdec=MU_SYS[1], vlos=OCEN_VSYS_KMS)
 
 
 def galcen(frame="baumgardt"):

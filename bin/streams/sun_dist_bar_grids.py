@@ -12,10 +12,11 @@ Output results/plot_data/sun_dist_bar_grids.json (resumable). Usage: OMP_NUM_THR
 import itertools, json, sys, time
 import numpy as np
 from grid4_common import ROOT, make_spray, score, project_gc, GC, du, OCEN_OBS, PMRA, PMDEC
+from ocen_dm.cluster import OCEN_DISTANCE_KPC
 
 CAT = (OCEN_OBS["pmra"], OCEN_OBS["pmdec"])
 CFG = []
-for fr, dd in itertools.product(("baumgardt", "ibata19"), (5.43, 5.6, 5.8)):
+for fr, dd in itertools.product(("baumgardt", "ibata19"), (OCEN_DISTANCE_KPC, 5.6, 5.8)):
     CFG.append(dict(test="T1", model="W", om=36., an=28., am=1.2, size=1.15, frame=fr, dist=dd, pm=CAT))
     CFG.append(dict(test="T1", model="R16", om=34.5, an=16., am=1.4, size=1.0, frame=fr, dist=dd, pm=(PMRA, PMDEC)))
 for an, sz, om, am in itertools.product((16., 20., 24., 28.), (1.0, 1.15, 1.3), (34., 35., 36., 37.), (1.2, 1.4)):
