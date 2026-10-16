@@ -20,6 +20,7 @@ __all__ = [
     "configs_dir",
     "results_dir",
     "ensure_data_tree",
+    "load_local_env",
 ]
 
 
@@ -78,3 +79,34 @@ def ensure_data_tree() -> None:
     """Create the data/results directory tree if it does not yet exist."""
     for path in (raw_dir(), interim_dir(), processed_dir(), results_dir()):
         path.mkdir(parents=True, exist_ok=True)
+
+
+def load_local_env(path: Path | None = None) -> dict[str, str]:
+    """Set environment variables from the repository's local ``.env`` file.
+
+    The file (gitignored, one ``NAME=value`` per line; ``#`` comments, an optional
+    ``export`` prefix and surrounding quotes allowed) holds the machine-specific
+    locations of external inputs such as ``OCEN_CATALOGUES``. Values are expanded
+    for ``~`` and ``$VAR``. A variable that is already set in the environment is
+    never overwritten, so an explicit ``export`` still wins. Called on
+    ``import ocen_dm``; returns the variables it set.
+    """
+    path = Path(path) if path is not None else project_root() / ".env"
+    applied: dict[str, str] = {}
+    if not path.is_file():
+        return applied
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].strip()
+        name, value = (part.strip() for part in line.split("=", 1))
+        if not name.isidentifier() or name in os.environ:
+            continue
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+            value = value[1:-1]
+        value = os.path.expanduser(os.path.expandvars(value))
+        os.environ[name] = value
+        applied[name] = value
+    return applied

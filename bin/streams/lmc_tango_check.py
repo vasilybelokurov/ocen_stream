@@ -4,7 +4,11 @@ initial MW (mw00 halo + bulge + disc): moving LMC + reflex UniformAcceleration +
 Data: Zenodo 10.5281/zenodo.4300977 (Sgr_stream_simulations.zip, sha256 6adcd571...1a37) unpacked in
 $OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977. omega Cen orbit integrated in the full evolving potential.
 Usage: python bin/streams/lmc_tango_check.py potentials_axisym|potentials_triax   (1 core, ~1 min)"""
-import os, sys, numpy as np, agama
+import os, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"src"))
+import ocen_dm  # noqa: E402,F401  (loads the local .env)
+import numpy as np, agama  # noqa: E402
 agama.setUnits(mass=232500, length=1, velocity=1)
 D = os.path.expandvars("$OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977/") + sys.argv[1]
 os.chdir(D)

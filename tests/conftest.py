@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import numpy as np
+
+import ocen_dm  # noqa: F401  (loads the local .env, as scripts do)
 import pytest
 from astropy import units as u
 from astropy.table import Table
