@@ -101,3 +101,22 @@ def test_score_refuses_age_beyond_cut():
         G.score(m, age_max=600.)
     with pytest.raises(ValueError):
         G.score(m)                       # default age_max 700 > cut 500
+
+
+def test_score_default_is_pooled():
+    """grid4_common.score defaults to pooled=True (2026-10-17); legacy_bins / legacy_background restore the chi bins."""
+    m = _load(REF[0][0])
+    s = G.score(m)
+    assert s["K"] == 1 and s["total"] == G.score(m, pooled=True)["total"]
+    leg = G.score(m, legacy_bins=True)
+    assert leg["K"] > 1 and leg["total"] != s["total"]
+    assert G.score(m, legacy_background=True)["K"] == leg["K"]
+    assert G.score(m, chi_edges=np.arange(0., 205., 5.))["K"] == 40
+
+
+def test_score_settings_tags():
+    m = _load(REF[0][0])
+    assert G.score(m)["settings"]["version"] == "S4-pooled"
+    assert G.score(m, legacy_bins=True)["settings"]["version"] == "S3"
+    assert G.score(m, legacy_background=True)["settings"]["version"] == "S2"
+    assert G.score(m, chi_edges=np.arange(0., 205., 5.))["settings"]["version"] == "S4-chi_edges"

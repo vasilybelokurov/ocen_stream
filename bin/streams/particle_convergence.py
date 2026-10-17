@@ -49,7 +49,7 @@ def task(job):
     t0 = time.time()
     m = spray(p, nrel, seed, host_kw=host_kw)
     t1 = time.time()
-    s = score(m)
+    s = score(m, legacy_bins=True)
     t2 = time.time()
     extra = {}
     if VERSION:

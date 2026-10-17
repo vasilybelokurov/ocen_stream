@@ -77,10 +77,47 @@ BG_BOUNDS = ((float(np.floor(dx.min()))-1., float(np.ceil(dx.max()))+1.),
 V_BOUNDS = (0., 400.)
 
 
-def score(m, legacy_background=False, **kw):
+# Bin weighting (2026-10-17, user): pooled=True is the default (one KDE of all debris; converges with particle number,
+# particle_convergence.py / neff_study.py). legacy_bins=True restores the equal-weight chi bins of all results before
+# 2026-10-17; legacy_background=True (exact replay of earlier results) implies it unless legacy_bins is given.
+def score(m, legacy_background=False, legacy_bins=None, **kw):
+    if legacy_bins is None:
+        legacy_bins = legacy_background
+    if not legacy_bins and "chi_edges" not in kw:
+        kw.setdefault("pooled", True)
     if "age_cut_myr" in m and kw.get("age_max", 700.) > float(m["age_cut_myr"]):
         raise ValueError(f"spray integrated only to {float(m['age_cut_myr']):g} Myr (make_spray max_age_myr) < age_max")
     mu, mx = project_gc(m["l"], m["b"], GC)
     if not legacy_background:
         kw.setdefault("w_bounds", BG_BOUNDS); kw.setdefault("v_bounds", V_BOUNDS)
-    return score_conditional(du, dW, d["v"], d["e_v"], cov, mu, np.column_stack((mx, m["pmra"], m["pmdec"])), m["vlos"], m["chi"], m["age"], u_window=win, **kw)
+    res = score_conditional(du, dW, d["v"], d["e_v"], cov, mu, np.column_stack((mx, m["pmra"], m["pmdec"])), m["vlos"], m["chi"], m["age"], u_window=win, **kw)
+    res["settings"] = score_settings(legacy_background, legacy_bins, kw)
+    return res
+
+
+def score_settings(legacy_background, legacy_bins, kw):
+    """Provenance of a score (docs/kb/models/stream_likelihood_versions.md): version tag, every non-default option, code commit.
+    Scripts that save scores should store this dict with their results."""
+    if kw.get("pooled"):
+        weighting = "pooled"
+    elif kw.get("chi_edges") is not None:
+        weighting = "chi_edges"
+    else:
+        weighting = "legacy_bins"
+    tag = {("legacy_bins", True): "S2", ("legacy_bins", False): "S3"}.get((weighting, legacy_background),
+                                                                               f"S4-{weighting}"+("-legacy_bg" if legacy_background else ""))
+    opts = {k: (np.asarray(v).tolist() if isinstance(v, (np.ndarray, tuple, list)) else v) for k, v in kw.items()
+            if k not in ("return_neff", "return_components", "chunk")}
+    return dict(version=tag, weighting=weighting, legacy_background=bool(legacy_background), options=opts, commit=_commit())
+
+
+@__import__("functools").lru_cache(maxsize=1)
+def _commit():
+    import subprocess
+    try:
+        c = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=5).stdout.strip()
+        dirty = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src/ocen_dm/streams", "bin/streams/grid4_common.py"],
+                               capture_output=True, text=True, timeout=5).stdout.strip()
+        return c+("-dirty" if dirty else "")
+    except Exception:
+        return "unknown"
