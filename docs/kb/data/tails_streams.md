@@ -14,7 +14,7 @@ Shorthands are defined on the [Data products](index.md) page.
 
 ![Tail radial velocities](../../../plots/kuzma2026_vlos_along_tails.png)
 
-*Kuzma+2026 FLAMES line-of-sight velocities along the tails (signed distance from the centre, trailing negative): 157 members in six fields, with field means against the systemic 232.6 km/s.*
+*Kuzma+2026 FLAMES line-of-sight velocities along the tails (signed distance from the centre, trailing negative): 157 members in six fields, with field means against the systemic velocity. The plot was made with 232.6 km/s; the code now uses 232.7 km/s (`OCEN_VSYS_KMS` in `src/ocen_dm/cluster.py`).*
 
 ![Fimbulthul candidates](../../../plots/fimbulthul.png)
 
@@ -22,7 +22,7 @@ Shorthands are defined on the [Data products](index.md) page.
 
 ![Stream 54 data](../../../plots/data_stream54.png)
 
-*STREAMFINDER (Ibata+2024) stream 54, the data the stream models are fitted to: 3,724 members on the sky (colour: G); proper motions along the stream in the chord great-circle frame φ1, showing the steepening beyond φ1 ≈ 15° (the "knee"); and the 29 radial velocities.*
+*STREAMFINDER (Ibata+2024) stream 54: 3,724 members on the sky (colour: G), of which the stream models are fitted to the 3,681 inside the `load_data` cut (b > 15°, −75° < l < −20°; `bin/streams/spray_bar_grid2.py`); proper motions along the stream in the chord great-circle frame φ1, showing the steepening beyond φ1 ≈ 15° (the "knee"); and the 29 radial velocities.*
 
 ## T1/T2. Kuzma & Ishigaki 2025 Pristine periphery and its Gaia covariance
 
@@ -83,22 +83,22 @@ Shorthands are defined on the [Data products](index.md) page.
   - Stream 54 (Fimbulthul): 3,724 stars, 29 with VHel.
   - Stream 55 (Fimbulthul-S): 1,734 stars, 25 with VHel.
   - `e_VHel = 300` means null.
-- **Loader.** `bin/streams/spray_bar_grid2.py:24–33 load_data`.
-  - Keeps Stream == 54 with b > 15° and −75° < l < −20°.
+- **Loader.** `bin/streams/spray_bar_grid2.py:24–32 load_data`.
+  - Keeps Stream == 54 with b > 15° and −75° < l < −20°: 3,681 of the 3,724 members.
   - Sets VHel to NaN unless `e_VHel < 300`.
   - Attaches S2 errors and correlations.
   - About 20 scripts import it (`fit_bar_ocen.py`, `grid4_common.py` → grid4, `fit_lmc_ocen`, `rescore_*` and others). About 15 more read the FITS directly with the same cut.
 - **Scoring.** `src/ocen_dm/streams/score.py`.
 - **Restrictions.**
   - Track-only (STREAMFINDER selection, as for T4).
-  - Ibata+2024 exclude stream 54 from their own potential fit (the project journal, 6618).
+  - Ibata+2024 exclude stream 54 from their own potential fit (the project journal).
   - Member parallaxes are biased by +0.063 mas relative to the cluster (the project journal).
 - **Status.** c.
 
 ## S2. Gaia DR3 errors and correlations for stream-54/55 members
 
 - **Product.** `results/plot_data/stream5455_gaia_errors.npz` (168,341 B; 5,458 rows). Keys `source_id`, `pmra_error`, `pmdec_error`, `pmra_pmdec_corr`, `parallax_error`, `ruwe`, `g`.
-- **Builder.** **None in the repo**: it was an ad hoc WSDB `source_id` join, recorded only at the project journal.
+- **Builder.** **None in the repo**: it was an ad hoc WSDB `source_id` join, recorded only in the project journal.
 - **Consumers.** Every `load_data` user; `measure_track.py:21`.
 - **Status.** c. This is a reproducibility gap.
 
@@ -129,7 +129,7 @@ The cluster mass profile used by the spray is `results/nbody/A_nodm/model_profil
   - Built by q3c joins to `koposov.andrae2023_v21_table1` on WSDB (the project journal). **There is no builder script.**
   - Consumer: `bin/streams/plot_stream_xp_metallicity.py`.
   - Status: d. The project journal calls the result inconclusive.
-  - The Andrae+2023 paper reference (arXiv or DOI) is not recorded: **UNVERIFIED**.
+  - Paper: Andrae et al. 2023, ApJS 267, 8, [2023ApJS..267....8A](https://ui.adsabs.harvard.edu/abs/2023ApJS..267....8A/abstract) (resolved in ADS, `docs/kb/literature.json`).
   - Large local XP/Andrae files in `CAT` (`gaia_xp_andrae_parallax01.fits` 1.89 GB, `gc_members_vasiliev_XP.fits` 280 MB, `xp_rvs_andrae_*`) are not referenced by repo code.
 - **S6, Gaia DR3 rotation pull.**
   - Builder: `bin/streams/measure_gaia_rotation.py:18–25`. Cuts: within 0.6°, RUWE < 1.3, PM errors < 0.15 mas/yr, PM window ±2 mas/yr.
@@ -137,7 +137,7 @@ The cluster mass profile used by the spray is `results/nbody/A_nodm/model_profil
   - Consumer: `bin/streams/fit_spin.py:43` (spin-tracer fit).
   - Status: c.
 - **S7, knee box and stream-54 parallax.**
-  - `results/streams/m5_gaia_knee.npz` (241,961,873 B), built by `bin/streams/m5_independent_selection.py:33–47`. Status: d. It is a candidate for clean-up.
+  - `results/streams/m5_gaia_knee.npz` (242 MB), a WSDB cache written by `bin/streams/m5_independent_selection.py:33–48`, was deleted in the 2026-10-13 clean-up. The script re-queries WSDB when the cache is absent. Status: d.
   - `results/streams/stream54_parallax.npz` (75,847 B), built by `bin/streams/parallax_check.py:22`. Status: d.
 
 ## S8. Full Baumgardt GC compilation
@@ -153,8 +153,11 @@ The cluster mass profile used by the spray is `results/nbody/A_nodm/model_profil
 - **Papers:**
   - Scalco+2021, arXiv:2107.08726
   - Gerasimov+2022, arXiv:2111.10063
-  - Scalco+2024, A&A 688, A180
+  - Scalco+2024, A&A 688, A180, [arXiv:2405.19939](https://arxiv.org/abs/2405.19939)
   - Scalco+2024, A&A 691, A96, arXiv:2409.04533
 - **Registered** in `configs/data.yaml:63–70` only.
-- **Consumer.** `bin/plot_hst_lp_cmds.py:38`, writing `results/plot_data/cmd_hst_lp_fields.json`.
-- **Status.** d.
+- **Consumers.**
+  - Since 2026-10-16 the external fields F1–F5 set the Gaia count completeness: `bin/check_gaia_completeness_lp.py:39` (completeness against radius, `results/plot_data/gaia_completeness_lp.json`) and `bin/build_count_completeness.py`, which imports its functions and writes c<sub>G</sub> into `proc/kinematics/ocen_counts_gaia_g17_c.json` (product metadata: "sources: HST Large Programme fields F1-F5"; see [cluster data](cluster.md#gaia-completeness-from-the-hst-large-programme-fields-2026-10-16)).
+  - That product enters the tied DF refit (`results/df/dftie_restart_20261016`, `dftie_halo_20261016`) and the J-counts Jeans fits through `bin/fit_count_tracer_mge.py`.
+  - `bin/plot_hst_lp_cmds.py:41`, writing `results/plot_data/cmd_hst_lp_fields.json` (diagnostic).
+- **Status.** a* (through C2 in the tied variant and J-counts), d. Still registered in `configs/data.yaml` only.

@@ -9,6 +9,19 @@ audit of all 51 scripts that call a stream score, 2026-10-17).
 From 2026-10-17 every call to `grid4_common.score()` returns `settings` (version tag, explicit options, code commit, `-dirty`
 if the score code had uncommitted changes); scripts that save scores should store it with their results.
 
+!!! info "Status (2026-10-17)"
+    - **Chosen: fixed chi bins.** The user chose fixed chi bins (equal weight per chi interval;
+      candidate range 0-200 in steps of 5, i.e. `chi_edges=np.arange(0., 205., 5.)`) over the pooled
+      KDE, because the density along the stream is not modelled reliably. Pooling weights each part
+      of the stream by its debris fraction and so reintroduces that dependence
+      ([Codex review of the score provenance](../../reviews/codex_score_provenance_2026-10-17.md)).
+    - **Default not yet changed.** `grid4_common.score()` still defaults to `pooled=True` (S4-pooled)
+      until the chi range is fixed.
+    - **Bias correction is not a score version.** The jackknife correction of the particle-number
+      bias (`src/ocen_dm/streams/score_bias.py`, commits `87771f5` and `e6c4dc8`) is applied to the
+      scores after scoring.
+    - Overall stream status: [stream status](../stream_status.md).
+
 ## Versions
 
 | tag | from commit (date) | function | what changed |
@@ -17,7 +30,7 @@ if the score code had uncommitted changes); scripts that save scores should stor
 | S1 | `7183e33` (2026-10-09 06:20) | `score_chi_kde` | chi-binned KDE with latent chi; capped bandwidths from `b5598ca` |
 | S2 | `29d04f8` (2026-10-09 14:01) | `score_conditional` | conditional p(w \| u) chi-KDE; equal-weight chi bins; background widths implied |
 | S3 | `ff312ad` (2026-10-17 06:51) | `score_conditional` | as S2, uniform background normalised over an explicit box containing every member |
-| S4-pooled | the commit that made `pooled=True` the default (2026-10-17) | `score_conditional` | as S3, one KDE of all debris (no chi bins) |
+| S4-pooled | `899d5e5` (2026-10-17 13:54) | `score_conditional` | as S3, one KDE of all debris (no chi bins) |
 
 Results from before S0 (until 2026-10-09 01:24) did not use a per-star likelihood (track comparisons, validation checks).
 

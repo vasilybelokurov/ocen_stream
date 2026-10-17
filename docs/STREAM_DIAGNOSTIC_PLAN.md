@@ -1,5 +1,15 @@
 # Stream 54 fit: diagnostic and model-extension plan (2026-10-10; Phase 3 adopted the same day)
 
+!!! note "Historical (2026-10-10)"
+    Superseded; current status: [kb/stream_status.md](kb/stream_status.md). Stale claims below:
+
+    - "Omega_b = 34-35 robust to every variation" holds only at fixed bar size.
+    - Phases marked "running now" are done.
+    - The spray-noise numbers are superseded: the legacy score does not converge with particle
+      number ([kb/models/stream_likelihood_versions.md](kb/models/stream_likelihood_versions.md)).
+    - The LMC (M6, item 6) was done on 2026-10-12/13.
+    - "No grid below 16 deg" is superseded by the 9-D emulator design (bar angle 10-35 deg).
+
 Built from: [STREAM_FIT_CAMPAIGN_PLAN.md](STREAM_FIT_CAMPAIGN_PLAN.md), [STREAM_FIT_METHODS_REVIEW.md](STREAM_FIT_METHODS_REVIEW.md),
 Codex reviews [codex_likelihood_calibration_2026-10-09.md](reviews/codex_likelihood_calibration_2026-10-09.md),
 [codex_diagnostic_experiments_2026-10-10.md](reviews/codex_diagnostic_experiments_2026-10-10.md),
@@ -48,11 +58,11 @@ Each test uses the D1 segment/observable diagnostics against the 28-deg baseline
 | M5 | Selection (STREAMFINDER) | Template-orbit selection could shape the knee PMs. This was planned as Stage 0(b) and never done. | Independent Gaia DR3 selection in the knee window (WSDB: sky + CMD + broad PM window, no orbit templates); compare PM ridges with the members. | ~1 h of work, seconds of queries |
 | M6 | Halo shape / LMC | Affects the orbit over Gyr. Less likely to produce a sharp knee. | Only if M1-M5 fail: one flattened halo and one LMC+reflex variant (no LMC in the code yet). | days (LMC) |
 
-Literature for M2/M3: Dillamore, Belokurov & Evans 2024, MNRAS 532, 4389 (arXiv:2402.14907, https://arxiv.org/abs/2402.14907);
-Sormani+2022, MNRAS 514, L5 (reference given in ../oCen_bar/agama_potentials/example_mw_bar_potential.py); Portail+2017 (MNRAS 465,
-1621; UNVERIFIED citation details). Present-day bar deceleration rates from the literature are to be looked up before choosing eta (UNVERIFIED).
+Literature for M2/M3: Dillamore, Belokurov & Evans 2024, MNRAS 532, 4389 ([arXiv:2402.14907](https://arxiv.org/abs/2402.14907));
+Sormani+2022, MNRAS 514, L1 ([ADS](https://ui.adsabs.harvard.edu/abs/2022MNRAS.514L...1S), [arXiv:2204.13114](https://arxiv.org/abs/2204.13114)); Portail+2017, MNRAS 465,
+1621 ([ADS](https://ui.adsabs.harvard.edu/abs/2017MNRAS.465.1621P), [arXiv:1608.07954](https://arxiv.org/abs/1608.07954)). Present-day bar deceleration rates from the literature are to be looked up before choosing eta (UNVERIFIED).
 
-## Status after Phases 1-2 (2026-10-10; numbers in JOURNAL.md)
+## Status after Phases 1-2 (2026-10-10; numbers in the project journal, local)
 
 - **Not the cause:**
   - code: audits and end-to-end checks pass;

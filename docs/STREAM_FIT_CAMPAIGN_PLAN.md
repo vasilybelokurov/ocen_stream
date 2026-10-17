@@ -1,9 +1,16 @@
 # Fitting campaign: omega Cen's stream in a barred Milky Way, then the DM test (plan, 2026-10-08)
 
-Status: **plan, not started.** Inputs: [STREAM_KNEE_INVESTIGATION.md](STREAM_KNEE_INVESTIGATION.md) (all tests so far) and the
+!!! note "Historical (2026-10-08)"
+    Superseded; current status: [kb/stream_status.md](kb/stream_status.md).
+    Stages 0-2 ran from 2026-10-09. The Gaussian track objective planned below
+    was replaced by the conditional per-star score, which was later found to
+    disagree with it. The bar-angle prior and range below are superseded by the
+    9-D emulator design (angle 10-35 deg).
+
+Status: **plan of 2026-10-08; stages 0-2 ran from 2026-10-09** (originally "plan, not started"). Inputs: [STREAM_KNEE_INVESTIGATION.md](STREAM_KNEE_INVESTIGATION.md) (all tests so far) and the
 Codex literature pass [codex_research_fit_campaign_2026-10-08.md](reviews/codex_research_fit_campaign_2026-10-08.md) (fallback web
-research; arXiv IDs checked against the arXiv API: two errors in that report -- Koposov+2019 Orphan is arXiv:1812.08172, not
-1812.08192 (= Erkal+2019 LMC mass); the 2026 omega Cen spectroscopy paper is Kuzma et al., arXiv:2605.23474).
+research; arXiv IDs checked against the arXiv API: two errors in that report -- Koposov+2019 Orphan is [arXiv:1812.08172](https://arxiv.org/abs/1812.08172), not
+1812.08192 (= Erkal+2019 LMC mass); the 2026 omega Cen spectroscopy paper is Kuzma et al., [arXiv:2605.23474](https://arxiv.org/abs/2605.23474)).
 
 ## Goal
 
@@ -19,14 +26,14 @@ data to b = 37) and turns the sky track by about half of the observed ~10 deg; a
 
 | Item | Adopted | Why / source |
 |---|---|---|
-| Path coordinate | Galactic b along the northern arm (monotonic from the cluster, b = 15 -> 41) with a fixed omega-Cen-anchored stream frame for reporting | Simple, curved-path-safe for this segment; Codex prefers a general curved-path estimator (TrackStream, Starkman+2023 arXiv:2212.00949) -- not needed while b is monotonic |
-| Data track | Per b bin (2 deg): stream + broad-background mixture in l, pmra, pmdec with Gaia per-star covariances; block (spatial) bootstrap errors; CMD-shift distance-modulus track with a zero-point nuisance; v_los kept per star | Erkal+2017 Pal 5 (arXiv:1609.01282), Koposov+2023 OC (arXiv:2211.04495) |
+| Path coordinate | Galactic b along the northern arm (monotonic from the cluster, b = 15 -> 41) with a fixed omega-Cen-anchored stream frame for reporting | Simple, curved-path-safe for this segment; Codex prefers a general curved-path estimator (TrackStream, Starkman+2023 [arXiv:2212.00949](https://arxiv.org/abs/2212.00949)) -- not needed while b is monotonic |
+| Data track | Per b bin (2 deg): stream + broad-background mixture in l, pmra, pmdec with Gaia per-star covariances; block (spatial) bootstrap errors; CMD-shift distance-modulus track with a zero-point nuisance; v_los kept per star | Erkal+2017 Pal 5 ([arXiv:1609.01282](https://arxiv.org/abs/1609.01282)), Koposov+2023 OC ([arXiv:2211.04495](https://arxiv.org/abs/2211.04495)) |
 | Density / counts | Not used in the likelihood | Unknown STREAMFINDER completeness (Codex; agreed) |
 | Selection bias | (a) magnitude-cut variants (G < 19 / < 20); (b) independent Gaia selection along the arm (WSDB: sky window + broad PM/CMD window, no orbit templates) and compare ridges; (c) systematic floor if they differ | STREAMFINDER template selection (Malhan & Ibata 2018) |
-| Fast generator | AGAMA particle spray (Fardal+2015 arXiv:1410.1861 as in AGAMA's tutorial; Chen+2024 arXiv:2408.01496 release model) in the time-dependent barred host; Jacobi radius/frequency from the host evaluated at each release time | seconds per model (to be benchmarked) |
-| Validation generator | Our prescribed-potential tracer runs (3.4 min axi / 6.5 min barred, 8 threads); already exist for Hunter axi and bars 33/37.5/41 | Codex: spray accuracy (~10% in Chen+24 tests) not established for a massive, rotating cluster in a bar |
+| Fast generator | AGAMA particle spray (Fardal+2015 [arXiv:1410.1861](https://arxiv.org/abs/1410.1861) as in AGAMA's tutorial; Chen et al. 2025 [arXiv:2408.01496](https://arxiv.org/abs/2408.01496) release model) in the time-dependent barred host; Jacobi radius/frequency from the host evaluated at each release time | seconds per model (to be benchmarked) |
+| Validation generator | Our prescribed-potential tracer runs (3.4 min axi / 6.5 min barred, 8 threads); already exist for Hunter axi and bars 33/37.5/41 | Codex: spray accuracy (~10% in Chen et al. 2025 tests) not established for a massive, rotating cluster in a bar |
 | DM-aware generator | Tracer runs only (sprays know only total mass and r_J) | DM enters via the mass profile and release distribution |
-| Objective | Gaussian track likelihood per bin: (y - m)^T (C_obs + C_model + C_sys)^-1 (y - m), model summaries built with identical frame, cuts, binning and error convolution | Erkal+2019 arXiv:1812.08192; Koposov+2023 |
+| Objective | Gaussian track likelihood per bin: (y - m)^T (C_obs + C_model + C_sys)^-1 (y - m), model summaries built with identical frame, cuts, binning and error convolution | Erkal+2019 [arXiv:1812.08192](https://arxiv.org/abs/1812.08192); Koposov+2023 |
 | Optimiser | coarse grid -> Nelder-Mead / CMA-ES with common random numbers -> small emcee only if needed | Codex; brute-force MCMC on tracer runs is unaffordable |
 
 ## Revision 2026-10-09 after the methods review ([STREAM_FIT_METHODS_REVIEW.md](STREAM_FIT_METHODS_REVIEW.md))
@@ -37,7 +44,7 @@ data to b = 37) and turns the sky track by about half of the observed ~10 deg; a
 - Mask only bins where the MODEL is multi-valued in b (Koposov+2023 practice); never mask the observed knee.
 - Likelihood: Gaussian per bin and observable with sigma_data^2 + sigma_sim^2; no extra error floors unless the user approves.
 - Spray: AGAMA, moving progenitor potential = our model's mass profile (Gibbons+2014: progenitor gravity essential),
-  pericentre-weighted release (Erkal+2019) or Chen+25; validated against the tracer runs. StreaMAX not used (bar not wired
+  pericentre-weighted release (Erkal+2019) or Chen et al. 2025; validated against the tracer runs. StreaMAX not used (bar not wired
   into its integrator, 2D-only track).
 - Optimiser: simplex/Nelder-Mead from many prior draws or dual annealing (likelihood discontinuous), then emcee if needed.
 - Report the pull on omega Cen's present-day 6D point (Dillamore+2022: it absorbs perturbations); mock calibration of the DM test.
@@ -57,7 +64,7 @@ present-day phase space (catalogue priors) and host parameters, not by an implau
 Gate: the knee (l turn and PM steepening at b > 30) persists across variants. Stream 55 measured separately, not fitted yet.
 
 **Stage 1 -- spray generator and its validation (~0.5 day, minutes of CPU).**
-`src/ocen_dm/streams/spray.py` (AGAMA, time-dependent host, Chen+24/Fardal release, release-time window 0-1 Gyr).
+`src/ocen_dm/streams/spray.py` (AGAMA, time-dependent host, Chen et al. 2025/Fardal release, release-time window 0-1 Gyr).
 Benchmark runtime. Validate against the existing tracer runs (Hunter axi, bars 33/37.5/41; model A): same summaries through
 the Stage-0 pipeline. Gate: spray ridges within the data errors of the tracer ridges, else calibrate the release parameters
 (mean offset, dispersions) against the tracer runs, or fall back to tracer runs on a coarse grid.

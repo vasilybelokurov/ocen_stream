@@ -1,5 +1,12 @@
 # Stream proper motions and the bar angle: renewed investigation
 
+!!! note "Historical (2026-10-13)"
+    Current status: [kb/stream_status.md](kb/stream_status.md). All ln L
+    values on this page are the legacy score S2 (equal-weight chi bins, implied
+    background widths; see [kb/models/stream_likelihood_versions.md](kb/models/stream_likelihood_versions.md)),
+    at 32,000 release epochs (pilots at 8,000). They are not comparable with
+    later scores.
+
 The task is to reproduce the remaining stream-54 proper-motion structure and
 determine whether the apparent preference for a low bar angle survives joint
 refitting. This note will record findings, including negative results.
@@ -155,6 +162,8 @@ The change does **not** remove the low-angle ranking. In the original
 16-degree advantage from 285.0 to about 392.0. The density mixing issue is
 real, but is not an explanation of the angle preference in these tests.
 The original background-support normalization issue remains separate.
+*(Update: fixed on 2026-10-17, score version S3; see
+[kb/models/stream_likelihood_versions.md](kb/models/stream_likelihood_versions.md).)*
 
 ## RV-star connection diagnostic
 
@@ -186,9 +195,12 @@ histories are tested, and the encounter metric is not a release likelihood.
 
 ## Escape-law pilot
 
+*Run at 8,000 release epochs, seed 4, legacy score S2
+(`results/plot_data/escape_pilot_20261013/`).*
+
 The current Fardal/Gala release has zero relative radial motion. Its
 implementation matches the local AGAMA tutorial, so this is not a sign or
-transcription bug. [Chen et al. 2024](https://arxiv.org/html/2408.01496v2)
+transcription bug. [Chen et al. 2025](https://arxiv.org/abs/2408.01496)
 provide a calibrated alternative with radial escape motion, correlated
 escape radius/direction, and integration in the progenitor potential.
 The code uses their five-dimensional Gaussian prescription and the actual
@@ -223,3 +235,7 @@ a modelling assumption, not an age measurement for the mismatched knee.
 If needed, the script also supports the existing slowing-bar prescription
 and the actual catalogue cluster state, with independently generated model
 controls. These are distinct tests, not a change to the active likelihood.
+
+*Update:* the 2 Gyr backward run exists
+(`results/plot_data/bar_profile_refinement_20261013/barred_backtrack_an{16,28}_b2000.json`)
+but was never analysed.

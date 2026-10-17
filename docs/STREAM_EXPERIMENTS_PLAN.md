@@ -1,5 +1,9 @@
 # Restricted N-body tails with and without DM vs Fimbulthul — scoping (2026-10-08)
 
+!!! note "Historical (2026-10-08)"
+    Scoping of the restricted N-body experiments. Current status:
+    [kb/stream_status.md](kb/stream_status.md).
+
 Status: **implemented and run (2026-10-08)**; results and open questions in [STREAM_KNEE_INVESTIGATION.md](STREAM_KNEE_INVESTIGATION.md). Decisions marked D1–D5 are the user's.
 
 ## Question
@@ -39,7 +43,7 @@ tails? Compare the results with Fimbulthul (Ibata+2019). Tails are made by const
    least as large as the expected DM signal.
 3. **The tooling exists in AGAMA 1.0.152; it is not yet in the repo.**
    `agama/py/tutorial_streams.ipynb` and `example_tidal_stream.py` provide particle spray
-   (Fardal+2015 as in Gala, and Chen+2024), streaklines with linear perturbation, and
+   (Fardal+2015 as in Gala, and Chen et al. 2025, [arXiv:2408.01496](https://arxiv.org/abs/2408.01496)), streaklines with linear perturbation, and
    restricted N-body (Vasiliev+2021). In the restricted scheme, tracers move in host plus
    moving satellite potential, and the satellite potential and mass are refitted from the
    bound tracers at intervals, with Chandrasekhar friction optional. Potentials accept
@@ -90,12 +94,12 @@ multithreaded integrator, against ~30 h for each live run. No run is launched wi
 
 ## References (arXiv IDs verified 2026-10-08)
 
-Gibbons, Belokurov & Evans 2014, arXiv:1406.2243; Fardal, Huang & Weinberg 2015, arXiv:1410.1861;
-Küpper, Lane & Heggie 2012, arXiv:1111.5013; Erkal+2019, arXiv:1812.08192; Vasiliev, Belokurov &
-Erkal 2021, arXiv:2009.10726; Ibata+2019, arXiv:1902.09544 (VizieR J/other/NatAs/3.667);
-Ibata+2021, arXiv:2012.05245; Ibata+2024, arXiv:2311.17202; Malhan, Valluri & Freese 2021,
-arXiv:2005.12919; Vitral & Boldrini 2022, arXiv:2112.01265; Errani+2022, arXiv:2203.02513;
-Evans, Strigari & Zivick 2022, arXiv:2109.10998; Kuzma+2026, arXiv:2605.23474.
+Gibbons, Belokurov & Evans 2014, [arXiv:1406.2243](https://arxiv.org/abs/1406.2243); Fardal, Huang & Weinberg 2015, [arXiv:1410.1861](https://arxiv.org/abs/1410.1861);
+Küpper, Lane & Heggie 2012, [arXiv:1111.5013](https://arxiv.org/abs/1111.5013); Erkal+2019, [arXiv:1812.08192](https://arxiv.org/abs/1812.08192); Vasiliev, Belokurov &
+Erkal 2021, [arXiv:2009.10726](https://arxiv.org/abs/2009.10726); Ibata+2019, [arXiv:1902.09544](https://arxiv.org/abs/1902.09544) (VizieR J/other/NatAs/3.667);
+Ibata+2021, [arXiv:2012.05245](https://arxiv.org/abs/2012.05245); Ibata+2024, [arXiv:2311.17202](https://arxiv.org/abs/2311.17202); Malhan, Valluri & Freese 2021,
+[arXiv:2005.12919](https://arxiv.org/abs/2005.12919); Vitral & Boldrini 2022, [arXiv:2112.01265](https://arxiv.org/abs/2112.01265); Errani+2022, [arXiv:2203.02513](https://arxiv.org/abs/2203.02513);
+Evans, Strigari & Zivick 2022, [arXiv:2109.10998](https://arxiv.org/abs/2109.10998); Kuzma+2026, [arXiv:2605.23474](https://arxiv.org/abs/2605.23474).
 Codex research pass (ordinary web-research fallback, not Deep Research) supplied the
 bibliography. The I19 method details (DB98 Model 1, >= 5 Gyr, 1e5 particles, rotating
 progenitor) are as reported by Codex from the Methods section and are consistent with the

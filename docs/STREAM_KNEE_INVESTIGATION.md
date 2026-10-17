@@ -1,6 +1,14 @@
 # omega Cen tails vs Fimbulthul: DM cases, rotation, host, and the stream-54 "knee" (2026-10-08)
 
-Consolidated record of the stream experiments of 2026-10-08. Day-by-day detail and all numbers are in `JOURNAL.md`
+!!! note "Historical (2026-10-08/09)"
+    Restricted N-body stream experiments, before the particle-spray work.
+    Current status: [kb/stream_status.md](kb/stream_status.md). The
+    "distance is not the explanation" conclusion below relied on the CMD-shift
+    distance track, withdrawn on 2026-10-10
+    ([literature/omega_cen_stream_distances_2026-10-10.md](literature/omega_cen_stream_distances_2026-10-10.md)).
+    The "next steps" were carried out: particle sprays were built from 2026-10-09.
+
+Consolidated record of the stream experiments of 2026-10-08. Day-by-day detail and all numbers are in the project journal (local)
 (entries from "Scoping: restricted N-body tails" to "No published model shows the PM knee"). Plan and user decisions:
 [`STREAM_EXPERIMENTS_PLAN.md`](STREAM_EXPERIMENTS_PLAN.md).
 
@@ -19,7 +27,8 @@ Consolidated record of the stream experiments of 2026-10-08. Day-by-day detail a
   (b ~ 35, l = -52..-32); their "knee" (l ~ -57, b ~ 20, Fig. 4b) is a sky feature near the cluster. Ibata+2024
   excludes stream 54 from its fit; Zheng+2026 report stronger observed bending than in their and Ibata's simulations.
   The premise "Ibata reproduces the knee" (adopted mid-day) was wrong.
-- **Distance is not the explanation (tested).** CMD-shift distances along stream 54 (`bin/streams/stream54_cmd_distance.py`,
+- **Distance is not the explanation (tested).** *[Withdrawn 2026-10-10: the CMD-shift track used here is
+  the outlier against the literature; see the banner.]* CMD-shift distances along stream 54 (`bin/streams/stream54_cmd_distance.py`,
   `plots/stream54_cmd_distance.png`) fall by 8-12% from b = 15-20 to b = 33-42, matching the model arm (13%); there is no
   ~30% distance step. The PM knee is therefore a tangential-velocity mismatch at the same distance (~90 km/s at b = 35-40).
   A perturber or extra cluster DM cannot supply this (cluster: <~13 km/s even with 10x DM at 1 kpc; a flyby needs ~5e8 Msun
@@ -86,7 +95,7 @@ Unbound tracers within 70 deg of omega Cen today (A / B / C):
 | `prescribed_maxrot` | McMillan17, 1.96, maximal | 8004 / 5377 / 5134 | `..._r70_xb_prescribed_maxrot.png`, `streams_arm_overlay_pm_b_maxrot.png` |
 | `db98_rot` | DB98 Model 1, 1.96, fitted, baumgardt | 9866 / 7321 / 6742 | `..._r70_xb_db98_rot.png`, `streams_arm_overlay_pm_b_db98rot.png`, `streams_knee_release_db98_rot_A_nodm.png` |
 | `db98_rot_5g` | DB98, 5 Gyr, fitted, baumgardt | A only (queue stopped) | none |
-| `db98_ibata` (deleted) | DB98, 1.96, fitted, ibata19 | 7057 / 4652 / 4264 | `..._r70_xb_db98_ibata.png`, `streams_arm_overlay_pm_b_db98ibata.png` (vertical streak at b = 15 is an artefact: centre ended 7.3 pc off, see below) |
+| `db98_ibata` (outputs deleted; `results/streams/db98_ibata` remains as an empty directory) | DB98, 1.96, fitted, ibata19 | 7057 / 4652 / 4264 | `..._r70_xb_db98_ibata.png`, `streams_arm_overlay_pm_b_db98ibata.png` (vertical streak at b = 15 is an artefact: centre ended 7.3 pc off, see below) |
 
 Present-day model tracks (all variants): today's prescribed centre within 0.25-0.74 pc of omega Cen (except `db98_ibata`).
 
@@ -137,10 +146,10 @@ No live N-body for now (user does not consider stream self-gravity the explanati
 thread options before every launch; refit 5-Gyr run stopped as redundant; `db98_ibata` rerun stopped (accuracy fix
 irrelevant for the knee).
 
-## Next steps (proposed, not started)
+## Next steps (proposed 2026-10-08; done from 2026-10-09)
 
-1. Done: distance step excluded (see Summary).
-2. Particle-spray streams (AGAMA, Fardal+15 / Chen+24) for fast scans of omega Cen's present-day PM/distance and the host's
+1. Done: distance step excluded (see Summary). *Withdrawn 2026-10-10 (see the banner).*
+2. Done from 2026-10-09: particle-spray streams (AGAMA, Fardal+15 / Chen et al. 2025) for fast scans of omega Cen's present-day PM/distance and the host's
    disc/halo parameters.
 3. Cross-check the DR3 knee against DR2 candidates and RV/chemistry members (STREAMFINDER template influence).
 

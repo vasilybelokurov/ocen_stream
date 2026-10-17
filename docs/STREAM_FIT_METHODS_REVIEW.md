@@ -1,12 +1,12 @@
 # How stream models are fitted to data: methods review (2026-10-09)
 
-Full texts read (pdftotext of arXiv versions; StreaMAX code read at commit 9fd520e, not run). Extraction notes per paper in the
+Full texts read (pdftotext of arXiv versions; StreaMAX code read at its upstream commit 9fd520e, not run). Extraction notes per paper in the
 session scratchpad; the key points, with locations, are below.
 
-| | Gibbons+2014 (arXiv:1406.2243) | Erkal+2019 (arXiv:1812.08192) | Koposov+2023 (arXiv:2211.04495) | Dillamore+2022 (arXiv:2205.13547) | Chemaly+2026 (arXiv:2601.15373; 2607.05510; StreaMAX) |
+| | Gibbons+2014 ([arXiv:1406.2243](https://arxiv.org/abs/1406.2243)) | Erkal+2019 ([arXiv:1812.08192](https://arxiv.org/abs/1812.08192)) | Koposov+2023 ([arXiv:2211.04495](https://arxiv.org/abs/2211.04495)) | Dillamore+2022 ([arXiv:2205.13547](https://arxiv.org/abs/2205.13547)) | Chemaly+2026 ([arXiv:2601.15373](https://arxiv.org/abs/2601.15373); [arXiv:2607.05510](https://arxiv.org/abs/2607.05510); StreaMAX) |
 |---|---|---|---|---|---|
 | Stream | Sgr | Orphan (RR Lyrae) | Orphan-Chenab (6D) | GD-1 | extragalactic (2D images) |
-| Generator | mLCS: release at +-r_t (Eq. 2), equal time steps, isotropic sigma; host + moving Plummer progenitor (essential: without it stream half as long, Fig. 3) | mLCS (as G14); 1e7 Msun Plummer; strip Gaussian 100 Myr around each pericentre, 5000/pericentre; LMC + MW reflex | mLCS; progenitor mass linear to 0; 120,000 particles/pericentre; LMC + reflex + dyn. friction | AGAMA Lagrange-point stripping (Bowden+15): r_prog +- 1.2 r_t, sigma 0.5 km/s; Sgr with mass loss per pericentre + MW reflex | JAX spray (Fardal+15, or Chen+25 in code), uniform-in-time release, Plummer progenitor, float32 leapfrog 100 steps |
+| Generator | mLCS: release at +-r_t (Eq. 2), equal time steps, isotropic sigma; host + moving Plummer progenitor (essential: without it stream half as long, Fig. 3) | mLCS (as G14); 1e7 Msun Plummer; strip Gaussian 100 Myr around each pericentre, 5000/pericentre; LMC + MW reflex | mLCS; progenitor mass linear to 0; 120,000 particles/pericentre; LMC + reflex + dyn. friction | AGAMA Lagrange-point stripping (Bowden+15): r_prog +- 1.2 r_t, sigma 0.5 km/s; Sgr with mass loss per pericentre + MW reflex | JAX spray (Fardal+15, or [Chen et al. 2025](https://arxiv.org/abs/2408.01496) in code), uniform-in-time release, Plummer progenitor, float32 leapfrog 100 steps |
 | Ordering / "unwrapping" | phase chi = sum (r - r_prog) since release (Eq. 3): sign separates arms; keep first apocentre per arm; trailing: drop debris stripped after last apocentre | none: select particles by phi1 window | none; knots where the model kinks are masked (Fig. 14) | none: bin in phi1; KDE copes with secondary tracks | C26: unwrap each particle's angle from its birth angle (fails when not monotonic); C26b: G14 ordering -- code: argsort(xhi) then np.unwrap of host-centred polar angle (utils.py:101-117) |
 | Model summary | binned centroid; Gaussian fit to each apocentre (3 numbers) | per data star: straight-line fit to particles within +-2.5 deg in phi1 -> mean and intrinsic width | per spline knot: straight line to particles within +-5 deg -> mean and error of the mean; require sigma_sim < sigma_data/5 | per 10-deg bin: quadratic trend + KDE of residuals, per observable | per 10-20 deg bin: median radius, 16-84% half-width, count |
 | Data | 3 scalars (apocentre distances, angle) | individual RR Lyrae: phi2, d, pmra, pmdec (no v_los) | spline tracks with knots (mixture models, Stan): phi2, DM, PMs, v_GSR | members: phi2, PMs; 66 v_los; distances only as a check | projected radius per angle bin |
@@ -29,7 +29,7 @@ session scratchpad; the key points, with locations, are below.
 4. **Progenitor gravity in the spray is essential** (G14 Fig. 3); omega Cen is massive (3-4e6 Msun) -- use our model's mass
    profile as the moving progenitor potential (already done in run_prescribed.py).
 5. **Release history matters:** G14 uniform in time, E19/K23 concentrated at pericentres; our tracer runs show pericentre-
-   driven escape. Prefer pericentre-weighted release (or Chen+25 calibration) and validate against the tracer runs.
+   driven escape. Prefer pericentre-weighted release (or Chen et al. 2025 calibration) and validate against the tracer runs.
 6. **A good track fit does not mean an unperturbed stream; the progenitor's present-day phase space absorbs perturbations**
    (D22: best fit with arms swapped by Sgr; optimiser shifted distance 7.47 -> 7.27 kpc). Keep Gaia/catalogue priors on
    omega Cen's 6D point and report any pull.
