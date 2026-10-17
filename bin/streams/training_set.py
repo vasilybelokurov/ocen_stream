@@ -60,6 +60,7 @@ MU_ERR = 0.022
 NAMES = ("angle", "omega", "amp", "size", "dist", "pmra", "pmdec", "vc", "halo_q")
 CAL_EXTRA_SEEDS = 7          # calibration points: seeds r = 1..7 at NREL (r = 0 is in the main design) and r = 0..7 at NREL_CAL
 CHI_HIST = np.arange(0., 1005., 5.)
+SCORE_CHUNK = 50             # members per kernel block: peak ~0.9 GB per worker at 256k (400 -> 6.8 GB); results bit-identical
 HUNTER_FILES = ("MWPotentialHunter24_axi.ini", "MWPotentialHunter24_baryon_full.ini", "MWPotentialHunter24_baryon_axi.ini")
 
 
@@ -154,7 +155,7 @@ def manifest(pts):
     m = dict(sources={s: sha256_file(ROOT/s) for s in project_sources()}, inputs=input_files(), data_sha256=h.hexdigest(),
              n_members=int(len(du)),
              design_sha256=hashlib.sha256(json.dumps(pts, sort_keys=True).encode()).hexdigest(),
-             nrel=NREL, nrel_calibration=NREL_CAL, age_cut_myr=AGE_CUT, rbar_kpc=RBAR_KPC, sobol_seed=SOBOL_SEED, npts=NPTS,
+             nrel=NREL, nrel_calibration=NREL_CAL, age_cut_myr=AGE_CUT, score_chunk=SCORE_CHUNK, rbar_kpc=RBAR_KPC, sobol_seed=SOBOL_SEED, npts=NPTS,
              scores=dict(chi200=dict(chi_edges=CHI_EDGES.tolist()), pooled=dict(pooled=True), legacy=dict(legacy_bins=True),
                          common=dict(w_bounds=[list(b) for b in BG_BOUNDS], v_bounds=list(V_BOUNDS), u_window=list(map(float, win)))),
              spray=dict(function="grid4_common.make_spray", frame="baumgardt", release="uniform", window_myr=1000., arm_only=1,
@@ -185,8 +186,9 @@ def task(job):
         ms = {k: np.asarray(m[k], np.float64) for k in keys}; ms["age_cut_myr"] = np.float64(AGE_CUT)
         npz = runs_dir/f"{job['run_id']}.npz"
         tmp = npz.with_name(npz.stem+"_tmp.npz"); np.savez_compressed(tmp, **ms); os.replace(tmp, npz)
-        sc = dict(chi200=score(ms, chi_edges=CHI_EDGES, return_neff=True, return_components=True),
-                  pooled=score(ms, pooled=True, return_components=True), legacy=score(ms, legacy_bins=True))
+        sc = dict(chi200=score(ms, chi_edges=CHI_EDGES, return_neff=True, return_components=True, chunk=SCORE_CHUNK),
+                  pooled=score(ms, pooled=True, return_components=True, chunk=SCORE_CHUNK),
+                  legacy=score(ms, legacy_bins=True, chunk=SCORE_CHUNK))
         t2 = time.time()
         sel = (ms["chi"] > 0) & (ms["age"] < AGE_CUT)
         nbin = np.histogram(ms["chi"][sel], CHI_EDGES)[0]
