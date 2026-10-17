@@ -230,7 +230,7 @@ def chi_kde_track(model, dchi=5., chi_max=105., nmin=20, age_max=700., floors=(0
 
 def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 0.2, 0.2), hv=5., dchi=5., nmin=20,
                       age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400,
-                      return_components=False, w_bounds=None, v_bounds=None, pooled=False, chi_edges=None):
+                      return_components=False, w_bounds=None, v_bounds=None, pooled=False, chi_edges=None, return_neff=False):
     """Conditional likelihood of members given model particles, density-free along the observed along-stream coordinate u
     (design reviewed with Codex: docs/reviews/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
     >= nmin particles), equal prior weight 1/K; in bin k a product-Gaussian KDE with FIXED bandwidths (same for every model):
@@ -255,6 +255,9 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     bandwidth KDE of a fixed distribution, so it converges as N grows. chi_edges (array): fixed bin edges with fixed weight
     1/(len(chi_edges) - 1) for every bin, empty ones included (they contribute zero density); particles outside the edges are
     not part of the model. Both are independent of N by construction.
+    return_neff=True adds n_eff (N,): the Kish effective number of model particles behind each member's foreground density,
+    (sum_j w_j)^2 / sum_j w_j^2 with w_j the particle's weighted joint-kernel contribution to f at that member (bin weights
+    included); diagnostics only, the score is unchanged.
     Returns dict(total, per_star (N,), K, frac_bg (mean background share of the numerator))."""
     du = np.asarray(du, float); dw = np.asarray(dw, float); n = len(du)
     lo, hi = (du.min(), du.max()) if u_window is None else u_window
@@ -301,7 +304,7 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
             result.update(foreground_joint=np.zeros(n), foreground_u=np.zeros(n), background_u=g_u, background_w=g_w)
         return result
     hu, hx, hpa, hpd = h
-    f = np.zeros(n); fu = np.zeros(n)
+    f = np.zeros(n); fu = np.zeros(n); f2 = np.zeros(n)
     sx2 = hpa**2+dcov[:, 0, 0]; sy2 = hpd**2+dcov[:, 1, 1]; cxy = dcov[:, 0, 1]; det = sx2*sy2-cxy**2
     sv = np.sqrt(hv**2+np.nan_to_num(dev)**2)
     for idx in bins:
@@ -316,11 +319,17 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
             q = (sy2[sl, None]*dx**2-2*cxy[sl, None]*dx*dy+sx2[sl, None]*dy**2)/det[sl, None]
             gp = np.exp(-0.5*q)/(2*np.pi*np.sqrt(det[sl]))[:, None]
             gv = np.where(hasv[sl, None], np.exp(-0.5*((np.nan_to_num(dv[sl])[:, None]-V[None, :])/sv[sl, None])**2)/(np.sqrt(2*np.pi)*sv[sl, None]), 1.)
-            f[sl] += np.mean(gu*gx*gp*gv, axis=1)/K
+            g = gu*gx*gp*gv
+            f[sl] += np.mean(g, axis=1)/K
             fu[sl] += np.mean(gu, axis=1)/K
+            if return_neff:
+                f2[sl] += np.sum(g**2, axis=1)/(K*len(idx))**2
     num = (1-eps)*f+eps*g_u*g_w; den = (1-eps)*fu+eps*g_u
     Li = num/den
     result = dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=K, frac_bg=float(np.mean(eps*g_u*g_w/num)))
     if return_components:
         result.update(foreground_joint=f, foreground_u=fu, background_u=g_u, background_w=g_w)
+    if return_neff:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            result["n_eff"] = np.where(f2 > 0, f**2/f2, 0.)
     return result

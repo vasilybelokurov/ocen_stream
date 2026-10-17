@@ -123,3 +123,15 @@ def test_pooled_score_converges_with_particle_number_and_legacy_k_grows():
         kl.append(score_conditional(du, dw, dv, dev, dcov, *s1, u_window=(0., 20.))["K"])
     assert diffs[1] < diffs[0]
     assert kl[1] > kl[0]
+
+
+def test_neff_counts_equal_contributors_and_leaves_score_unchanged():
+    """Members on top of m identical particles get n_eff = m; return_neff does not change the score."""
+    u = np.array([5., 15.]); w = np.array([[0., -4., -7.], [0., -6., -8.]]); n = 2
+    dv = np.full(n, np.nan); dev = np.full(n, np.nan); cov = np.tile(np.eye(2)*1e-4, (n, 1, 1))
+    m = 30
+    mu = np.repeat(u, m); mw = np.repeat(w, m, axis=0); mv = np.full(2*m, np.nan); chi = np.full(2*m, 2.); age = np.zeros(2*m)
+    a = score_conditional(u, w, dv, dev, cov, mu, mw, mv, chi, age, u_window=(0., 20.), pooled=True, return_neff=True)
+    b = score_conditional(u, w, dv, dev, cov, mu, mw, mv, chi, age, u_window=(0., 20.), pooled=True)
+    assert np.isclose(a["total"], b["total"])
+    assert np.allclose(a["n_eff"], m, rtol=1e-6)   # the other group is ~20 deg away: negligible weight
