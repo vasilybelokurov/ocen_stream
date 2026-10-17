@@ -63,3 +63,24 @@ def test_wrong_kinematics_scores_worse():
     mw2 = mw.copy(); mw2[:, 1] += 1.0
     bad = score_conditional(du, dw, dv, de, dc, mu, mw2, mv, chi, age, u_window=(0, 20))["total"]
     assert bad < good-100
+
+
+def test_explicit_background_bounds_normalise_and_reject_outside_members():
+    """With explicit w_bounds the background is a normalised uniform density over that box; members outside it raise."""
+    import pytest
+    from ocen_dm.streams.score import score_conditional
+    rng = np.random.default_rng(3)
+    n = 50
+    du = rng.uniform(0, 10, n); dw = np.column_stack((rng.uniform(-2, 2, n), rng.uniform(-5, -3, n), rng.uniform(-8, -6, n)))
+    dv = np.full(n, np.nan); dev = np.full(n, np.nan); cov = np.tile(np.eye(2)*1e-4, (n, 1, 1))
+    # no model particles -> background only: L_i = g_w
+    empty = np.zeros(0)
+    bounds = ((-3., 3.), (-6., -2.), (-9., -5.))
+    r = score_conditional(du, dw, dv, dev, cov, empty, np.zeros((0, 3)), empty, empty, empty, u_window=(0., 10.), w_bounds=bounds)
+    assert np.allclose(r["per_star"], -np.log(6.*4.*4.))
+    # the legacy widths give the same value when they equal the box widths
+    r0 = score_conditional(du, dw, dv, dev, cov, empty, np.zeros((0, 3)), empty, empty, empty, u_window=(0., 10.), w_box=(6., 4., 4.))
+    assert np.allclose(r0["per_star"], r["per_star"])
+    dw_out = dw.copy(); dw_out[0, 0] = 5.
+    with pytest.raises(ValueError):
+        score_conditional(du, dw_out, dv, dev, cov, empty, np.zeros((0, 3)), empty, empty, empty, u_window=(0., 10.), w_bounds=bounds)

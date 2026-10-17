@@ -67,8 +67,20 @@ def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=
     return out
 
 
-def score(m, **kw):
+# Background support (2026-10-17, Codex review 2026-10-09): the uniform background is normalised over an explicit box that
+# contains every member. Delta phi2: member range padded by 1 deg (-9.5..22.3 vs the old implied 12-deg width, which 119
+# near-cluster members exceeded); PMs and v_los keep their old widths (30, 30 mas/yr; 400 km/s) as boxes containing all
+# members, so only the Delta phi2 normalisation changes. score(m, legacy_background=True) replays earlier results.
+BG_BOUNDS = ((float(np.floor(dx.min()))-1., float(np.ceil(dx.max()))+1.),
+             (float(np.floor(d["pmra"].min()))-1., float(np.floor(d["pmra"].min()))-1.+30.),
+             (float(np.floor(d["pmdec"].min()))-1., float(np.floor(d["pmdec"].min()))-1.+30.))
+V_BOUNDS = (0., 400.)
+
+
+def score(m, legacy_background=False, **kw):
     if "age_cut_myr" in m and kw.get("age_max", 700.) > float(m["age_cut_myr"]):
         raise ValueError(f"spray integrated only to {float(m['age_cut_myr']):g} Myr (make_spray max_age_myr) < age_max")
     mu, mx = project_gc(m["l"], m["b"], GC)
+    if not legacy_background:
+        kw.setdefault("w_bounds", BG_BOUNDS); kw.setdefault("v_bounds", V_BOUNDS)
     return score_conditional(du, dW, d["v"], d["e_v"], cov, mu, np.column_stack((mx, m["pmra"], m["pmdec"])), m["vlos"], m["chi"], m["age"], u_window=win, **kw)

@@ -16,10 +16,18 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 G = pytest.importorskip("grid4_common")
 KEYS = ("l", "b", "pmra", "pmdec", "vlos", "d", "chi", "age")
+# The stored runs predate the single cluster reference (commit 9601ba7, 2026-10-15), which moved the default state
+# (centre, PMs at the 1e-4 level, v_los 232.78 -> 232.7 km/s). Byte-identity is tested at the state they were made with.
+LEGACY_OBS = dict(ra=201.69683, dec=-47.47958, pmra=-3.2499, pmdec=-6.7461, vlos=232.78)
+
+
+@pytest.fixture(autouse=True)
+def _legacy_state(monkeypatch):
+    monkeypatch.setattr(G, "OCEN_OBS", dict(LEGACY_OBS))
 
 # (stored file, make_spray args, kwargs) -- all made by make_spray before the change (4x particles)
 REF = [("results/streams/cluster_mass/mf1_s1.npz", (36., 28., 1.2, 5.6),
-        dict(nrel=32000, seed=1, pm=(G.OCEN_OBS["pmra"], G.OCEN_OBS["pmdec"]), host_kw=dict(bar_size=1.15), mass_factor=1.0)),
+        dict(nrel=32000, seed=1, pm=(LEGACY_OBS["pmra"], LEGACY_OBS["pmdec"]), host_kw=dict(bar_size=1.15), mass_factor=1.0)),
        ("results/streams/sun_dist_bar/T1_R16_om34.5_an16_am1.4_sz1_ibata19_d5.43.npz", (34.5, 16., 1.4, 5.43),
         dict(nrel=32000, seed=1, pm=(G.PMRA, G.PMDEC), host_kw=dict(bar_size=1.0), frame="ibata19"))]
 
