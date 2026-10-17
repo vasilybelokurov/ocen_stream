@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"bin/streams/paper"), str(ROOT/"src")]
 import numpy as np
 
-OUT = ROOT/"results/plot_data/particle_convergence_20261017.json"
+VERSION = os.environ.get("CONV_VERSION", "")
+OUT = ROOT/f"results/plot_data/particle_convergence_20261017{VERSION}.json"
 SPRAYS = ROOT/"results/streams/particle_convergence_20261017"
 NRELS = (4000, 8000, 16000, 32000, 64000, 128000)
 SEEDS = (1, 2, 3, 4, 5)
@@ -50,6 +51,11 @@ def task(job):
     t1 = time.time()
     s = score(m)
     t2 = time.time()
+    extra = {}
+    if VERSION:
+        for lab, kw in (("pooled", dict(pooled=True)), ("chi200", dict(chi_edges=np.arange(0., 205., 5.)))):
+            ta = time.time(); e = score(m, **kw)
+            extra[lab] = dict(total=float(e["total"]), per_star=np.asarray(e["per_star"], np.float32).tolist(), t=time.time()-ta)
     k = (m["chi"] > 0) & (m["age"] < 700.)
     mu, mx = project_gc(m["l"][k], m["b"][k], GC)
     mm = dict(phi1=mu, dphi2=mx, pmra=m["pmra"][k], pmdec=m["pmdec"][k])
@@ -62,12 +68,12 @@ def task(job):
         for q in ("pmra", "pmdec"):
             v = pred[q][ks]
             tr[q].append(float(np.nanmedian(v)) if np.isfinite(v).sum() >= 15 else np.nan)
-    if name == "A" and seed == 1:
+    if name == "A" and seed == 1 and not VERSION:
         SPRAYS.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(SPRAYS/f"A_n{nrel}_s1.npz", **{q: m[q] for q in ("l", "b", "pmra", "pmdec", "vlos", "d", "chi", "age")})
     return dict(model=name, nrel=nrel, seed=seed, total=float(s["total"]), per_star=np.asarray(s["per_star"], np.float32).tolist(),
                 K=int(s["K"]), frac_bg=float(s["frac_bg"]), n_particles=int(k.sum()), tracks=tr,
-                t_spray=t1-t0, t_score=t2-t1)
+                t_spray=t1-t0, t_score=t2-t1, scores=extra)
 
 
 def run(args):

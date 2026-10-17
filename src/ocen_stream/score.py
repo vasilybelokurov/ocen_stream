@@ -230,7 +230,7 @@ def chi_kde_track(model, dchi=5., chi_max=105., nmin=20, age_max=700., floors=(0
 
 def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 0.2, 0.2), hv=5., dchi=5., nmin=20,
                       age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400,
-                      return_components=False, w_bounds=None, v_bounds=None):
+                      return_components=False, w_bounds=None, v_bounds=None, pooled=False, chi_edges=None):
     """Conditional likelihood of members given model particles, density-free along the observed along-stream coordinate u
     (design reviewed with Codex: docs/reviews/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
     >= nmin particles), equal prior weight 1/K; in bin k a product-Gaussian KDE with FIXED bandwidths (same for every model):
@@ -249,6 +249,12 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     otherwise). The legacy widths w_box/v_box (used when w_bounds is None) are kept only to replay earlier results: with
     them a member outside the implied box receives an unnormalised background density (Codex review 2026-10-09; fixed
     2026-10-17 by passing explicit bounds from grid4_common.score).
+    Bin weighting (2026-10-17). Default (legacy): every chi bin of width dchi with >= nmin particles gets weight 1/K, so K grows
+    with the particle number and jitters between seeds -- the likelihood then does not converge with N (particle_convergence.py,
+    2026-10-17). pooled=True: one bin with all selected particles (f = p(u, w) of the debris, f_u its u marginal); a fixed-
+    bandwidth KDE of a fixed distribution, so it converges as N grows. chi_edges (array): fixed bin edges with fixed weight
+    1/(len(chi_edges) - 1) for every bin, empty ones included (they contribute zero density); particles outside the edges are
+    not part of the model. Both are independent of N by construction.
     Returns dict(total, per_star (N,), K, frac_bg (mean background share of the numerator))."""
     du = np.asarray(du, float); dw = np.asarray(dw, float); n = len(du)
     lo, hi = (du.min(), du.max()) if u_window is None else u_window
@@ -271,9 +277,23 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     else:
         g_w = np.where(hasv, 1./(np.prod(w_box)*v_box), 1./np.prod(w_box))
     k = (chi > 0) & (age < age_max)
-    edges = np.arange(0., (chi[k].max() if k.any() else 0.)+dchi, dchi)
-    bins = [np.where(k & (chi >= e0) & (chi < e0+dchi))[0] for e0 in edges]
-    bins = [b_ for b_ in bins if len(b_) >= nmin]; K = len(bins)
+    if pooled and chi_edges is not None:
+        raise ValueError("choose pooled or chi_edges, not both")
+    if pooled:
+        bins = [np.where(k)[0]] if k.sum() >= nmin else []
+        K = len(bins)
+    elif chi_edges is not None:
+        ce = np.asarray(chi_edges, float)
+        if ce.ndim != 1 or len(ce) < 2 or np.any(np.diff(ce) <= 0):
+            raise ValueError("chi_edges must be increasing")
+        bins = [np.where(k & (chi >= a) & (chi < b))[0] for a, b in zip(ce[:-1], ce[1:])]
+        K = len(bins)
+        if sum(len(b_) for b_ in bins) == 0:
+            bins, K = [], 0
+    else:
+        edges = np.arange(0., (chi[k].max() if k.any() else 0.)+dchi, dchi)
+        bins = [np.where(k & (chi >= e0) & (chi < e0+dchi))[0] for e0 in edges]
+        bins = [b_ for b_ in bins if len(b_) >= nmin]; K = len(bins)
     if K == 0:
         Li = np.full(n, (eps*g_u*g_w)/(eps*g_u))
         result = dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=0, frac_bg=1.0)
@@ -285,6 +305,8 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     sx2 = hpa**2+dcov[:, 0, 0]; sy2 = hpd**2+dcov[:, 1, 1]; cxy = dcov[:, 0, 1]; det = sx2*sy2-cxy**2
     sv = np.sqrt(hv**2+np.nan_to_num(dev)**2)
     for idx in bins:
+        if len(idx) == 0:          # fixed chi grid: an empty bin keeps its weight and contributes zero density
+            continue
         U, W, V = mu[idx], mw[idx], mv[idx]
         for i0 in range(0, n, chunk):
             sl = slice(i0, min(n, i0+chunk))
