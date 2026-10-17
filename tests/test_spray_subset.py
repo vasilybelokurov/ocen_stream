@@ -83,6 +83,17 @@ def test_subset_options_bit_identical(case):
         np.testing.assert_array_equal(nopsi[q], full[q][k1], err_msg=q)
 
 
+def test_chunked_integration_bit_identical():
+    """spray_unwrapped(chunk=...) bounds memory; chunk sizes 1, 7 and > N must give identical outputs."""
+    from ocen_dm.streams.spray import spray_unwrapped
+    host, today = _host_today()
+    trel = np.linspace(G.T-1000/G.AGAMA_T_MYR, G.T, 300)
+    runs = [spray_unwrapped(host, today, G.T, G.r_kpc, G.M, trel, seed=3, chunk=c) for c in (10**9, 7, 1)]
+    for r in runs[1:]:
+        for q in ("xv", "chi", "psi", "t_release_myr_ago", "arm"):
+            np.testing.assert_array_equal(r[q], runs[0][q], err_msg=q)
+
+
 def test_score_refuses_age_beyond_cut():
     m = dict(l=np.zeros(3), b=np.zeros(3), pmra=np.zeros(3), pmdec=np.zeros(3), vlos=np.zeros(3), d=np.ones(3), chi=np.ones(3),
              age=np.array([100., 400., 490.]), age_cut_myr=np.float64(500.))

@@ -101,7 +101,7 @@ def spray(host, today, T, r_kpc, M_enc, n_release=2000, t_release=None, seed=1, 
 
 
 def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, accuracy=1e-8, spin=None, arm_only=None,
-                    max_age_myr=None, with_psi=True, escape_recipe="fardal"):
+                    max_age_myr=None, with_psi=True, escape_recipe="fardal", chunk=20000):
     """Spray (as spray(), progenitor gravity included) with per-particle trajectories, returning stream-ordering coordinates:
       chi [kpc Myr]: Gibbons+2014 phase, integral over release->today of (|r| - |r_prog|) dt (their Eq. 3 sums over equal
             time steps; this is the time-weighted continuous form; > 0 trailing, < 0 leading);
@@ -114,7 +114,8 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     ago. All initial conditions are drawn first and then subset, and particles are independent (no mutual gravity), so the
     kept particles are bit-identical to the same particles of the full run (tests/test_spray_subset.py).
     with_psi=False skips psi (returned as zeros); chi and everything else are unchanged.
-    escape_recipe='chen24' replaces Fardal offsets by Chen+2024, using the actual satellite escape speed. Default unchanged."""
+    escape_recipe='chen24' replaces Fardal offsets by Chen+2024, using the actual satellite escape speed. Default unchanged.
+    chunk: particles integrated per agama.orbit call (bounds memory; results independent of it)."""
     agama = agama_kpc()
     rng = np.random.default_rng(seed)
     _, back = agama.orbit(potential=host, ic=today, timestart=T, time=-T, trajsize=2, accuracy=1e-12)
@@ -141,7 +142,6 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     if escape_recipe != "chen24":
         sat = satellite_potential(np.zeros((0, 3)), np.zeros(0), core=FrozenCore(r_kpc, M_enc))
     total = agama.Potential(host, agama.Potential(potential=sat, center=np.column_stack((tc, orb))))
-    res = agama.orbit(potential=total, ic=ic, timestart=t0, time=T-t0, trajsize=ntraj, accuracy=accuracy, verbose=False)
     # orbital-plane basis from the progenitor's present angular momentum
     Lp = np.cross(orb[-1, :3], orb[-1, 3:]); ez = Lp/np.linalg.norm(Lp)
     ex = orb[-1, :3]-np.dot(orb[-1, :3], ez)*ez; ex /= np.linalg.norm(ex); ey = np.cross(ez, ex)
@@ -149,13 +149,21 @@ def spray_unwrapped(host, today, T, r_kpc, M_enc, t_release, ntraj=240, seed=1, 
     Psi_prog = np.unwrap(ang(orb[:, :3]))
     rprog = np.linalg.norm(orb[:, :3], axis=1)
     xv = np.zeros((len(ic), 6)); chi = np.zeros(len(ic)); psi = np.zeros(len(ic))
-    for i in range(len(ic)):
-        tt, tj = res[i, 0], res[i, 1]
-        xv[i] = tj[-1]
-        dr = np.linalg.norm(tj[:, :3], axis=1)-np.interp(tt, tc, rprog)
-        chi[i] = np.trapezoid(dr, tt)*AGAMA_T_MYR
-        if not with_psi:
-            continue
-        a = np.unwrap(ang(tj[:, :3]))
-        psi[i] = np.degrees(np.interp(tt[0], tc, Psi_prog)+(a[-1]-a[0])-Psi_prog[-1])
+    # integrate in chunks: full trajectories cost 7*ntraj*8 B per particle (~5 GB at 3.6e5 particles); orbits are independent,
+    # so chunking does not change any result
+    for c0 in range(0, len(ic), chunk):
+        sl = slice(c0, c0+chunk)
+        res = agama.orbit(potential=total, ic=ic[sl], timestart=t0[sl], time=T-t0[sl], trajsize=ntraj, accuracy=accuracy,
+                          verbose=False)
+        for j in range(len(res)):
+            i = c0+j
+            tt, tj = res[j, 0], res[j, 1]
+            xv[i] = tj[-1]
+            dr = np.linalg.norm(tj[:, :3], axis=1)-np.interp(tt, tc, rprog)
+            chi[i] = np.trapezoid(dr, tt)*AGAMA_T_MYR
+            if not with_psi:
+                continue
+            a = np.unwrap(ang(tj[:, :3]))
+            psi[i] = np.degrees(np.interp(tt[0], tc, Psi_prog)+(a[-1]-a[0])-Psi_prog[-1])
+        del res
     return dict(xv=xv, arm=arm, chi=chi, psi=psi, t_release_myr_ago=(T-t0)*AGAMA_T_MYR, centre_today=orb[-1])
