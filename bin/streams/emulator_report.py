@@ -109,14 +109,16 @@ def main():
             if f.name.endswith(".error.json"):
                 continue
             j = json.loads(f.read_text())
-            if j.get("purpose") == "predicted best, check":
+            if j.get("purpose") in ("predicted best, check", "emulator max, check"):
                 chk.append(j)
-    if chk:
-        m_, s_ = em.predict(np.array([chk[0]["unit"]]))
-        y = np.array([j["total_jk"] for j in chk])
-        rep["best_check"] = dict(params=chk[0]["params"], predicted_at_design=chk[0]["mu"], predicted_now=float(m_[0]),
-                                 sd_now=float(s_[0]), measured=y.tolist(), measured_mean=float(y.mean()),
-                                 measured_sd=float(y.std(ddof=1)) if len(y) > 1 else None)
+    rep["best_check"] = []                    # one entry per checked point (Codex 2026-10-18: do not pool points)
+    for key in dict.fromkeys(j["key"] for j in chk):
+        cj = [j for j in chk if j["key"] == key]
+        m_, s_ = em.predict(np.array([cj[0]["unit"]]))
+        y = np.array([j["total_jk"] for j in cj])
+        rep["best_check"].append(dict(key=key, params=cj[0]["params"], predicted_at_design=cj[0]["mu"], predicted_now=float(m_[0]),
+                                      sd_now=float(s_[0]), measured=y.tolist(), measured_mean=float(y.mean()),
+                                      measured_se=float(y.std(ddof=1)/np.sqrt(len(y))) if len(y) > 1 else None))
     # tracks of the best measured run
     rows = []
     for b in [ED.TRAIN]+od+[ED.REPS]:
