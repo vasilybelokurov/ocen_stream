@@ -1,4 +1,4 @@
-# Stream 54: status (2026-10-17)
+# Stream 54: status (2026-10-18)
 
 This page summarises the stream work since 2026-10-13. Earlier results are on the
 [PM refinement page](../STREAM_PM_REFINEMENT_2026-10-13.md) (historical). Every ln L below names its score version and
@@ -13,7 +13,8 @@ particle number. Totals from different versions or particle numbers are **not co
   ln L. The disagreement is a trade-off between the sky track and the PM track in the turn.
 - **The original likelihood did not converge with particle number.** It is replaced by fixed χ bins with equal weights. A
   jackknife removes the small-particle-number bias.
-- **A 9-parameter emulator training set is running** (307 sprays at 256,000 release epochs).
+- **A 9-parameter emulator is built and validated** (470 sprays). It does not yet constrain the bar. One independently
+  checked point beats the paper models by about 600, but the turn is still not fitted.
 
 ## Model comparison
 
@@ -77,29 +78,60 @@ observed track at φ<sub>1</sub> = 2–8°; the axisymmetric null does not.
   Means and seed scatter over 8 independent seeds per resolution, fixed χ bins 0–200. The check is limited to about ±35
   by the number of seeds. A second-order (delta-method) correction removes only about half the bias.
 
-## Emulator training set (running)
+## Emulator (2026-10-18)
 
-`bin/streams/training_set.py`, started 2026-10-17, output `results/streams/training_9d_20261017/` (not in the repository).
+**Data.** 470 sprays at 256,000 release epochs over 375 points of the 9-parameter space (`bin/streams/training_set.py`,
+`bin/streams/stream_batch.py`), each scored with fixed χ bins 0–200 and jackknife-corrected:
+- 256 Sobol design points;
+- 32 points with two extra independent seeds, for the noise. Each repeat shifts the release-time grid by a random offset
+  as well as redrawing the escape offsets; the original runs agree with the shifted repeats (mean difference −24 ± 20);
+- two refinement rounds (100 and 60 runs) chosen by predicted ln L + 2σ, with exploration points, held-out points and
+  repeats;
+- 8 seeds at the emulator maximum.
 
-- **Parameters and ranges:**
-  - bar angle 10–35°, pattern speed 30–40 km s<sup>−1</sup> kpc<sup>−1</sup>, amplitude 0.6–2.0;
-  - bar size 0.8 up to the corotation limit (size × 4.25 kpc ≤ R<sub>CR</sub> of the point's own host, at most 1.5);
-  - ω Cen distance 5.25–5.95 kpc, PMs ±4σ;
-  - v<sub>c</sub>(R<sub>0</sub>) 220–240 km s<sup>−1</sup> through the halo normalisation, halo flattening 0.8–1.2.
-- **Design:** 256 scrambled-Sobol points, an independent seed per run, 256,000 release epochs.
-- **Calibration runs:** two points with 8 seeds at 256k and 8 at 128k (above); seven more with 4 seeds each.
-- **Storage:** every run keeps its full spray, so any score definition can be recomputed later.
-- **Provenance:** source, input and data hashes are recorded. A run refuses to start if any source changed.
+**Model.** Stochastic kriging (`src/ocen_dm/streams/emulator.py`; Ankenman, Nelson & Staum 2010,
+[2010OpRes..58..371A](https://ui.adsabs.harvard.edu/abs/2010OpRes..58..371A/abstract); Binois, Gramacy & Ludkovski,
+[arXiv:1611.05902](https://arxiv.org/abs/1611.05902)):
+- a GP for the mean, with each point's noise fixed;
+- a noise surface ln s² = a + b ln v<sub>jk</sub> + GP fitted to the repeat variances (median noise sd 65 in ln L).
 
-**Next steps:**
-1. jackknife-correct every run;
-2. fit a noise model from the replicate seeds;
-3. fit the emulator to the corrected ln L, with each point's noise, and test it on held-out design points;
-4. choose the posterior calibration (global or per-segment tempering, or Holmes & Walker 2017,
-   [arXiv:1701.08515](https://arxiv.org/abs/1701.08515)) by held-out segments and mock coverage.
+**Validation** (5-fold, noise model refitted in each fold; `results/plot_data/emulator_validate_final_20261018.json`):
+
+| Subset | RMSE | Bias (true − predicted) | z sd | 95 % coverage |
+|---|---|---|---|---|
+| All 375 points | 1269 | −76 | 1.08 | 0.94 |
+| Top 20 % | 1043 | +467 | 0.95 | 0.95 |
+| 18 held-out points (never fitted) | 1123 | −413 | 1.01 | 16/18 |
+
+- **Columns.** z = (measured − predicted)/total predicted sd. The uncertainties are roughly right overall but not yet
+  established near the maximum: the top quintile is biased by +467 and only 18 points were held out.
+
+**Results.**
+- **The bar is not yet constrained.** The emulator's uncertainty is about 575 at the profile peaks and 806 at its optimised
+  maximum, while each one-parameter profile (maximum over the other eight) varies by only 500–1350. Profiles are maxima over
+  a finite candidate set with pointwise bands, not uncertainty-integrated. The emulator maximum moves between fits.
+- **The two paper models are indistinguishable at current precision**: 16° −22174 and 28° −22171 (2 seeds each; difference
+  3 ± ~70). They also differ in distance, amplitude and size, so this is not a clean test of the angle.
+- **One independently replicated point is about 600 better**: −21569 ± 11 (8 seeds) at angle 17°, Ω<sub>b</sub> 32,
+  amplitude 1.57, size 0.89, distance 5.79 kpc, v<sub>c</sub> 220 km s<sup>−1</sup>, q 1.02. Its slow bar, large distance and
+  low v<sub>c</sub> describe this candidate, not a measurement. The score has no prior on ω Cen's distance (adopted
+  5.43 ± 0.05 kpc). v<sub>c</sub> sits at the lower edge of the range; the latest emulator maximum also sits at the edges of
+  μ<sub>δ</sub> and halo q.
+- **Predicted maxima are optimistic.** The three checked predicted-best points came in 430–770 below their predictions.
+- **The turn is still not fitted.** At φ<sub>1</sub> = 21° the best point improves the μ<sub>δ</sub> residual from −0.82 to
+  −0.16 mas yr<sup>−1</sup> (paper 16°), but its Δφ<sub>2</sub> offset grows from 0.47° to 1.42°. This is a remaining
+  mismatch, not shown to be unavoidable everywhere in the space.
+
+**Open decisions:**
+1. extend v<sub>c</sub> below 220 km s<sup>−1</sup> (and check the μ<sub>δ</sub> and halo-q edges);
+2. add the distance measurement as a prior or keep the score likelihood-only;
+3. denser local design around the top (a local GP is an experiment), keeping global exploration and fresh held-out points;
+4. choose the tempering by held-out segments and mock coverage.
 
 ## Reviews
 
 [Unbiased likelihood](../reviews/codex_unbiased_likelihood_2026-10-17.md),
 [score provenance](../reviews/codex_score_provenance_2026-10-17.md),
-[training-set plan](../reviews/codex_training_set_plan_2026-10-17.md) (Codex, 2026-10-17).
+[training-set plan](../reviews/codex_training_set_plan_2026-10-17.md) (Codex, 2026-10-17);
+[emulator and design](../reviews/codex_emulator_review_2026-10-18.md),
+[campaign conclusions](../reviews/codex_emulator_conclusions_2026-10-18.md) (Codex, 2026-10-18).
