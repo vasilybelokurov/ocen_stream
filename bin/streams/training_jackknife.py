@@ -65,6 +65,8 @@ def main():
     src = {s: sha(ROOT/s) for s in SOURCES}
     todo = []
     for f in sorted(RUNS.glob("p*_r*_n*k.json")):
+        if f.stem.endswith("_jk"):          # outputs of this script
+            continue
         jk = f.with_name(f.stem+"_jk.json")
         if jk.exists():
             j = json.loads(jk.read_text())
