@@ -21,12 +21,21 @@ def _toy(seed=1):
     return U, m, s2, key, y, v
 
 
-def test_noise_model_and_coverage():
+def test_noise_model_unbiased_over_seeds():
+    """64 points x 3 runs pin s2 to ~ a factor 2 per point; no bias on average (mean ln ratio over 4 toys within 0.3)."""
+    lr = []
+    for s in (1, 2, 3, 4):
+        U, m, s2, key, y, v = _toy(s)
+        g = group_replicates(U[key], y, v, key)
+        r = NoiseModel().fit(g["X"], g["S2"], g["r"], g["vjk_mean"]).predict(g["X"], g["vjk_mean"])/s2(g["X"])
+        assert np.percentile(r, 90)/np.percentile(r, 10) < 6
+        lr.append(np.mean(np.log(r)))
+    assert abs(np.mean(lr)) < 0.3
+
+
+def test_kfold_coverage():
     U, m, s2, key, y, v = _toy()
     g = group_replicates(U[key], y, v, key)
-    nm = NoiseModel().fit(g["X"], g["S2"], g["r"], g["vjk_mean"])
-    s2hat = nm.predict(g["X"], g["vjk_mean"])
-    ratio = s2hat/s2(g["X"])
-    assert 0.6 < np.median(ratio) < 1.6 and np.percentile(ratio, 90)/np.percentile(ratio, 10) < 4
+    s2hat = NoiseModel().fit(g["X"], g["S2"], g["r"], g["vjk_mean"]).predict(g["X"], g["vjk_mean"])
     val = kfold_validate(g["X"], g["ybar"], s2hat/g["r"], K=5, n_restarts=2)
     assert 0.7 < val["z_sd"] < 1.4 and 0.88 < val["cover95"] <= 1.0
