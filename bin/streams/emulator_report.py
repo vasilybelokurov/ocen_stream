@@ -37,7 +37,8 @@ def smax_interp():
 def physical(U, smax):
     P = dict(angle=10+25*U[:, 0], omega=30+10*U[:, 1], amp=0.6+1.4*U[:, 2], dist=5.25+0.7*U[:, 4],
              pmra=-3.250+0.022*(8*U[:, 5]-4), pmdec=-6.746+0.022*(8*U[:, 6]-4), vc=220+20*U[:, 7], halo_q=0.8+0.4*U[:, 8])
-    P["size"] = 0.8+U[:, 3]*(smax(np.column_stack((P["omega"], P["vc"], P["halo_q"])))-0.8)
+    q = np.column_stack((np.clip(P["omega"], 30, 40), np.clip(P["vc"], 220, 240), np.clip(P["halo_q"], 0.8, 1.2)))   # float edges
+    P["size"] = 0.8+U[:, 3]*(smax(q)-0.8)
     return P
 
 
