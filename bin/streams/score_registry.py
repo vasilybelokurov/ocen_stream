@@ -181,4 +181,17 @@ ENTRIES = [
                   "results/streams/prescribed*", "results/streams/spin/", "results/streams/spin_max/",
                   "results/streams/spiral_potential/"],
          score="none (no per-star stream likelihood)", options="", spray="see the writing script", recorded="n/a"),
+    dict(script="bin/streams/training_set.py (+ training_jackknife.py)", outputs=["results/streams/training_9d_20261017/"],
+         score="S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; jackknife (G 10) of the chi score",
+         options="chi_edges arange(0, 205, 5), chunk 50; return_neff, return_components",
+         spray="make_spray, 256k (calibration 128k) release epochs, legacy epoch grid, seed per run, max_age 700, bar_size + "
+               "axi_variant(halo_q, vc_target); 9-D Sobol design (design.json)",
+         recorded="yes: manifest.json (source/input/data hashes), per-run settings, params, seed, nrel; _jk.json per run"),
+    dict(script="bin/streams/stream_batch.py", outputs=["results/streams/training_9d_reps_20261018/", "results/streams/emulator_round1_20261018/", "results/streams/emulator_round2_20261018/",
+                                                        "results/streams/emulator_check_20261018/", "results/streams/emulator_paperref_20261018/"],
+         score="S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; in-worker jackknife (G 10) of the chi score",
+         options="chi_edges arange(0, 205, 5), chunk 50",
+         spray="make_spray, 256k release epochs, epoch_offset (random grid start) per run, seed per run, max_age 700, bar_size + "
+               "axi_variant(halo_q, vc_target); jobs.json per batch",
+         recorded="yes: manifest.json, jobs.json, per-run settings, params, seed, epoch_offset, total_jk, var_jk"),
 ]
