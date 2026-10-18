@@ -4,7 +4,7 @@
 1. Profiles: for each parameter, the maximum over the other eight of the emulator mean mu, in bins of that parameter
    (2^16 scrambled-Sobol candidates; size in kpc-free units = bar size factor), with the emulator sd at the maximising
    candidate. 2-D profiles for (angle, Omega), (Omega, distance), (amplitude, size).
-2. Check of the predicted best point: measured jackknife totals of its seeds vs the emulator prediction (fitted without them).
+2. Emulator maximum (L-BFGS-B on mu from the 20 best measured points) and check of the predicted best point: measured jackknife totals of its seeds vs the emulator prediction (fitted without them).
 3. Tracks of the best measured run vs the members: Delta phi2 median and the PM residuals (model PM = median of particles
    within 0.5 deg of the member's (phi1, Delta phi2), as paper fig3_residuals) in 2-deg phi1 bins; refined 16 deg paper
    model (32k, seed 4) for comparison.
@@ -92,6 +92,15 @@ def main():
                 if s.any():
                     M[j, i] = mu[s].max()
         rep["profiles2d"][f"{kx}_{ky}"] = dict(x_edges=ex.tolist(), y_edges=ey.tolist(), mu_max=np.where(np.isfinite(M), M, None).tolist())
+    # emulator maximum: L-BFGS-B on mu from the 20 best measured points
+    from scipy.optimize import minimize
+    best = None
+    for x0 in g["X"][np.argsort(-g["ybar"])[:20]]:
+        r = minimize(lambda x: -em.predict(x[None], return_std=False)[0], x0, method="L-BFGS-B", bounds=[(0, 1)]*9)
+        if best is None or r.fun < best.fun:
+            best = r
+    mb, sb = em.predict(best.x[None]); pb = ED.unit_to_params(best.x)
+    rep["emulator_max"] = dict(unit=best.x.tolist(), params=pb, mu=float(mb[0]), sd=float(sb[0]))
     # predicted-best check
     od = [Path(x) if Path(x).is_absolute() else ROOT/x for x in a.batch]
     chk = []
@@ -136,7 +145,7 @@ def main():
     fig.savefig(ROOT/f"plots/emulator_tracks_{a.tag}.png", dpi=130); plt.close(fig)
     (ROOT/f"results/plot_data/emulator_report_{a.tag}.json").write_text(json.dumps(rep, indent=1))
     print(json.dumps(dict(best_observed=rep["best_observed"], best_check=rep.get("best_check"), best_run_params=par,
-                          best_run_lnL=tot), indent=1))
+                          best_run_lnL=tot, emulator_max=rep["emulator_max"]), indent=1))
 
 
 if __name__ == "__main__":

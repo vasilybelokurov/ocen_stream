@@ -6,7 +6,8 @@ r >= 1 share the release-epoch grid of r = 0 and are left out) + training_9d_rep
 random epoch-grid start) + any later batches given with --batch. Replicates of a point are averaged; the noise surface
 (emulator.NoiseModel) is fitted to their sample variances with the jackknife variance as covariate; the mean GP
 (emulator.MeanEmulator) uses s2/r as fixed per-point noise. Validation: 5-fold over points.
-Design (action 'design'): 4096 scrambled-Sobol candidates; batch of N points by greedy maximum of mu + kappa sd, with
+Design (action 'design'): 4096 scrambled-Sobol candidates + 2000 local ones (Gaussian, sd 0.05 in the unit cube, around
+the 10 best measured points; added 2026-10-18 after round 1); batch of N points by greedy maximum of mu + kappa sd, with
 the predictive sd updated after each pick (kriging believer: fixed kernel, the pick added at its predicted mean), so the
 batch spreads; plus 4 seeds at the candidate with the highest mu, and 2 replicates at the 8 batch points with the highest
 mu; plus --n-explore pure-exploration (max sd) points and --n-valid random held-out validation points
@@ -156,6 +157,9 @@ def design(a):
     from sklearn.gaussian_process import GaussianProcessRegressor
     g, s2, nm, em, info = fit(a.batch)
     C = qmc.Sobol(9, scramble=True, seed=a.seed).random_base2(12)
+    rng = np.random.default_rng(500+a.seed)                     # local candidates around the 10 best measured points
+    top = g["X"][np.argsort(-g["ybar"])[:10]]
+    C = np.vstack((C, np.clip(np.repeat(top, 200, axis=0)+rng.normal(0, 0.05, (2000, 9)), 0, 1)))
     mu, sd = em.predict(C)
     Xb, yb, nb = g["X"].copy(), (g["ybar"]-em.ymu)/em.ysd, (s2/g["r"])/em.ysd**2
     pick = []
