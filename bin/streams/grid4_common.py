@@ -37,7 +37,7 @@ def peri_release_times(host, today, nrel, window_myr=1000., sigma_myr=50.):
     return np.sort(T-ages/AGAMA_T_MYR), peri
 
 
-def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10., frame="baumgardt", proj_frame=None, mass_factor=1.0, max_age_myr=None, accuracy=1e-8, escape_recipe="fardal", arm_only=1):
+def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10., frame="baumgardt", proj_frame=None, mass_factor=1.0, max_age_myr=None, accuracy=1e-8, escape_recipe="fardal", arm_only=1, epoch_offset=None):
     """Trailing-arm spray (observables, chi, age). host_kw: extra host_potential options (bar_eta, bar_size, bar_model).
     release: 'uniform' (epochs uniform over the last window_myr) or 'peri' (concentrated at pericentres, peri_release_times,
     Gaussian width peri_sigma_myr; omega Cen's pericentres are ~88 Myr apart). frame: solar frame (frames.FRAMES) used both
@@ -48,11 +48,23 @@ def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=
     particles are identical to the same particles of a full run, and the dict then carries age_cut_myr, which score() checks.
     accuracy: AGAMA orbit tolerance of the particles (default 1e-8 as before).
     escape_recipe: 'fardal' (default unchanged) or 'chen24' (actual satellite escape speed, radial release motion).
-    arm_only=None returns both launch arms, allowing the score to select trailing chi regardless of launch label."""
+    arm_only=None returns both launch arms, allowing the score to select trailing chi regardless of launch label.
+    epoch_offset (release='uniform' only; default None = the legacy grid, linspace(T - window, T, nrel)): u in [0, 1)
+    gives a systematic grid with a random start, t_k = T - window + (k + u) window/nrel, k = 0..nrel-1, so independent
+    replicates (u drawn per seed) re-randomise the release-epoch sampling as well as the escape offsets (2026-10-18)."""
     pa, pd = (PMRA, PMDEC) if pm is None else pm
     host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am, **(host_kw or {}))
     today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], dist, pa, pd, OCEN_OBS["vlos"], frame)[0]
-    trel = np.linspace(T-window_myr/AGAMA_T_MYR, T, nrel) if release == "uniform" else peri_release_times(host, today, nrel, window_myr, peri_sigma_myr)[0]
+    if release == "uniform" and epoch_offset is not None:
+        if not 0. <= epoch_offset < 1.:
+            raise ValueError("epoch_offset must be in [0, 1)")
+        trel = T-window_myr/AGAMA_T_MYR+(np.arange(nrel)+epoch_offset)*(window_myr/AGAMA_T_MYR)/nrel
+    elif release == "uniform":
+        trel = np.linspace(T-window_myr/AGAMA_T_MYR, T, nrel)
+    else:
+        if epoch_offset is not None:
+            raise ValueError("epoch_offset applies to release='uniform' only")
+        trel = peri_release_times(host, today, nrel, window_myr, peri_sigma_myr)[0]
     sp = spray_unwrapped(host, today, T, r_kpc, M*mass_factor, trel, seed=seed, spin=spin, arm_only=arm_only, max_age_myr=max_age_myr,
                          accuracy=accuracy, with_psi=False, escape_recipe=escape_recipe)
     tr = np.ones(len(sp["arm"]), bool) if arm_only is None else sp["arm"] == arm_only

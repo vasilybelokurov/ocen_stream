@@ -120,3 +120,18 @@ def test_score_settings_tags():
     assert G.score(m, legacy_bins=True)["settings"]["version"] == "S3"
     assert G.score(m, legacy_background=True)["settings"]["version"] == "S2"
     assert G.score(m, chi_edges=np.arange(0., 205., 5.))["settings"]["version"] == "S4-chi_edges"
+
+
+def test_epoch_offset_default_unchanged_and_grid_shifted():
+    """make_spray(epoch_offset=None) is the legacy grid (bit-identical); an offset u gives T - W + (k + u) W / n."""
+    a = G.make_spray(35., 25., 1.2, 5.6, nrel=200, seed=3, max_age_myr=700.)
+    b = G.make_spray(35., 25., 1.2, 5.6, nrel=200, seed=3, max_age_myr=700., epoch_offset=None)
+    for q in KEYS:
+        np.testing.assert_array_equal(a[q], b[q], err_msg=q)
+    c = G.make_spray(35., 25., 1.2, 5.6, nrel=200, seed=3, max_age_myr=700., epoch_offset=0.37)
+    W = 1000.; ages = np.unique(np.round(c["age"], 6))
+    expect = np.sort(W-(np.arange(200)+0.37)*W/200)
+    expect = expect[expect < 700.]
+    np.testing.assert_allclose(np.sort(ages), np.sort(np.round(expect, 6)), atol=1e-4)
+    with pytest.raises(ValueError):
+        G.make_spray(35., 25., 1.2, 5.6, nrel=20, seed=3, epoch_offset=1.0)
