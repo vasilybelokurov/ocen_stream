@@ -153,8 +153,8 @@ def done(outdir, mid):
         if r.get("manifest_sha256") != mid:
             raise SystemExit(f"{f.name}: manifest mismatch; refusing to mix")
         rd = outdir/"runs"
-        if (rd/f"{r['run_id']}.npz").exists() and sha(rd/f"{r['run_id']}.npz") == r["spray_sha256"] and \
-                sha(rd/f"{r['run_id']}_perstar.npz") == r["perstar_sha256"]:
+        npz, per = rd/f"{r['run_id']}.npz", rd/f"{r['run_id']}_perstar.npz"
+        if npz.exists() and per.exists() and sha(npz) == r["spray_sha256"] and sha(per) == r["perstar_sha256"]:
             out.add(r["run_id"])
     return out
 
@@ -180,11 +180,18 @@ def main():
         print(f"{len(dn)}/{len(jobs)} done, {len(list((outdir/'runs').glob('*.error.json')))} errors"); return
     todo = [j for j in jobs if j["run_id"] not in dn][:a.limit or None]
     print(f"{len(todo)} jobs to do ({len(dn)} done), {a.workers} workers", flush=True)
+    nerr = 0
     with Pool(a.workers, maxtasksperchild=1) as pool:
         for k, (rid, tot, ts, tj, err) in enumerate(pool.imap_unordered(task, [(j, mid, sources, str(outdir)) for j in todo]), 1):
             msg = f"ERROR {err}" if err else f"lnL_jk {tot:.1f} spray {ts:.0f}s score+jk {tj:.0f}s"
+            nerr += bool(err) and "source files changed" not in err
             print(f"{time.strftime('%H:%M:%S')} {k}/{len(todo)} {rid} {msg}", flush=True)
+    if nerr:                                  # unattended runs: failures must not look like success (Codex 2026-10-18)
+        print(f"{nerr} jobs FAILED", flush=True); sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
+
+# 2026-10-18: the first replicate batch (training_9d_reps_20261018) was stopped after 64 of 128 jobs by editing this file
+# (workers re-hash sources and refuse later jobs); see the project journal.
