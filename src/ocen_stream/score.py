@@ -230,7 +230,8 @@ def chi_kde_track(model, dchi=5., chi_max=105., nmin=20, age_max=700., floors=(0
 
 def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 0.2, 0.2), hv=5., dchi=5., nmin=20,
                       age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400,
-                      return_components=False, w_bounds=None, v_bounds=None, pooled=False, chi_edges=None, return_neff=False):
+                      return_components=False, w_bounds=None, v_bounds=None, pooled=False, chi_edges=None, return_neff=False,
+                      cutoff=None, jackknife_groups=None):
     """Conditional likelihood of members given model particles, density-free along the observed along-stream coordinate u
     (design reviewed with Codex: docs/reviews/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
     >= nmin particles), equal prior weight 1/K; in bin k a product-Gaussian KDE with FIXED bandwidths (same for every model):
@@ -258,6 +259,14 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     return_neff=True adds n_eff (N,): the Kish effective number of model particles behind each member's foreground density,
     (sum_j w_j)^2 / sum_j w_j^2 with w_j the particle's weighted joint-kernel contribution to f at that member (bin weights
     included); diagnostics only, the score is unchanged.
+    cutoff (2026-10-18; default None = exact, unchanged): evaluate the joint kernel only for particles within `cutoff` kernel
+    widths of the member in the scaled sky plane (u/h_u, x/h_x; cKDTree), and the u-marginal only for particles within
+    cutoff h_u in u. Sums are divided by the full bin counts. Omitted terms are bounded by exp(-cutoff^2/2) times the kernel
+    peak (not relative to f); accuracy is tested on real sprays (tests/test_score_cutoff.py).
+    jackknife_groups G (requires cutoff): also return the delete-group jackknife (group g = particles with index % G == g,
+    as score_bias.jackknife_total): per-member kernel sums are accumulated per group in one pass and each leave-one-out
+    score is rebuilt from them with its own bin counts. Adds keys per_star_jk (N,), total_jk, leave_out_totals (G,),
+    var_jk = (G-1)/G sum_g (l_-g - mean)^2.
     Returns dict(total, per_star (N,), K, frac_bg (mean background share of the numerator))."""
     du = np.asarray(du, float); dw = np.asarray(dw, float); n = len(du)
     lo, hi = (du.min(), du.max()) if u_window is None else u_window
@@ -307,6 +316,13 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     f = np.zeros(n); fu = np.zeros(n); f2 = np.zeros(n)
     sx2 = hpa**2+dcov[:, 0, 0]; sy2 = hpd**2+dcov[:, 1, 1]; cxy = dcov[:, 0, 1]; det = sx2*sy2-cxy**2
     sv = np.sqrt(hv**2+np.nan_to_num(dev)**2)
+    if jackknife_groups is not None and cutoff is None:
+        raise ValueError("jackknife_groups requires cutoff")
+    if jackknife_groups is not None and not (pooled or chi_edges is not None):
+        raise ValueError("one-pass jackknife keeps K fixed: use pooled=True or chi_edges (legacy bins depend on counts)")
+    if cutoff is not None:
+        return _score_cutoff(du, dw, dv, dev, hasv, bins, K, mu, mw, mv, h, hv, sx2, sy2, cxy, det, sv, eps, g_u, g_w, cutoff,
+                             jackknife_groups, return_components, return_neff, chunk)
     for idx in bins:
         if len(idx) == 0:          # fixed chi grid: an empty bin keeps its weight and contributes zero density
             continue
@@ -332,4 +348,68 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     if return_neff:
         with np.errstate(divide="ignore", invalid="ignore"):
             result["n_eff"] = np.where(f2 > 0, f**2/f2, 0.)
+    return result
+
+
+def _score_cutoff(du, dw, dv, dev, hasv, bins, K, mu, mw, mv, h, hv, sx2, sy2, cxy, det, sv, eps, g_u, g_w, c, G,
+                  return_components, return_neff, chunk):
+    """score_conditional with a sky cutoff and optional one-pass delete-group jackknife (see its docstring)."""
+    from scipy.spatial import cKDTree
+    n = len(du); hu, hx = h[0], h[1]
+    NG = G or 1
+    S = np.zeros((NG, n)); Su = np.zeros((NG, n)); S2 = np.zeros((NG, n))      # per-group kernel sums, accumulated over bins
+    # per bin the weight 1/(K n_k) differs between the full and the leave-out samples, so keep per-bin per-group sums
+    f = np.zeros(n); fu = np.zeros(n); f2 = np.zeros(n)
+    flo = np.zeros((NG, n)) if G else None; fulo = np.zeros((NG, n)) if G else None
+    dv0 = np.nan_to_num(dv); x_m = dw[:, 0]
+    for idx in bins:
+        if len(idx) == 0:
+            continue
+        U, W, V = mu[idx], mw[idx], mv[idx]; nk = len(idx)
+        grp = (idx % NG) if G else np.zeros(nk, int)
+        nkg = np.bincount(grp, minlength=NG)
+        tree = cKDTree(np.column_stack((U/hu, W[:, 0]/hx)))
+        order = np.argsort(U); Us = U[order]
+        bS = np.zeros((NG, n)); bSu = np.zeros((NG, n)); bS2 = np.zeros((NG, n))
+        for i0 in range(0, n, chunk):
+            sl = np.arange(i0, min(n, i0+chunk))
+            nb = tree.query_ball_point(np.column_stack((du[sl]/hu, x_m[sl]/hx)), c)
+            lens = np.fromiter((len(a) for a in nb), int, len(nb))
+            if lens.sum():
+                pj = np.concatenate([np.asarray(a, int) for a in nb if len(a)]); mi = np.repeat(sl, lens)
+                gu = np.exp(-0.5*((du[mi]-U[pj])/hu)**2)/(np.sqrt(2*np.pi)*hu)
+                gx = np.exp(-0.5*((x_m[mi]-W[pj, 0])/hx)**2)/(np.sqrt(2*np.pi)*hx)
+                ddx = dw[mi, 1]-W[pj, 1]; ddy = dw[mi, 2]-W[pj, 2]
+                q = (sy2[mi]*ddx**2-2*cxy[mi]*ddx*ddy+sx2[mi]*ddy**2)/det[mi]
+                gp = np.exp(-0.5*q)/(2*np.pi*np.sqrt(det[mi]))
+                gv = np.where(hasv[mi], np.exp(-0.5*((dv0[mi]-V[pj])/sv[mi])**2)/(np.sqrt(2*np.pi)*sv[mi]), 1.)
+                g = gu*gx*gp*gv; key = grp[pj]*n+mi
+                bS += np.bincount(key, weights=g, minlength=NG*n).reshape(NG, n)
+                bS2 += np.bincount(key, weights=g*g, minlength=NG*n).reshape(NG, n)
+            lo = np.searchsorted(Us, du[sl]-c*hu, "left"); hi = np.searchsorted(Us, du[sl]+c*hu, "right")
+            ul = hi-lo
+            if ul.sum():
+                mi = np.repeat(sl, ul); pj = order[np.concatenate([np.arange(a, b) for a, b in zip(lo, hi) if b > a])]
+                gu = np.exp(-0.5*((du[mi]-U[pj])/hu)**2)/(np.sqrt(2*np.pi)*hu)
+                bSu += np.bincount(grp[pj]*n+mi, weights=gu, minlength=NG*n).reshape(NG, n)
+        tS, tSu, tS2 = bS.sum(0), bSu.sum(0), bS2.sum(0)
+        f += tS/(K*nk); fu += tSu/(K*nk); f2 += tS2/(K*nk)**2
+        if G:
+            for gg in range(NG):
+                m_ = nk-nkg[gg]
+                if m_ > 0:                      # leave-out sample of this bin (an emptied bin keeps its weight, zero density)
+                    flo[gg] += (tS-bS[gg])/(K*m_); fulo[gg] += (tSu-bSu[gg])/(K*m_)
+    num = (1-eps)*f+eps*g_u*g_w; den = (1-eps)*fu+eps*g_u
+    Li = num/den
+    result = dict(total=float(np.log(Li).sum()), per_star=np.log(Li), K=K, frac_bg=float(np.mean(eps*g_u*g_w/num)))
+    if return_components:
+        result.update(foreground_joint=f, foreground_u=fu, background_u=g_u, background_w=g_w)
+    if return_neff:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            result["n_eff"] = np.where(f2 > 0, f**2/f2, 0.)
+    if G:
+        lo_per = np.log(((1-eps)*flo+eps*g_u*g_w)/((1-eps)*fulo+eps*g_u))
+        lot = lo_per.sum(axis=1)
+        result.update(per_star_jk=G*result["per_star"]-(G-1)*lo_per.mean(axis=0), total_jk=float(G*result["total"]-(G-1)*lot.mean()),
+                      leave_out_totals=lot, var_jk=float((G-1)/G*np.sum((lot-lot.mean())**2)))
     return result
