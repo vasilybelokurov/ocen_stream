@@ -1,0 +1,28 @@
+# Codex review: history matching + stratified search plan (2026-10-18)
+
+Codex CLI, effort high, read-only.
+
+
+**The oracle does not establish “root = search coverage” uniquely.** It adds a high score **and** adds the truth location to the optimizer starts. Separate those effects with a cheap crossed ablation: original/refitted emulator × original/truth-augmented starts. Missing information is strongly implicated; exclusive causation remains unproved. [emulator_benchmark.py:74–85](bin/streams/emulator_benchmark.py:74)
+
+My ranked recommendation:
+
+1. **Use stratified local search, with reversible global screening.** Your score-relative implausibility is an optimisation screen; conventional history matching compares simulator outputs with observations and their uncertainties. ([Vernon et al.](https://www2.stat.duke.edu/~mukee002/REUF/Uncertainty/euclid.ba.1340110846.pdf)) Keep excluded regions eligible for exploration and restarts. Making *all* global exploration conditional on NROY risks preserving the original mistake.
+
+2. **Do not justify \(d\) from `z_sd ≈ 1.4`.** Set physical discrepancy \(d=0\) for this numerical search; calibrate emulator uncertainty separately using signed blocked-validation residuals, their bias, and one-sided upper-tail coverage. The existing statistic divides by **combined emulator and simulation uncertainty**, so its standard deviation does not directly estimate an emulator-only multiplier. [emulator_benchmark.py:47–51](bin/streams/emulator_benchmark.py:47) Moreover, T2/T3 truth residuals reach 5.81/6.78σ despite blocked `z_sd` near 1.4. [benchmark.json:770–797](results/plot_data/emulator_benchmark_20261018.json:770), [benchmark.json:1322–1349](results/plot_data/emulator_benchmark_20261018.json:1322) Treat cutoff 3 as provisional acquisition tuning. Screen against a replicated incumbent’s **lower confidence bound minus the declared search tolerance**, rather than the largest noisy observation.
+
+3. **Start with 100 total sprays per wave:** 60 adaptive local evaluations, 20 whole-domain space-filling evaluations, 10 held-out validations, 10 independent checks—two per angle bin. Use two separated starts per bin and refit after small batches; replenish unsuccessful starts. This allocation is a pilot assumption, not an established optimum. Ten starts leave little budget per start, so share existing observations rather than fitting ten tiny independent GPs. Make shrink/expand decisions noise-aware; the reference TuRBO implementation explicitly warns that noisy observations require different incumbent handling. ([TuRBO README](https://github.com/uber-research/TuRBO/blob/master/README.md))
+
+4. **Fix catalogue routing before spending simulations.** The current designer fits stored original scores, the batch worker scores against the real catalogue, and rescoring enumerates fixed batch directories. New mock-directed waves therefore require explicit catalogue-specific score inputs and batch lists throughout. [emulator_design.py:58–85](bin/streams/emulator_design.py:58), [stream_batch.py:89–100](bin/streams/stream_batch.py:89), [rescore_batch.py:24–47](bin/streams/rescore_batch.py:24)
+
+5. **Use T2 for development; require untouched tests before inference.** Freeze rules before the new 20°/33° cases, and vary generating-spray seeds: the existing two catalogues per truth share one generating spray. [mock_data.py:99–108](bin/streams/mock_data.py:99) Reusing a common spray library is fair if every competing method receives it and its cost is disclosed. Accept search recovery when a one-sided uncertainty bound on `truth score − candidate score` is below 100; do not require absolute agreement, since a finite-catalogue optimum can beat truth. Freeze candidates before independent checks.
+
+6. **Separate search completion from interval validation.** Provisionally stop after two waves with independently resolved improvement below the tolerance in every competitive bin, plus an exploration/restart audit; reaching the budget means “unresolved” if these fail. Refine angle locations around competing peaks and interval crossings—five bin maxima alone are insufficient. Current profile bands are pointwise GP uncertainty at selected maximizers, not calibrated angle intervals. [mock_recovery.py:115–122](bin/streams/mock_recovery.py:115) Keep total lnL as the acceptance objective; tracks can guide proposals without replacing it.
+
+Separately:
+
+1. **Verified versus assumed:** I read the requested files, benchmark records, mock generation, and relevant tests; I did not rerun fits or tests. Existing emulator tests cover a smooth quadratic toy and random-fold coverage, not missed-ridge discovery. [test_emulator.py:8–41](tests/test_emulator.py:8) The proposed budget, starts and stopping thresholds are assumptions to validate.
+
+2. **Strongest argument against this answer:** stratification may spread 100 evaluations too thinly across eight nuisance dimensions. A global acquisition policy could discover the ridge faster. Only matched-budget, independently scored comparisons can establish the benefit.
+
+3. **Needed for confidence:** the crossed oracle ablation; matched-budget search comparisons; independent generating-spray repeats; competitive-point resolution checks; direct validation of profile differences; and regression tests for catalogue routing, held-out isolation, duplicate simulation identities, and interrupted/resumed waves.
