@@ -60,6 +60,8 @@ def load(batches, purposes=None, exclude_purposes=("validation (held out)",)):
         j = json.loads(f.read_text()); add(f"t{j['point']}", D[j["point"]]["unit"], j, "training")
     dirs = list(dict.fromkeys([REPS]+[Path(x) if Path(x).is_absolute() else ROOT/x for x in batches]))
     for b in dirs:
+        if not (b/"runs").is_dir():
+            raise SystemExit(f"batch directory {b} has no runs/ (missing or mistyped)")
         mids = set()
         for f in (b/"runs").glob("*.json"):
             if f.name.endswith(".error.json"):
