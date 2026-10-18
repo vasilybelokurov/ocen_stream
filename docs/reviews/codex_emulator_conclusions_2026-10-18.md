@@ -1,0 +1,24 @@
+# Codex review: conclusions of the 2026-10-18 emulator campaign
+
+Codex CLI, effort high, read-only. All points checked and adopted in docs/kb/stream_status.md; the best_check pooling bug fixed.
+
+
+The saved evidence contradicts two details: final median noise SD is **65**, not 76, and the optimized final maximum has SD **806**, not 575. ([validation:30](results/plot_data/emulator_validate_final_20261018.json:30), [report:1261](results/plot_data/emulator_report_final.json:1261))
+
+There is also a reporting bug: `best_check` pools checks from different parameter points while reporting the first point’s parameters and prediction. **Do not quote its combined mean or scatter.** ([emulator_report.py:107–119](bin/streams/emulator_report.py:107))
+
+- **(1) “Calibrated” is too strong; “no reliable bar constraints yet” is defensible.** Broad predictive coverage looks approximately consistent, but top-quintile bias is +467 and held-out coverage is 16/18. These do not establish calibration near selected maxima. The profiles maximize over finite candidates; their bands are pointwise prediction uncertainties, not uncertainty bands for optimized profiles. Comparing SD with profile height alone also ignores correlated prediction errors. ([validation:21–38](results/plot_data/emulator_validate_final_20261018.json:21), [emulator_report.py:69–79](bin/streams/emulator_report.py:69))
+
+- **(2) Say “these two reference models are indistinguishable at current precision.”** Their means differ by approximately 3, with a rough independent-seed standard error of 70. Two seeds each establish neither equivalence nor resolution convergence. They also differ in distance, amplitude and size, so this is not an isolated angle comparison. Existing resolution checks concern two other calibration points. ([reference scores:7–10](results/streams/emulator_paperref_20261018/run.log:7), [reference parameters:12–67](results/streams/emulator_paperref_20261018/jobs.json:12), [stream_status.md:72–78](docs/kb/stream_status.md:72))
+
+- **(3) Approximately +600 is supported at one independently replicated point, not throughout a “best-fit region.”** The eight checks give −21,568.5 with seed SD 29.7 and **SE 10.5**. Its slow bar, large distance and boundary \(v_c\) are candidate properties, not parameter measurements. No distance prior enters the training target. The new predicted maximum additionally hits the PM-declination and halo-flattening bounds; extending only \(v_c\) misses those warnings. ([checks:11–18](results/streams/emulator_check_20261018/run.log:11), [checked parameters:24–33](results/streams/emulator_check_20261018/jobs.json:24), [score target:99–109](bin/streams/stream_batch.py:99), [final maximum:1250–1259](results/plot_data/emulator_report_final.json:1250))
+
+- **(4) The trade-off persists locally.** At \(\phi_1=21^\circ\), the PM-declination residual improves from about −0.82 to −0.16, while the sky offset grows from about 0.47° to 1.42°. That supports a remaining mismatch, not an unavoidable trade-off throughout parameter space. The comparison uses the highest-scoring individual run against a 32k reference, so seed selection and unequal resolution remain caveats. ([track values:1306–1477](results/plot_data/emulator_report_final.json:1306), [selection:120–134](bin/streams/emulator_report.py:120), [reference resolution:9–10](bin/streams/emulator_report.py:9))
+
+- **(5) Denser local sampling is justified; a local GP is an experiment, not an established remedy.** Retain global exploration and fresh validation. Choose tempering using held-out segments or mock coverage, not by making these profiles look restrictive—the stated calibration plan already requires that. ([design:175–189](bin/streams/emulator_design.py:175), [stream_status.md:98–99](docs/kb/stream_status.md:98))
+
+1. **Verified versus assumed.** I read the implementation and saved records and recomputed the replicate summaries. I assume the recorded simulations and scores reproduce their inputs; I did not rerun sprays, scores or tests.
+
+2. **Strongest argument against my caution.** The independently checked gain of about 600 is much larger than its measured seed uncertainty. It is credible evidence of an improved score at that point, despite inaccurate emulator localization. ([check scores:11–18](results/streams/emulator_check_20261018/run.log:11))
+
+3. **Needed for confidence.** Check resolution convergence at the winner and both references; validate nearby competitors with fresh seeds; compare profiles after constrained optimization and joint GP uncertainty. Add regression coverage for check grouping and production validation: the existing toy coverage test exercises a different CV function, and held-out validation uses raw jackknife variance whereas campaign CV uses fitted noise. ([test_emulator.py:36–41](tests/test_emulator.py:36), [emulator_design.py:107–139](bin/streams/emulator_design.py:107))
