@@ -65,7 +65,7 @@ def manifest(jobs):
     h = hashlib.sha256()
     for a in (du, dW, d["v"], d["e_v"], cov, np.asarray(win)):
         h.update(np.ascontiguousarray(np.asarray(a, np.float64)).tobytes())
-    srcs = TS.project_sources()+["bin/streams/stream_batch.py"]
+    srcs = TS.project_sources()+["bin/streams/stream_batch.py", "bin/streams/rescore_batch.py", "bin/streams/mock_data.py"]
     m = dict(sources={s: sha(ROOT/s) for s in sorted(set(srcs))}, inputs=TS.input_files(), data_sha256=h.hexdigest(),
              jobs_sha256=hashlib.sha256(json.dumps(jobs, sort_keys=True).encode()).hexdigest(), age_cut_myr=TS.AGE_CUT,
              score_chunk=TS.SCORE_CHUNK, chi_edges=TS.CHI_EDGES.tolist(), jackknife_groups=G_JK,
@@ -79,6 +79,49 @@ def manifest(jobs):
     return m
 
 
+def catalogue_spec(outdir):
+    """OUTDIR/catalogue.json = {"catalogue": "real" | repo-relative mock npz, "box": "data" | "wide"} (optional; 2026-10-18):
+    score new sprays against that catalogue (fast scorer: chi 0-200, cutoff 7, one-pass jackknife) instead of the default
+    real-data scores. Needed for searches driven by a mock (Codex 2026-10-18: catalogue routing)."""
+    f = Path(outdir)/"catalogue.json"
+    if not f.exists():
+        return None
+    c = json.loads(f.read_text())
+    c["sha256"] = "real" if c["catalogue"] == "real" else sha(ROOT/c["catalogue"])
+    return c
+
+
+def task_catalogue(job, mid, sources, outdir, spec):
+    import rescore_batch as RB
+    from grid4_common import make_spray, win, project_gc, GC
+    from ocen_dm.streams.score import score_conditional
+    rd = Path(outdir)/"runs"; rid = job["run_id"]; p = job["params"]; t0 = time.time()
+    m = make_spray(p["omega"], p["angle"], p["amp"], p["dist"], nrel=job["nrel"], seed=job["seed"], pm=(p["pmra"], p["pmdec"]),
+                   host_kw=dict(bar_size=p["size"], axi_variant=dict(halo_q=p["halo_q"], vc_target=p["vc"])),
+                   max_age_myr=TS.AGE_CUT, epoch_offset=job["epoch_offset"])
+    t1 = time.time()
+    keys = ("l", "b", "pmra", "pmdec", "vlos", "d", "chi", "age")
+    ms = {k: np.asarray(m[k], np.float64) for k in keys}; ms["age_cut_myr"] = np.float64(TS.AGE_CUT)
+    npz = rd/f"{rid}.npz"; tmp = rd/f"{rid}_tmp.npz"; np.savez_compressed(tmp, **ms); os.replace(tmp, npz)
+    c, csha, ob = RB.catalogue(spec["catalogue"] if spec["catalogue"] == "real" else str(ROOT/spec["catalogue"]))
+    if csha != spec["sha256"]:
+        raise RuntimeError("catalogue changed since the manifest")
+    BG, VB = RB.bounds(spec["box"]); ob = "raise" if spec["box"] == "wide" else ob
+    mu, mx = project_gc(ms["l"], ms["b"], GC)
+    s = score_conditional(c["du"], c["dw"], c["dv"], c["dev"], c["cov"], mu, np.column_stack((mx, ms["pmra"], ms["pmdec"])), ms["vlos"],
+                          ms["chi"], ms["age"], u_window=win, w_bounds=BG, v_bounds=VB, chi_edges=TS.CHI_EDGES, cutoff=RB.CUTOFF,
+                          jackknife_groups=RB.G, chunk=TS.SCORE_CHUNK, outside_bounds=ob)
+    t2 = time.time()
+    np.savez_compressed(rd/f"{rid}_perstar_tmp.npz", lnL_chi200=s["per_star"], lnL_chi200_jk=s["per_star_jk"], leave_out_totals=s["leave_out_totals"])
+    os.replace(rd/f"{rid}_perstar_tmp.npz", rd/f"{rid}_perstar.npz")
+    rec = dict(job, manifest_sha256=mid, catalogue=spec, spray_sha256=sha(npz), perstar_sha256=sha(rd/f"{rid}_perstar.npz"),
+               n_particles=int(len(ms["chi"])), scores=dict(chi200=dict(total=float(s["total"]), frac_bg=float(s["frac_bg"]))),
+               total_jk=float(s["total_jk"]), bias_jk=float(s["total"]-s["total_jk"]), var_jk=float(s["var_jk"]),
+               t_spray_s=t1-t0, t_score_jk_s=t2-t1)
+    TS.atomic_write(rd/f"{rid}.json", json.dumps(rec, indent=1))
+    return rid, s["total_jk"], t1-t0, t2-t1, None
+
+
 def task(args):
     job, mid, sources, outdir = args
     rd = Path(outdir)/"runs"; rid = job["run_id"]
@@ -86,6 +129,9 @@ def task(args):
         changed = [s for s, h in sources.items() if sha(ROOT/s) != h]
         if changed:
             raise RuntimeError(f"source files changed since the manifest: {changed}")
+        spec = catalogue_spec(outdir)
+        if spec is not None:
+            return task_catalogue(job, mid, sources, outdir, spec)
         from grid4_common import make_spray, score
         p = job["params"]; t0 = time.time()
         m = make_spray(p["omega"], p["angle"], p["amp"], p["dist"], nrel=job["nrel"], seed=job["seed"], pm=(p["pmra"], p["pmdec"]),
@@ -133,7 +179,11 @@ def task(args):
 def prepare(outdir):
     (outdir/"runs").mkdir(parents=True, exist_ok=True)
     jobs = json.loads((outdir/"jobs.json").read_text())
-    man = manifest(jobs); mf = outdir/"manifest.json"
+    man = manifest(jobs); spec = catalogue_spec(outdir)
+    if spec is not None:                       # the catalogue is part of the batch identity
+        man["catalogue"] = spec
+        man["manifest_sha256"] = hashlib.sha256((man["manifest_sha256"]+json.dumps(spec, sort_keys=True)).encode()).hexdigest()
+    mf = outdir/"manifest.json"
     if mf.exists():
         old = json.loads(mf.read_text())
         if old["manifest_sha256"] != man["manifest_sha256"]:
