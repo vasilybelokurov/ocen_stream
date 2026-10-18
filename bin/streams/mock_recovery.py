@@ -8,6 +8,7 @@ truth (mocks_20261018/T<t>/mock_c<c>.json). Steps (same pipeline as the real dat
 2. 5-fold CV with the noise model refitted per fold; held-out points;
 3. emulator maximum (L-BFGS-B from the 20 best runs) and optimised 1-D profiles (per bin: L-BFGS-B over the other 8
    coordinates from the bin's 3 best candidates);
+Profiles for 'size' fix its unit coordinate (fraction of the corotation-allowed range), not the physical size.
 4. truth: emulator mean +- sd at the truth's unit coordinates vs the jackknife score of the independent truth-check spray
    (same parameters, other seed) against the mock; the generating spray's own score for reference.
 Output: OUTDIR/recovery.json, plots/mock_recovery_<tag>.png
@@ -47,10 +48,17 @@ def score_spray(path, cat, bounds):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--mock", required=True); ap.add_argument("--rescore", required=True)
-    ap.add_argument("--tag", required=True); a = ap.parse_args()
+    ap.add_argument("--tag", required=True); ap.add_argument("--variant", default="", help="suffix for repeated analyses")
+    a = ap.parse_args()
     mock = Path(a.mock) if Path(a.mock).is_absolute() else ROOT/a.mock; rd = Path(a.rescore) if Path(a.rescore).is_absolute() else ROOT/a.rescore
     info = json.loads(mock.with_suffix(".json").read_text()); truth = info["params"]
     R = json.loads((rd/"rescore.json").read_text())
+    import hashlib
+    if R["manifest"]["catalogue_sha256"] != hashlib.sha256(mock.read_bytes()).hexdigest():
+        raise SystemExit("rescore.json was made for a different catalogue than --mock")
+    outf = rd/f"recovery{'_'+a.variant if a.variant else ''}.json"
+    if outf.exists():
+        raise SystemExit(f"{outf} exists; refusing to overwrite")
     rows = [r for r in R["rows"] if r["purpose"] != HELD]; held = [r for r in R["rows"] if r["purpose"] == HELD]
     X = np.array([r["unit"] for r in rows]); y = np.array([r["total_jk"] for r in rows]); v = np.array([r["var_jk"] for r in rows])
     key = np.array([r["key"] for r in rows])
@@ -77,7 +85,7 @@ def main():
     # emulator maximum
     from scipy.optimize import minimize
     best = None
-    for x0 in list(g["X"][np.argsort(-g["ybar"])[:20]])+[ut]:
+    for x0 in g["X"][np.argsort(-g["ybar"])[:20]]:           # measured points only: no truth-informed start (Codex 2026-10-18)
         r = minimize(lambda x: -em.predict(x[None], return_std=False)[0], x0, method="L-BFGS-B", bounds=[(0, 1)]*9)
         best = r if best is None or r.fun < best.fun else best
     mb, sb = em.predict(best.x[None]); pb = ED.unit_to_params(best.x)
@@ -88,7 +96,7 @@ def main():
     from scipy.stats import qmc
     import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
     rng = np.random.default_rng(5); C = qmc.Sobol(9, scramble=True, seed=21).random_base2(15)
-    C = np.vstack((C, np.clip(np.repeat(np.vstack((g["X"][np.argsort(-g["ybar"])[:10]], ut)), 300, 0)+rng.normal(0, 0.05, (3300, 9)), 0, 1)))
+    C = np.vstack((C, np.clip(np.repeat(g["X"][np.argsort(-g["ybar"])[:10]], 300, 0)+rng.normal(0, 0.05, (3000, 9)), 0, 1)))
     mu, sd = em.predict(C); P = ER.physical(C, smax); ref = max(mu.max(), float(mb[0]))
     fig, ax = plt.subplots(3, 3, figsize=(11, 9), constrained_layout=True); out["profiles"] = {}
     for k, axx in zip(ED.NAMES, ax.ravel()):
@@ -114,7 +122,7 @@ def main():
     fig.suptitle(f"mock {a.tag}: emulator profiles (max over the rest, rel. to the max; 2 sd band); red: truth; blue dashed: emulator max",
                  fontsize=9)
     fig.savefig(ROOT/f"plots/mock_recovery_{a.tag}.png", dpi=120); plt.close(fig)
-    (rd/"recovery.json").write_text(json.dumps(out, indent=1))
+    outf.write_text(json.dumps(out, indent=1))
     ts = out["truth_score"]; ex = out["emulator_max"]
     print(f"{a.tag}: CV all rmse {out['cv_all']['rmse']:.0f} z_sd {out['cv_all']['z_sd']:.2f} cover95 {out['cv_all']['cover95']:.2f}; "
           f"top20 rmse {out['cv_top20']['rmse']:.0f} bias {out['cv_top20']['bias']:+.0f}; held-out rmse {out.get('heldout', {}).get('rmse', np.nan):.0f}")

@@ -59,14 +59,32 @@ class NoiseModel:
         return np.exp(self.predict_log(X, vjk))
 
 
-class MeanEmulator:
-    """GP on replicate means with fixed per-point noise s2/r."""
+def _features(X, trend):
+    if trend == "linear":
+        return X
+    if trend == "quadratic":
+        from sklearn.preprocessing import PolynomialFeatures
+        return PolynomialFeatures(2, include_bias=False).fit_transform(X)
+    raise ValueError(trend)
 
-    def __init__(self, n_restarts=5, nu=2.5):
-        self.n_restarts, self.nu = n_restarts, nu
+
+class MeanEmulator:
+    """GP on replicate means with fixed per-point noise s2/r. trend: 'constant' (default), 'linear' or 'quadratic' --
+    a ridge-regularised polynomial mean (alpha by generalised CV, weights 1/noise) with the GP on its residuals
+    (2026-10-18; trend-coefficient uncertainty is not propagated)."""
+
+    def __init__(self, n_restarts=5, nu=2.5, trend="constant"):
+        self.n_restarts, self.nu, self.trend = n_restarts, nu, trend
+
+    def _trend(self, X):
+        return 0. if self.trend == "constant" else self.reg.predict(_features(X, self.trend))
 
     def fit(self, X, ybar, noise_var):
         d = X.shape[1]
+        if self.trend != "constant":
+            from sklearn.linear_model import RidgeCV
+            self.reg = RidgeCV(alphas=np.logspace(-4, 3, 22)).fit(_features(X, self.trend), ybar, sample_weight=1/noise_var)
+            ybar = ybar-self.reg.predict(_features(X, self.trend))
         self.ymu, self.ysd = float(ybar.mean()), float(ybar.std())
         kern = ConstantKernel(1.0, (1e-3, 1e6))*Matern(np.full(d, 0.5), (0.02, 50.), nu=self.nu)
         self.gp = GaussianProcessRegressor(kern, alpha=noise_var/self.ysd**2, normalize_y=False,
@@ -75,8 +93,8 @@ class MeanEmulator:
         return self
 
     def predict(self, X, return_std=True):
-        m, s = self.gp.predict(X, return_std=True)
-        return (self.ymu+self.ysd*m, self.ysd*s) if return_std else self.ymu+self.ysd*m
+        m, s = self.gp.predict(X, return_std=True); t = self._trend(X)
+        return (t+self.ymu+self.ysd*m, self.ysd*s) if return_std else t+self.ymu+self.ysd*m
 
 
 def kfold_validate(X, ybar, noise_var, K=5, seed=0, **kw):
