@@ -6,7 +6,8 @@ truth (mocks_20261018/T<t>/mock_c<c>.json). Steps (same pipeline as the real dat
 1. emulator fit: replicate means, noise surface from the replicate variances (jackknife covariate), mean GP; held-out
    validation points excluded from the fit;
 2. 5-fold CV with the noise model refitted per fold; held-out points;
-3. emulator maximum (L-BFGS-B from the 20 best runs) and 1-D profiles (max over 2^15 Sobol + local candidates);
+3. emulator maximum (L-BFGS-B from the 20 best runs) and optimised 1-D profiles (per bin: L-BFGS-B over the other 8
+   coordinates from the bin's 3 best candidates);
 4. truth: emulator mean +- sd at the truth's unit coordinates vs the jackknife score of the independent truth-check spray
    (same parameters, other seed) against the mock; the generating spray's own score for reference.
 Output: OUTDIR/recovery.json, plots/mock_recovery_<tag>.png
@@ -34,13 +35,14 @@ def to_unit(p, smax):
     return u
 
 
-def score_spray(path, cat):
-    from grid4_common import win, BG_BOUNDS, V_BOUNDS, project_gc, GC
+def score_spray(path, cat, bounds):
+    from grid4_common import win, project_gc, GC
+    BG_BOUNDS, V_BOUNDS = [tuple(map(tuple, bounds[0])), tuple(bounds[1])]
     from ocen_dm.streams.score import score_conditional
     m = dict(np.load(path)); mu, mx = project_gc(m["l"], m["b"], GC)
     return score_conditional(cat["du"], cat["dw"], cat["dv"], cat["dev"], cat["cov"], mu, np.column_stack((mx, m["pmra"], m["pmdec"])),
                              m["vlos"], m["chi"], m["age"], u_window=win, w_bounds=BG_BOUNDS, v_bounds=V_BOUNDS, chi_edges=np.arange(0., 205., 5.),
-                             cutoff=7., jackknife_groups=10, chunk=50, outside_bounds="zero")
+                             cutoff=7., jackknife_groups=10, chunk=50)
 
 
 def main():
@@ -65,7 +67,8 @@ def main():
     # truth
     smax = ER.smax_interp(); ut = to_unit(truth, smax)
     mt, st = em.predict(ut[None]); cat = dict(np.load(mock))
-    chk = score_spray(mock.parent/"check_spray.npz", cat); gen = score_spray(mock.parent/"truth_spray.npz", cat)
+    bd = R["manifest"]["bounds"]
+    chk = score_spray(mock.parent/"check_spray.npz", cat, bd); gen = score_spray(mock.parent/"truth_spray.npz", cat, bd)
     out["truth_unit"] = ut.tolist()
     out["truth_score"] = dict(check_spray_jk=chk["total_jk"], check_spray_sd_jk=float(np.sqrt(chk["var_jk"])), generating_spray_jk=gen["total_jk"],
                               emulator_mu=float(mt[0]), emulator_sd=float(st[0]),
@@ -90,8 +93,21 @@ def main():
     fig, ax = plt.subplots(3, 3, figsize=(11, 9), constrained_layout=True); out["profiles"] = {}
     for k, axx in zip(ED.NAMES, ax.ravel()):
         e = np.linspace(P[k].min(), P[k].max(), 21); c = 0.5*(e[1:]+e[:-1]); pm, ps = [], []
+        j = ED.NAMES.index(k)
         for x0, x1 in zip(e[:-1], e[1:]):
-            s = (P[k] >= x0) & (P[k] <= x1); i = np.flatnonzero(s)[np.argmax(mu[s])]; pm.append(mu[i]-ref); ps.append(sd[i])
+            # optimised profile (2026-10-18): maximise mu over the other 8 coordinates, coordinate j fixed at the bin centre (in
+            # unit space), from the 3 best candidates of the bin; size uses its unit coordinate
+            s = (P[k] >= x0) & (P[k] <= x1); cand = np.flatnonzero(s)[np.argsort(-mu[s])[:3]]
+            uc = np.median(C[s, j]); bestv, bests = -np.inf, 0.
+            for i in cand:
+                free = [q for q in range(9) if q != j]
+                def negmu(z, i=i):
+                    x = C[i].copy(); x[free] = z; x[j] = uc
+                    return -em.predict(x[None], return_std=False)[0]
+                r = minimize(negmu, C[i][free], method="L-BFGS-B", bounds=[(0, 1)]*8, options=dict(maxiter=60))
+                if -r.fun > bestv:
+                    x = C[i].copy(); x[free] = r.x; x[j] = uc; bestv = -r.fun; bests = em.predict(x[None])[1][0]
+            pm.append(bestv-ref); ps.append(bests)
         pm, ps = np.array(pm), np.array(ps); out["profiles"][k] = dict(x=c.tolist(), dlnL=pm.tolist(), sd=ps.tolist())
         axx.fill_between(c, pm-2*ps, pm+2*ps, color="0.85"); axx.plot(c, pm, "k-"); axx.axvline(truth[k], color="C3", lw=1.2)
         axx.axvline(pb[k], color="C0", lw=0.8, ls="--"); axx.set(xlabel=k, ylim=(-4000, 600))

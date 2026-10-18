@@ -4,8 +4,9 @@
 Sprays: the emulator's runs -- training_9d_20261017 replicate 0 (256k), training_9d_reps_20261018, emulator_round1/2,
 emulator_check (all 256k). Score: score_conditional with fixed chi bins 0-200, cutoff 7, one-pass jackknife G = 10
 (matches the exact brute-force scores to < 1e-3; tests/test_score_cutoff.py), background box and u window of the real data.
-Catalogue: 'real' (grid4_common member arrays) or a mock npz from mock_data.py (du, dw, dv, dev, cov); mocks are scored with
-outside_bounds='zero' (members outside the box get no background density).
+Catalogue: 'real' (grid4_common member arrays) or a mock npz from mock_data.py (du, dw, dv, dev, cov). --box wide scores with
+mock_data.WIDE_W/WIDE_V (the box the mock's background was drawn from); --box data uses the real data's box (mocks then
+with outside_bounds='zero').
 Output: OUTDIR/rescore.json = dict(manifest, rows): per run key, unit, purpose, seed, epoch_offset, nrel, params, spray path
 and sha256, total, total_jk, var_jk. Manifest: catalogue sha256, settings, source hashes.
 Usage: OMP_NUM_THREADS=1 PYTHONPATH=src python bin/streams/rescore_batch.py --catalogue real|PATH --outdir DIR --workers 8
@@ -54,11 +55,19 @@ def catalogue(spec):
     c = dict(np.load(spec)); return dict(du=c["du"], dw=c["dw"], dv=c["dv"], dev=c["dev"], cov=c["cov"]), sha(spec), "zero"
 
 
+def bounds(box):
+    from grid4_common import BG_BOUNDS, V_BOUNDS
+    from mock_data import WIDE_W, WIDE_V
+    return (WIDE_W, WIDE_V) if box == "wide" else (BG_BOUNDS, V_BOUNDS)
+
+
 def task(args):
-    r, spec = args
-    from grid4_common import win, BG_BOUNDS, V_BOUNDS, project_gc, GC
+    r, spec, box = args
+    from grid4_common import win, project_gc, GC
+    BG_BOUNDS, V_BOUNDS = bounds(box)
     from ocen_dm.streams.score import score_conditional
     c, _, ob = catalogue(spec)
+    ob = "raise" if box == "wide" else ob
     m = dict(np.load(ROOT/r["spray"])); mu, mx = project_gc(m["l"], m["b"], GC)
     s = score_conditional(c["du"], c["dw"], c["dv"], c["dev"], c["cov"], mu, np.column_stack((mx, m["pmra"], m["pmdec"])), m["vlos"],
                           m["chi"], m["age"], u_window=win, w_bounds=BG_BOUNDS, v_bounds=V_BOUNDS, chi_edges=E, cutoff=CUTOFF,
@@ -68,16 +77,19 @@ def task(args):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--catalogue", required=True); ap.add_argument("--outdir", required=True)
-    ap.add_argument("--workers", type=int, default=8); a = ap.parse_args()
+    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--box", default="data", choices=("data", "wide"), help="background box: the real data's, or the wide mock box")
+    a = ap.parse_args()
     od = Path(a.outdir) if Path(a.outdir).is_absolute() else ROOT/a.outdir; od.mkdir(parents=True, exist_ok=True)
     if (od/"rescore.json").exists():
         raise SystemExit(f"{od/'rescore.json'} exists; refusing to overwrite")
     _, csha, ob = catalogue(a.catalogue); R = runs(); t0 = time.time()
     with Pool(a.workers, maxtasksperchild=50) as pool:
-        rows = pool.map(task, [(r, a.catalogue) for r in R], chunksize=4)
+        rows = pool.map(task, [(r, a.catalogue, a.box) for r in R], chunksize=4)
     man = dict(catalogue=a.catalogue if a.catalogue == "real" else str(Path(a.catalogue).resolve().relative_to(ROOT.resolve()))
                if str(Path(a.catalogue).resolve()).startswith(str(ROOT.resolve())) else Path(a.catalogue).name,
-               catalogue_sha256=csha, outside_bounds=ob, chi_edges=E.tolist(), cutoff=CUTOFF, jackknife_groups=G,
+               catalogue_sha256=csha, outside_bounds="raise" if a.box == "wide" else ob, box=a.box,
+               bounds=[list(map(list, bounds(a.box)[0])), list(bounds(a.box)[1])], chi_edges=E.tolist(), cutoff=CUTOFF, jackknife_groups=G,
                sources={s: sha(ROOT/s) for s in SOURCES}, n_runs=len(rows), seconds=time.time()-t0)
     tmp = od/"rescore.json.tmp"; tmp.write_text(json.dumps(dict(manifest=man, rows=rows))); os.replace(tmp, od/"rescore.json")
     print(f"{len(rows)} runs re-scored in {time.time()-t0:.0f} s -> {od/'rescore.json'}")

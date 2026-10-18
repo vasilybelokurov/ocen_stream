@@ -34,6 +34,9 @@ TRUTHS = {1: dict(angle=14.0, omega=34.8, amp=1.35, size=1.2, dist=5.48, pmra=-3
           2: dict(angle=27.0, omega=35.0, amp=1.0, size=1.0, dist=5.43, pmra=-3.250, pmdec=-6.746, vc=229.0, halo_q=1.0),
           3: dict(angle=27.0, omega=35.0, amp=0.7, size=1.0, dist=5.43, pmra=-3.250, pmdec=-6.746, vc=229.0, halo_q=1.0)}
 KEYS = ("l", "b", "pmra", "pmdec", "vlos", "d", "chi", "age")
+# wide background box containing ~all model debris (0.01-99.99 % over 63 sprays, padded): mocks drawn from the full model
+# PDF are scored with this box, so generation and scoring use the same likelihood (2026-10-18)
+WIDE_W = ((-95., 55.), (-50., 10.), (-45., 15.)); WIDE_V = (-420., 450.)
 
 
 def spray(p, seed):
@@ -46,9 +49,11 @@ def spray(p, seed):
     return out, off
 
 
-def draw(m, rng):
-    """One mock catalogue from spray m (see module docstring). Returns dict(du, dw, dv, dev, cov, n_bg, n_redraw)."""
+def draw(m, rng, box="wide"):
+    """One mock catalogue from spray m (see module docstring). box: 'wide' (WIDE_W/WIDE_V, default) or 'data' (BG_BOUNDS)."""
     from grid4_common import du, dW, d, cov, win, BG_BOUNDS, V_BOUNDS, project_gc, GC
+    if box == "wide":
+        BG_BOUNDS, V_BOUNDS = WIDE_W, WIDE_V
     mu, mx = project_gc(m["l"], m["b"], GC)
     sel = (m["chi"] > 0) & (m["age"] < 700.)
     K = len(E)-1; kb = np.digitize(m["chi"], E)-1; inb = sel & (kb >= 0) & (kb < K)
@@ -91,30 +96,33 @@ def spray_task(args):
     return t, name, time.time()-t0
 
 
-def catalogues(t):
+def catalogues(t, box="wide"):
     od = OUT/f"T{t}"; m = dict(np.load(od/"truth_spray.npz")); sp = json.loads((od/"truth_spray.json").read_text())
     for c in (0, 1):
-        f = od/f"mock_c{c}.npz"
+        f = od/f"mock_{box}_c{c}.npz"
         if f.exists():
             raise SystemExit(f"{f} exists; refusing to overwrite")
-        cat = draw(m, np.random.default_rng([600000, t, c]))
+        cat = draw(m, np.random.default_rng([600000, t, c]), box=box)
         np.savez_compressed(f, **{k: v for k, v in cat.items() if isinstance(v, np.ndarray)})
-        (od/f"mock_c{c}.json").write_text(json.dumps(dict(truth=t, params=TRUTHS[t], eps=EPS, h=H, hv=HV, chi_edges=E.tolist(),
+        f.with_suffix(".json").write_text(json.dumps(dict(truth=t, params=TRUTHS[t], eps=EPS, h=H, hv=HV, chi_edges=E.tolist(),
                                                           truth_spray=sp, catalogue=c, sampling_seed=[600000, t, c],
-                                                          n_bg=cat["n_bg"], n_outside_box=cat["n_outside_box"],
+                                                          n_bg=cat["n_bg"], n_outside_box=cat["n_outside_box"], box=box,
                                                           sha256=hashlib.sha256(f.read_bytes()).hexdigest()), indent=1))
         print(f"T{t} c{c}: background {cat['n_bg']}, outside the box {cat['n_outside_box']}", flush=True)
 
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--workers", type=int, default=6); ap.add_argument("--truths", nargs="*", type=int, default=[1, 2, 3])
-    a = ap.parse_args()
-    jobs = [(t, n, 500000+10*t+(5 if n == "check_spray" else 0)) for t in a.truths for n in ("truth_spray", "check_spray")]
-    with Pool(min(a.workers, len(jobs)), maxtasksperchild=1) as pool:
-        for t, n, s in pool.imap_unordered(spray_task, jobs):
-            print(f"T{t} {n} done in {s:.0f} s", flush=True)
+    ap.add_argument("--box", default="wide", choices=("wide", "data")); a = ap.parse_args()
+    ap2 = a
+    jobs = [(t, n, 500000+10*t+(5 if n == "check_spray" else 0)) for t in a.truths for n in ("truth_spray", "check_spray")
+            if not (OUT/f"T{t}"/f"{n}.npz").exists()]
+    if jobs:
+        with Pool(min(a.workers, len(jobs)), maxtasksperchild=1) as pool:
+            for t, n, s in pool.imap_unordered(spray_task, jobs):
+                print(f"T{t} {n} done in {s:.0f} s", flush=True)
     for t in a.truths:
-        catalogues(t)
+        catalogues(t, box=a.box)
 
 
 if __name__ == "__main__":
