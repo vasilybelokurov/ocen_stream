@@ -231,7 +231,7 @@ def chi_kde_track(model, dchi=5., chi_max=105., nmin=20, age_max=700., floors=(0
 def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 0.2, 0.2), hv=5., dchi=5., nmin=20,
                       age_max=700., eps=0.05, u_window=None, w_box=(12., 30., 30.), v_box=400., chunk=400,
                       return_components=False, w_bounds=None, v_bounds=None, pooled=False, chi_edges=None, return_neff=False,
-                      cutoff=None, jackknife_groups=None):
+                      cutoff=None, jackknife_groups=None, outside_bounds="raise"):
     """Conditional likelihood of members given model particles, density-free along the observed along-stream coordinate u
     (design reviewed with Codex: docs/reviews/codex_conditional_kde_2026-10-09.md). Model: chi bins of width dchi (chi > 0, age < age_max,
     >= nmin particles), equal prior weight 1/K; in bin k a product-Gaussian KDE with FIXED bandwidths (same for every model):
@@ -263,6 +263,8 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
     widths of the member in the scaled sky plane (u/h_u, x/h_x; cKDTree), and the u-marginal only for particles within
     cutoff h_u in u. Sums are divided by the full bin counts. Omitted terms are bounded by exp(-cutoff^2/2) times the kernel
     peak (not relative to f); accuracy is tested on real sprays (tests/test_score_cutoff.py).
+    outside_bounds ('raise' default, unchanged; 'zero'): with 'zero' members outside w_bounds / v_bounds are allowed and get
+    zero background density (for mock catalogues drawn from the full model PDF; 2026-10-18).
     jackknife_groups G (requires cutoff): also return the delete-group jackknife (group g = particles with index % G == g,
     as score_bias.jackknife_total): per-member kernel sums are accumulated per group in one pass and each leave-one-out
     score is rebuilt from them with its own bin counts. Adds keys per_star_jk (N,), total_jk, leave_out_totals (G,),
@@ -275,17 +277,23 @@ def score_conditional(du, dw, dv, dev, dcov, mu, mw, mv, chi, age, h=(0.5, 0.5, 
         wb = np.asarray(w_bounds, float)
         if wb.shape != (3, 2) or np.any(wb[:, 1] <= wb[:, 0]):
             raise ValueError("w_bounds must be three (lo, hi) pairs with hi > lo")
-        if np.any(dw < wb[:, 0]) or np.any(dw > wb[:, 1]):
+        out_w = np.any((dw < wb[:, 0]) | (dw > wb[:, 1]), axis=1)
+        if out_w.any() and outside_bounds == "raise":
             raise ValueError("members outside the background box w_bounds")
         vol_w = float(np.prod(wb[:, 1]-wb[:, 0]))
         if v_bounds is not None:
             vb = np.asarray(v_bounds, float)
-            if np.any(dv[hasv] < vb[0]) or np.any(dv[hasv] > vb[1]):
+            out_v = hasv & ((np.nan_to_num(dv) < vb[0]) | (np.nan_to_num(dv) > vb[1]))
+            if out_v.any() and outside_bounds == "raise":
                 raise ValueError("line-of-sight velocities outside v_bounds")
             vol_v = float(vb[1]-vb[0])
         else:
-            vol_v = v_box
+            vol_v = v_box; out_v = np.zeros(n, bool)
         g_w = np.where(hasv, 1./(vol_w*vol_v), 1./vol_w)
+        if outside_bounds == "zero":           # mocks drawn from the unselected model: no background density outside the box
+            g_w = np.where(out_w | out_v, 0., g_w)
+        elif outside_bounds != "raise":
+            raise ValueError("outside_bounds must be 'raise' or 'zero'")
     else:
         g_w = np.where(hasv, 1./(np.prod(w_box)*v_box), 1./np.prod(w_box))
     k = (chi > 0) & (age < age_max)
