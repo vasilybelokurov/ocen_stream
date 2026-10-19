@@ -30,19 +30,23 @@ def sha(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
-def runs():
+def runs(extra=()):
     D = json.loads((TRAIN/"design.json").read_text())["points"]
     out = []
     for f in sorted(TRAIN.glob("runs/*_r0_n256k.json")):
         j = json.loads(f.read_text())
         out.append(dict(key=f"t{j['point']}", unit=D[j["point"]]["unit"], purpose="training", seed=j["seed"], epoch_offset=None,
                         nrel=j["nrel"], params=j["params"], spray=str(f.with_suffix(".npz").relative_to(ROOT))))
-    for b in BATCHES:
+    for b in list(BATCHES)+list(extra):
         for f in sorted((ROOT/b/"runs").glob("*.json")):
             if f.name.endswith(".error.json"):
                 continue
             j = json.loads(f.read_text())
+            if j.get("nrel") != 256000 or "spray_sha256" not in j:      # 256k sprays only (emulator data)
+                continue
             key, unit = (j["key"], j["unit"]) if "unit" in j and j["unit"] is not None else (f"t{j['point']}", D[j["point"]]["unit"])
+            if b in extra and not key.startswith("t"):        # keys of extra batches are local to them: make them unique
+                key = f"{Path(b).name}:{key}"
             out.append(dict(key=key, unit=unit, purpose=j.get("purpose", ""), seed=j["seed"], epoch_offset=j.get("epoch_offset"),
                             nrel=j["nrel"], params=j["params"], spray=str(f.with_suffix(".npz").relative_to(ROOT))))
     return out
@@ -79,11 +83,12 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--catalogue", required=True); ap.add_argument("--outdir", required=True)
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--box", default="data", choices=("data", "wide"), help="background box: the real data's, or the wide mock box")
+    ap.add_argument("--extra", nargs="*", default=[], help="further batch directories with 256k sprays (e.g. mock-search waves)")
     a = ap.parse_args()
     od = Path(a.outdir) if Path(a.outdir).is_absolute() else ROOT/a.outdir; od.mkdir(parents=True, exist_ok=True)
     if (od/"rescore.json").exists():
         raise SystemExit(f"{od/'rescore.json'} exists; refusing to overwrite")
-    _, csha, ob = catalogue(a.catalogue); R = runs(); t0 = time.time()
+    _, csha, ob = catalogue(a.catalogue); R = runs(a.extra); t0 = time.time()
     with Pool(a.workers, maxtasksperchild=50) as pool:
         rows = pool.map(task, [(r, a.catalogue, a.box) for r in R], chunksize=4)
     man = dict(catalogue=a.catalogue if a.catalogue == "real" else str(Path(a.catalogue).resolve().relative_to(ROOT.resolve()))

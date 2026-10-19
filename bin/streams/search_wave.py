@@ -37,12 +37,14 @@ def sha(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
-def observations(base, prev, csha):
+def observations(base, prev, csha, prior=False):
     rows = []
     R = json.loads((base/"rescore.json").read_text())
     if R["manifest"]["catalogue_sha256"] != csha:
         raise SystemExit(f"{base}: re-scored against a different catalogue")
-    rows += [dict(key=r["key"], unit=r["unit"], y=r["total_jk"], v=r["var_jk"], purpose=r["purpose"]) for r in R["rows"]]
+    from profile_nm import ln_prior
+    lp = (lambda p: ln_prior(p)) if prior else (lambda p: 0.)
+    rows += [dict(key=r["key"], unit=r["unit"], y=r["total_jk"]+lp(r["params"]), v=r["var_jk"], purpose=r["purpose"]) for r in R["rows"]]
     for w in prev:
         man = json.loads((w/"manifest.json").read_text())
         if man.get("catalogue", {}).get("sha256") != csha:
@@ -51,7 +53,7 @@ def observations(base, prev, csha):
             if f.name.endswith(".error.json"):
                 continue
             j = json.loads(f.read_text())
-            rows.append(dict(key=j["key"], unit=j["unit"], y=j["total_jk"], v=j["var_jk"], purpose=j["purpose"]))
+            rows.append(dict(key=j["key"], unit=j["unit"], y=j["total_jk"]+lp(j["params"]), v=j["var_jk"], purpose=j["purpose"]))
     return rows
 
 
@@ -106,13 +108,14 @@ def main():
     ap.add_argument("--catalogue", required=True); ap.add_argument("--box", default="wide", choices=("wide", "data"))
     ap.add_argument("--base", required=True); ap.add_argument("--outdir", required=True); ap.add_argument("--prev", nargs="*", default=[])
     ap.add_argument("--seed-base", type=int, required=True)
+    ap.add_argument("--prior", action="store_true", help="add the distance and PM measurement priors to the scores")
     a = ap.parse_args()
     P = lambda x: Path(x) if Path(x).is_absolute() else ROOT/x
     od, base, prev = P(a.outdir), P(a.base), [P(x) for x in a.prev]
     if (od/"jobs.json").exists():
         raise SystemExit("jobs.json exists; refusing to overwrite")
     csha = "real" if a.catalogue == "real" else sha(P(a.catalogue))
-    rows = observations(base, prev, csha); g, s2, em = fit(rows)
+    rows = observations(base, prev, csha, a.prior); g, s2, em = fit(rows)
     rng = np.random.default_rng(a.seed_base); wave = len(prev)+1
     noise_sd = float(np.sqrt(np.median(s2)))
     # trust-region state
