@@ -238,7 +238,7 @@ def main():
             f = ex.submit(evaluate, (ch.full(z).tolist(), ch.seed, ch.off, a.nrel, spec, str(od), rid, sources))
             queue[f] = (ch, tag, z)
     t0 = time.time()
-    with ProcessPoolExecutor(a.workers, max_tasks_per_child=4) as ex:   # recycle workers: AGAMA memory grows (guard stop 2026-10-20)
+    with ProcessPoolExecutor(a.workers) as ex:   # max_tasks_per_child=4 hung the pool after the first retirements (2026-10-20); resume after a guard stop instead
         for ch in chains:
             submit(ex, ch)
         while queue:
