@@ -68,11 +68,12 @@ def sha256_file(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
-def r_cr(omega, vc, halo_q):
-    """Corotation radius [kpc] of the point's axisymmetric host: root of v_c(R)/R = omega [km/s/kpc] (bracketed, bisection)."""
-    from ocen_dm.streams.mw_variants import axisymmetric_variant
+def r_cr(omega, vc, halo_q, r0_kpc=None):
+    """Corotation radius [kpc] of the point's axisymmetric host: root of v_c(R)/R = omega [km/s/kpc] (bracketed, bisection).
+    r0_kpc: radius where v_c = vc (default mw_variants.R0_KPC = 8.178)."""
+    from ocen_dm.streams.mw_variants import axisymmetric_variant, R0_KPC
     from ocen_dm.streams.restricted import HUNTER24_DIR
-    pot = axisymmetric_variant(HUNTER24_DIR, halo_q=halo_q, vc_target=vc)[0]
+    pot = axisymmetric_variant(HUNTER24_DIR, halo_q=halo_q, vc_target=vc, r0_kpc=R0_KPC if r0_kpc is None else r0_kpc)[0]
     om = lambda R: np.sqrt(-R*pot.force(np.array([[R, 0., 0.]]))[0, 0])/R - omega
     lo, hi = 1.0, 20.0
     if not (om(lo) > 0 > om(hi)):

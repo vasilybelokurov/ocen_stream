@@ -6,6 +6,13 @@ Frames:
              (Baumgardt orbits_table.txt) used by all runs before 2026-10-08 evening.
   ibata19    Ibata+2019 (arXiv:1902.09544, Methods): R0 = 8.122 kpc, z_sun = 17 pc, v_c(R0) = 220 km/s plus the Schoenrich+2010
              peculiar motion (11.1, 12.24, 7.25) -> Vsun = (11.1, 232.24, 7.25); omega Cen d = 5.63 kpc.
+  gravity21  (2026-10-20; docs/reviews/codex_solar_frame_20261020.md) R0 = 8.275 kpc (GRAVITY 2021, arXiv:2101.12098),
+             z_sun = 20.8 pc (Bennett & Bovy 2019, arXiv:1809.03507), V_tot = 4.74047 x 6.411 mas/yr x R0 = 251.49 km/s from the
+             Sgr A* proper motion along the plane (Reid & Brunthaler 2020, arXiv:2001.04386), U, W = 11.1, 7.25 (Schoenrich+2010).
+             v_c(R0) of the potential is then a separate parameter, normalised at this R0 (frame_r0); V_pec = V_tot - v_c is
+             derived. omega Cen d = 5.43 kpc. The baumgardt frame (V/R0 -> mu_SgrA* = 6.507 mas/yr) is kept for old runs.
+VC_PRIOR_KMS: v_c(R0) = 233 +- 7 km/s (Poder+2023, arXiv:2309.02895, Gaia DR3; R0 and tracer uncertainties propagated),
+agreed with the user 2026-10-20 as a Gaussian prior for gravity21 fits.
 omega Cen observables (both frames): position, systemic PM and v_los from ocen_dm.cluster (the single reference;
 Vasiliev & Baumgardt 2021 PM, Baumgardt & Hilker 2018 v_los). Until 2026-10-16 they were typed in here as the
 Baumgardt orbit-table values (201.69683, -47.47958), PM (-3.2499, -6.7461), v_los 232.78: the same within
@@ -21,7 +28,15 @@ from ..cluster import MU_SYS, OCEN_DEC, OCEN_DISTANCE_KPC, OCEN_RA, OCEN_VSYS_KM
 FRAMES = {
     "baumgardt": dict(r0_kpc=8.178, z_sun_pc=0.0, v_sun=(11.1, 252.24, 7.25), d_ocen_kpc=OCEN_DISTANCE_KPC),
     "ibata19": dict(r0_kpc=8.122, z_sun_pc=17.0, v_sun=(11.1, 232.24, 7.25), d_ocen_kpc=5.63),
+    "gravity21": dict(r0_kpc=8.275, z_sun_pc=20.8, v_sun=(11.1, round(4.74047*6.411*8.275, 2), 7.25), d_ocen_kpc=OCEN_DISTANCE_KPC),
 }
+VC_PRIOR_KMS = (233.0, 7.0)
+
+
+def frame_r0(frame="baumgardt"):
+    """Cylindrical solar radius [kpc] of a frame (normalisation radius of v_c(R0)): sqrt(R0^2 - z_sun^2)."""
+    f = FRAMES[frame]
+    return float(np.sqrt(f["r0_kpc"]**2-(1e-3*f["z_sun_pc"])**2))
 OCEN_OBS = dict(ra=OCEN_RA, dec=OCEN_DEC, pmra=MU_SYS[0], pmdec=MU_SYS[1], vlos=OCEN_VSYS_KMS)
 
 

@@ -49,7 +49,7 @@ def main():
         r = json.loads(f.read_text()); ang = float(f.stem.split("_")[1][1:])
         v, t = res[str(f.with_suffix(".npz"))]
         assert abs(t-r["total_jk"]) < 1e-2, (f, t, r["total_jk"])
-        per.setdefault(ang, []).append(v); prior[ang] = ln_prior(r["params"]) if man.get("prior") else 0.
+        per.setdefault(ang, []).append(v); prior[ang] = ln_prior(r["params"], man.get("vc_prior", False)) if man.get("prior") else 0.
     ang = sorted(per); L = np.array([np.mean(per[x], axis=0) for x in ang])          # (n_angle, n_star)
     tot = L.sum(1)+np.array([prior[x] for x in ang]); ib = int(np.argmax(tot))
     out = dict(tag=a.tag, angles=ang, total=tot.tolist(), best=ang[ib], segments={}, without_u_gt_20=None, bootstrap={})

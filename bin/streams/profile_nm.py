@@ -15,6 +15,9 @@ All chains run concurrently on a process pool; every evaluation is stored (runs/
 (identity = point, seed, offset, nrel); sources are hashed in manifest.json and re-checked before each evaluation.
 Usage: OMP_NUM_THREADS=1 PYTHONPATH=src python bin/streams/profile_nm.py --catalogue CAT --box wide --start-from DIR ... \
            --outdir OUT --angles 12.5 17.5 22.5 27 27.5 32.5 --workers 8 [--budget 30] [--nrel 128000]
+--design step2 (2026-10-20): distance 5.33-5.53 kpc, vc 220-250 normalised at the gravity21 R0, sprays placed and projected in
+the gravity21 frame (emulator_design.DESIGNS); starts are earlier runs mapped by their physical parameters. --vc-prior adds
+the v_c(R0) prior frames.VC_PRIOR_KMS (233 +- 7 km/s).
 """
 import argparse, hashlib, json, os, sys, time
 from concurrent.futures import ProcessPoolExecutor, FIRST_COMPLETED, wait
@@ -26,7 +29,8 @@ sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 STEP0, TOL, NFINAL = 0.1, 0.05, 4
 SOURCES = ["bin/streams/profile_nm.py", "bin/streams/grid4_common.py", "bin/streams/rescore_batch.py", "bin/streams/mock_data.py",
            "bin/streams/emulator_design.py", "src/ocen_dm/streams/score.py", "src/ocen_dm/streams/spray.py",
-           "src/ocen_dm/streams/restricted.py", "src/ocen_dm/streams/mw_variants.py"]
+           "src/ocen_dm/streams/restricted.py", "src/ocen_dm/streams/mw_variants.py", "src/ocen_dm/streams/frames.py",
+           "bin/streams/training_set.py"]
 
 
 def sha(p):
@@ -45,9 +49,14 @@ def evaluate(args):
     import emulator_design as ED, rescore_batch as RB
     from grid4_common import make_spray, win, project_gc, GC
     from ocen_dm.streams.score import score_conditional
-    p = ED.unit_to_params(np.asarray(u)); t0 = time.time()
+    design = spec.get("design", "v1"); frame = ED.DESIGNS[design]["frame"]
+    p = ED.unit_to_params(np.asarray(u), design); t0 = time.time()
+    axi = dict(halo_q=p["halo_q"], vc_target=p["vc"])
+    if frame != "baumgardt":
+        from ocen_dm.streams.frames import frame_r0
+        axi["r0_kpc"] = frame_r0(frame)
     m = make_spray(p["omega"], p["angle"], p["amp"], p["dist"], nrel=nrel, seed=seed, pm=(p["pmra"], p["pmdec"]),
-                   host_kw=dict(bar_size=p["size"], axi_variant=dict(halo_q=p["halo_q"], vc_target=p["vc"])), max_age_myr=700., epoch_offset=off)
+                   host_kw=dict(bar_size=p["size"], axi_variant=axi), max_age_myr=700., epoch_offset=off, frame=frame)
     keys = ("l", "b", "pmra", "pmdec", "vlos", "d", "chi", "age")
     ms = {k: np.asarray(m[k], np.float64) for k in keys}; ms["age_cut_myr"] = np.float64(700.)
     tmp = Path(outdir)/"runs"/f"{rid}_tmp.npz"; np.savez_compressed(tmp, **ms); os.replace(tmp, Path(outdir)/"runs"/f"{rid}.npz")
@@ -140,15 +149,18 @@ class NM:
             self._reflect()
 
 
-def ln_prior(p):
-    """Measurement priors on omega Cen's distance and PMs (src/ocen_dm/cluster.py), as agreed with the user 2026-10-18."""
+def ln_prior(p, vc_prior=False):
+    """Measurement priors on omega Cen's distance and PMs (src/ocen_dm/cluster.py), as agreed with the user 2026-10-18;
+    vc_prior: plus the v_c(R0) prior frames.VC_PRIOR_KMS (agreed 2026-10-20)."""
     from ocen_dm.cluster import OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC, MU_SYS, MU_SYS_ERR
+    from ocen_dm.streams.frames import VC_PRIOR_KMS
     return (-0.5*((p["dist"]-OCEN_DISTANCE_KPC)/OCEN_DISTANCE_ERR_KPC)**2-0.5*((p["pmra"]-MU_SYS[0])/MU_SYS_ERR)**2
-            -0.5*((p["pmdec"]-MU_SYS[1])/MU_SYS_ERR)**2)
+            -0.5*((p["pmdec"]-MU_SYS[1])/MU_SYS_ERR)**2-(0.5*((p["vc"]-VC_PRIOR_KMS[0])/VC_PRIOR_KMS[1])**2 if vc_prior else 0.))
 
 
-def starts(start_dirs, angle, prior=False):
-    """Two distinct start points (8 free unit coords) for a fixed angle from earlier runs."""
+def starts(start_dirs, angle, prior=False, vc_prior=False, design="v1"):
+    """Two distinct start points (8 free unit coords) for a fixed angle from earlier runs. For a design other than v1 the
+    runs are ranked by their score + prior and the best 40 near the angle are mapped into the design by their parameters."""
     R = []
     for d in start_dirs:
         for f in (Path(d)/"runs").glob("*.json"):
@@ -156,10 +168,14 @@ def starts(start_dirs, angle, prior=False):
                 continue
             j = json.loads(f.read_text())
             if "total_jk" in j and "unit" in j and j.get("purpose") != "validation (held out)" and j.get("unit") is not None:
-                R.append((j["total_jk"]+(ln_prior(j["params"]) if prior else 0.), np.array(j["unit"])))
+                R.append((j["total_jk"]+(ln_prior(j["params"], vc_prior) if prior else 0.), np.array(j["unit"]), j["params"]))
     au = (angle-10)/25
     near = [r for r in R if abs(r[1][0]-au) <= 0.1] or R
-    near.sort(key=lambda r: -r[0]); a = near[0][1]
+    near.sort(key=lambda r: -r[0])
+    if design != "v1":
+        import emulator_design as ED
+        near = [(r[0], ED.params_to_unit(r[2], design), r[2]) for r in near[:40]]
+    a = near[0][1]
     far = [r for r in near if np.linalg.norm(r[1][1:]-a[1:]) >= 0.3]
     b = (far[0] if far else near[1])[1]
     return a[1:], b[1:], near[0][0], (far[0] if far else near[1])[0]
@@ -173,13 +189,22 @@ def main():
     ap.add_argument("--nrel", type=int, default=128000); ap.add_argument("--nrel-final", type=int, default=256000)
     ap.add_argument("--seed-base", type=int, default=900000)
     ap.add_argument("--prior", action="store_true", help="add the distance and PM measurement priors to the objective")
+    ap.add_argument("--vc-prior", action="store_true", help="with --prior: add the v_c(R0) prior (frames.VC_PRIOR_KMS)")
+    ap.add_argument("--design", default="v1", help="parameter ranges and frame (emulator_design.DESIGNS)")
     a = ap.parse_args()
+    if a.vc_prior and not a.prior:
+        raise SystemExit("--vc-prior needs --prior")
     P = lambda x: Path(x) if Path(x).is_absolute() else ROOT/x
     od = P(a.outdir); (od/"runs").mkdir(parents=True, exist_ok=True)
     spec = dict(catalogue=a.catalogue, box=a.box); spec["sha256"] = "real" if a.catalogue == "real" else sha(P(a.catalogue))
+    if a.design != "v1":
+        spec["design"] = a.design
     sources = {s: sha(ROOT/s) for s in SOURCES}
     man = dict(spec=spec, sources=sources, angles=a.angles, budget=a.budget, nrel=a.nrel, nrel_final=a.nrel_final, seed_base=a.seed_base,
                start_from=a.start_from, step0=STEP0, tol=TOL, prior=a.prior)
+    if a.vc_prior:
+        man["vc_prior"] = True
+    LP = lambda p: ln_prior(p, a.vc_prior) if a.prior else 0.
     mf = od/"manifest.json"
     if mf.exists():
         old = json.loads(mf.read_text())
@@ -189,7 +214,7 @@ def main():
         mf.write_text(json.dumps(man, indent=1))
     chains = []
     for ia, ang in enumerate(a.angles):
-        za, zb, fa, fb = starts([P(d) for d in a.start_from], ang, a.prior)
+        za, zb, fa, fb = starts([P(d) for d in a.start_from], ang, a.prior, a.vc_prior, a.design)
         for j, z in enumerate((za, zb)):
             seed = a.seed_base+100*ia+j
             chains.append(NM(f"a{ang:g}_{j}", (ang-10)/25, z, seed, float(np.random.default_rng([seed, 777]).uniform()), a.budget))
@@ -203,14 +228,14 @@ def main():
             f = ex.submit(evaluate, (ch.full(z).tolist(), ch.seed, ch.off, a.nrel, spec, str(od), rid, sources))
             queue[f] = (ch, tag, z)
     t0 = time.time()
-    with ProcessPoolExecutor(a.workers) as ex:
+    with ProcessPoolExecutor(a.workers, max_tasks_per_child=4) as ex:   # recycle workers: AGAMA memory grows (guard stop 2026-10-20)
         for ch in chains:
             submit(ex, ch)
         while queue:
             doneset, _ = wait(list(queue), return_when=FIRST_COMPLETED)
             for f in doneset:
                 ch, tag, z = queue.pop(f); rec = f.result()
-                ch.tell(tag, np.asarray(rec["unit"])[1:], -(rec["total_jk"]+(ln_prior(rec["params"]) if a.prior else 0.)))
+                ch.tell(tag, np.asarray(rec["unit"])[1:], -(rec["total_jk"]+LP(rec["params"])))
                 busy = any(v[0] is ch for v in queue.values())
                 if not busy and not ch.done():
                     submit(ex, ch)
@@ -239,7 +264,7 @@ def main():
     for ang, d in out.items():
         y = np.array(d["final"]); d.update(mean=float(y.mean()), se=float(y.std(ddof=1)/np.sqrt(len(y))))
         d["params"] = json.loads((od/"runs"/f"final_a{ang:g}_0.json").read_text())["params"]
-        d["ln_prior"] = float(ln_prior(d["params"])) if a.prior else 0.
+        d["ln_prior"] = float(LP(d["params"]))
     (od/"profile.json").write_text(json.dumps({f"{k:g}": v for k, v in out.items()}, indent=1))
     print(f"done in {(time.time()-t0)/3600:.1f} h")
     for ang in sorted(out):

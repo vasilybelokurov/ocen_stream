@@ -3,7 +3,8 @@ potential-shape test (docs/STREAM_DIAGNOSTIC_PLAN.md, Phase 3 item 1). The bar's
 adds A x (baryon_full - baryon_axi) as before); only the axisymmetric part is replaced by
     baryon_axi (file) + (disc_scale - 1) x [thin + thick stellar discs]  +  halo(q) x c,
 where halo(q) is the Hunter+2024 Einasto halo (Spheroid parameters copied from the construction script) with axisRatioZ = q, and c is
-chosen so that the circular velocity at R0 = 8.178 kpc equals that of the original model (keep_vc=True). disc_scale = 1, q = 1
+chosen so that the circular velocity at R0 = 8.178 kpc equals that of the original model (keep_vc=True). r0_kpc moves the
+radius at which v_c is normalised (vc_target; frames.frame_r0 for a frame other than baumgardt; added 2026-10-20). disc_scale = 1, q = 1
 reproduces the original axisymmetric potential (tested in tests/test_mw_variants.py)."""
 from __future__ import annotations
 
@@ -24,7 +25,7 @@ def _vc2(pot, R=R0_KPC):
     return float(-R*pot.force(np.array([[R, 0., 0.]]))[0, 0])
 
 
-def axisymmetric_variant(hunter_dir, halo_q=1.0, disc_scale=1.0, keep_vc=True, vc_target=None):
+def axisymmetric_variant(hunter_dir, halo_q=1.0, disc_scale=1.0, keep_vc=True, vc_target=None, r0_kpc=R0_KPC):
     """Return (axisymmetric agama.Potential, info dict). See module docstring. vc_target [km/s] (optional): choose the halo
     normalisation c so that v_c(R0) = vc_target instead (overrides keep_vc; baryons unchanged)."""
     from .restricted import agama_kpc
@@ -38,15 +39,15 @@ def axisymmetric_variant(hunter_dir, halo_q=1.0, disc_scale=1.0, keep_vc=True, v
     halo1 = agama.Potential(density=agama.Density(**dict(PARAMS_DARK, axisRatioZ=halo_q)), **dict(MUL, symmetry="Axisymmetric"))
     c = 1.0
     if vc_target is not None:
-        c = (vc_target**2-_vc2(base))/_vc2(halo1)
+        c = (vc_target**2-_vc2(base, r0_kpc))/_vc2(halo1, r0_kpc)
         if c <= 0:
             raise ValueError("cannot reach vc_target: baryons alone exceed it")
     elif keep_vc:
         orig = agama.Potential(file=os.path.join(hunter_dir, "MWPotentialHunter24_axi.ini"))
-        c = (_vc2(orig)-_vc2(base))/_vc2(halo1)
+        c = (_vc2(orig, r0_kpc)-_vc2(base, r0_kpc))/_vc2(halo1, r0_kpc)
         if c <= 0:
             raise ValueError("cannot keep v_c(R0): baryons alone exceed it")
     halo = agama.Potential(density=agama.Density(**dict(PARAMS_DARK, axisRatioZ=halo_q, densitynorm=PARAMS_DARK["densitynorm"]*c)),
                            **dict(MUL, symmetry="Axisymmetric"))
     pot = agama.Potential(base, halo)
-    return pot, dict(halo_q=halo_q, disc_scale=disc_scale, halo_norm_factor=c, vc_R0=np.sqrt(_vc2(pot)))
+    return pot, dict(halo_q=halo_q, disc_scale=disc_scale, halo_norm_factor=c, vc_R0=np.sqrt(_vc2(pot, r0_kpc)), r0_kpc=r0_kpc)

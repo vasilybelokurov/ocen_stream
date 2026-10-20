@@ -30,14 +30,39 @@ NAMES = ("angle", "omega", "amp", "size", "dist", "pmra", "pmdec", "vc", "halo_q
 MU_SYS, MU_ERR, RBAR = (-3.250, -6.746), 0.022, 4.25
 
 
-def unit_to_params(u):
-    """Same map as training_set.design (checked against design.json in main())."""
+# Design ranges (lo, hi) of dist [kpc] and vc [km/s], and the frame whose R0 normalises vc. "v1": the original design
+# (training_set.design); "step2" (2026-10-20, agreed with the user): distance band 5.33-5.53 kpc (+-2 sigma of 5.43 +- 0.05),
+# vc 220-250 searched under the VC_PRIOR_KMS prior, gravity21 frame.
+DESIGNS = {"v1": dict(dist=(5.25, 5.95), vc=(220., 240.), frame="baumgardt"),
+           "step2": dict(dist=(5.33, 5.53), vc=(220., 250.), frame="gravity21")}
+
+
+def _r0(design):
+    from ocen_dm.streams.frames import frame_r0
+    return None if DESIGNS[design]["frame"] == "baumgardt" else frame_r0(DESIGNS[design]["frame"])
+
+
+def unit_to_params(u, design="v1"):
+    """Same map as training_set.design for design "v1" (checked against design.json in main())."""
     from training_set import r_cr
-    p = dict(angle=10.+25.*u[0], omega=30.+10.*u[1], amp=0.6+1.4*u[2], dist=5.25+0.7*u[4],
-             pmra=MU_SYS[0]+MU_ERR*(8.*u[5]-4.), pmdec=MU_SYS[1]+MU_ERR*(8.*u[6]-4.), vc=220.+20.*u[7], halo_q=0.8+0.4*u[8])
-    smax = min(1.5, r_cr(p["omega"], p["vc"], p["halo_q"])/RBAR)
+    D = DESIGNS[design]; (d0, d1), (v0, v1) = D["dist"], D["vc"]
+    p = dict(angle=10.+25.*u[0], omega=30.+10.*u[1], amp=0.6+1.4*u[2], dist=d0+(d1-d0)*u[4],
+             pmra=MU_SYS[0]+MU_ERR*(8.*u[5]-4.), pmdec=MU_SYS[1]+MU_ERR*(8.*u[6]-4.), vc=v0+(v1-v0)*u[7], halo_q=0.8+0.4*u[8])
+    smax = min(1.5, r_cr(p["omega"], p["vc"], p["halo_q"], _r0(design))/RBAR)
     p["size"] = 0.8+u[3]*(smax-0.8)
     return {k: float(p[k]) for k in NAMES}
+
+
+def params_to_unit(p, design="v1"):
+    """Inverse of unit_to_params (clipped to [0, 1]); used to start a search in one design from points of another."""
+    from training_set import r_cr
+    D = DESIGNS[design]; (d0, d1), (v0, v1) = D["dist"], D["vc"]
+    u = np.array([(p["angle"]-10.)/25., (p["omega"]-30.)/10., (p["amp"]-0.6)/1.4, 0., (p["dist"]-d0)/(d1-d0),
+                  (p["pmra"]-MU_SYS[0])/MU_ERR/8.+0.5, (p["pmdec"]-MU_SYS[1])/MU_ERR/8.+0.5, (p["vc"]-v0)/(v1-v0), (p["halo_q"]-0.8)/0.4])
+    u = np.clip(u, 0., 1.); q = unit_to_params(u, design)                     # size fraction in the target design's range
+    smax = min(1.5, r_cr(q["omega"], q["vc"], q["halo_q"], _r0(design))/RBAR)
+    u[3] = np.clip((p["size"]-0.8)/(smax-0.8), 0., 1.)
+    return u
 
 
 def load(batches, purposes=None, exclude_purposes=("validation (held out)",)):
