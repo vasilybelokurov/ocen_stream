@@ -158,9 +158,11 @@ def ln_prior(p, vc_prior=False):
             -0.5*((p["pmdec"]-MU_SYS[1])/MU_SYS_ERR)**2-(0.5*((p["vc"]-VC_PRIOR_KMS[0])/VC_PRIOR_KMS[1])**2 if vc_prior else 0.))
 
 
-def starts(start_dirs, angle, prior=False, vc_prior=False, design="v1"):
+def starts(start_dirs, angle, prior=False, vc_prior=False, design="v1", transfer=False):
     """Two distinct start points (8 free unit coords) for a fixed angle from earlier runs. For a design other than v1 the
-    runs are ranked by their score + prior and the best 40 near the angle are mapped into the design by their parameters."""
+    runs are ranked by their score + prior and the best 40 near the angle are mapped into the design by their parameters.
+    transfer (2026-10-20, Fable review): the second start is the best run over ALL angles moved to this angle (if its other
+    8 coordinates are >= 0.3 from the first start), so each angle also tries the globally best parameter family."""
     R = []
     for d in start_dirs:
         for f in (Path(d)/"runs").glob("*.json"):
@@ -172,10 +174,15 @@ def starts(start_dirs, angle, prior=False, vc_prior=False, design="v1"):
     au = (angle-10)/25
     near = [r for r in R if abs(r[1][0]-au) <= 0.1] or R
     near.sort(key=lambda r: -r[0])
+    import emulator_design as ED
     if design != "v1":
-        import emulator_design as ED
         near = [(r[0], ED.params_to_unit(r[2], design), r[2]) for r in near[:40]]
     a = near[0][1]
+    if transfer:
+        g = max(R, key=lambda r: r[0])
+        gu = ED.params_to_unit(dict(g[2], angle=angle), design) if design != "v1" else g[1]
+        if np.linalg.norm(gu[1:]-a[1:]) >= 0.3:
+            return a[1:], gu[1:], near[0][0], g[0]
     far = [r for r in near if np.linalg.norm(r[1][1:]-a[1:]) >= 0.3]
     b = (far[0] if far else near[1])[1]
     return a[1:], b[1:], near[0][0], (far[0] if far else near[1])[0]
@@ -191,6 +198,7 @@ def main():
     ap.add_argument("--prior", action="store_true", help="add the distance and PM measurement priors to the objective")
     ap.add_argument("--vc-prior", action="store_true", help="with --prior: add the v_c(R0) prior (frames.VC_PRIOR_KMS)")
     ap.add_argument("--design", default="v1", help="parameter ranges and frame (emulator_design.DESIGNS)")
+    ap.add_argument("--transfer", action="store_true", help="second chain starts from the best run over all angles (see starts)")
     a = ap.parse_args()
     if a.vc_prior and not a.prior:
         raise SystemExit("--vc-prior needs --prior")
@@ -204,17 +212,19 @@ def main():
                start_from=a.start_from, step0=STEP0, tol=TOL, prior=a.prior)
     if a.vc_prior:
         man["vc_prior"] = True
+    if a.transfer:
+        man["transfer"] = True
     LP = lambda p: ln_prior(p, a.vc_prior) if a.prior else 0.
     mf = od/"manifest.json"
     if mf.exists():
         old = json.loads(mf.read_text())
-        if {k: old[k] for k in man} != man:
+        if any(old.get(k) != man.get(k) for k in set(old) | set(man)):   # optional keys must match too (Fable 2026-10-20)
             raise SystemExit("manifest differs from an earlier run in this directory; refusing to resume")
     else:
         mf.write_text(json.dumps(man, indent=1))
     chains = []
     for ia, ang in enumerate(a.angles):
-        za, zb, fa, fb = starts([P(d) for d in a.start_from], ang, a.prior, a.vc_prior, a.design)
+        za, zb, fa, fb = starts([P(d) for d in a.start_from], ang, a.prior, a.vc_prior, a.design, a.transfer)
         for j, z in enumerate((za, zb)):
             seed = a.seed_base+100*ia+j
             chains.append(NM(f"a{ang:g}_{j}", (ang-10)/25, z, seed, float(np.random.default_rng([seed, 777]).uniform()), a.budget))
