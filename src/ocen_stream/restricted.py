@@ -37,12 +37,21 @@ def agama_kpc():
 HUNTER24_DIR = os.path.join(os.environ.get("OCEN_BAR_DIR", "$OCEN_BAR_DIR"), "agama_potentials")   # clone of github.com/adllmr/oCen_bar
 
 
-def host_potential(*args, lmc=None, spiral=None, **kw):
+def host_potential(*args, lmc=None, spiral=None, excess=None, **kw):
     """Host potential (see _host_potential_base). lmc (optional): dict(mass=[Msun], ...) -> the host in the MW-centred
     non-inertial frame with the LMC on its mutual orbit with the MW and the MW reflex field (lmc.with_lmc; needs t_today).
     spiral (optional): parameters of spiral.with_spiral, adding the reflected Hunter spiral with an independent phase and
-    pattern speed. Both extensions require t_today. The default host is unchanged."""
+    pattern speed. Both extensions require t_today. The default host is unchanged.
+    excess (optional, 2026-10-21): dict(amp, size, omega, angle_deg[, bar_model]) adds the difference between an inflated Hunter
+    bar term and the published one, amp x [full(x/size) - axi(x/size)] - [full - axi] (zero m=0 part), as a separate rigid
+    pattern rotating at its own pattern speed omega [km/s/kpc] with major axis at angle_deg today (omega 0: static). With
+    omega and angle_deg equal to the bar's and the host bar at amp = size = 1, the host equals the inflated-bar host."""
     host = _host_potential_base(*args, **kw)
+    if excess is not None:
+        t_today = kw.get("t_today", args[3] if len(args) > 3 else None)
+        if t_today is None:
+            raise ValueError("the excess pattern needs t_today")
+        host = agama_kpc().Potential(host, _excess_pattern(t_today, **excess))
     if lmc is None and spiral is None:
         return host
     t_today = kw.get("t_today", args[3] if len(args) > 3 else None)
@@ -55,6 +64,17 @@ def host_potential(*args, lmc=None, spiral=None, **kw):
         from .lmc import with_lmc
         host = with_lmc(host, t_today, **lmc)
     return host
+
+
+def _excess_pattern(t_today, amp, size, omega, angle_deg, bar_model="hunter24"):
+    """amp x [full(x/size) - axi(x/size)] - [full - axi] rotating rigidly: angle(t) = angle_deg + omega (t - t_today)."""
+    agama = agama_kpc()
+    full, axi = dict(hunter24=("MWPotentialHunter24_baryon_full.ini", "MWPotentialHunter24_baryon_axi.ini"),
+                     portail17=("Portail17.ini", "Portail17_axi.ini"))[bar_model]
+    tt = np.linspace(-1., t_today+1., 4001); rot = np.column_stack((tt, np.deg2rad(angle_deg)+omega*(tt-t_today)))
+    F, X = os.path.join(HUNTER24_DIR, full), os.path.join(HUNTER24_DIR, axi)
+    return agama.Potential(agama.Potential(file=F, scale=[amp*size, size], rotation=rot), agama.Potential(file=X, scale=[-amp*size, size]),
+                           agama.Potential(file=F, scale=[-1., 1.], rotation=rot), agama.Potential(file=X, scale=[1., 1.]))
 
 
 def _host_potential_base(name="McMillan17", bar_omega=None, bar_angle_deg=28.0, t_today=None, bar_amp=None, bar_eta=None, bar_size=1.0,
