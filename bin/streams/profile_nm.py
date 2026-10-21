@@ -78,15 +78,19 @@ def evaluate(args):
 class NM:
     """Ask/tell Nelder-Mead minimising f over the 8 free unit coordinates (angle fixed)."""
 
-    def __init__(self, cid, angle_u, x0, seed, off, budget):
-        self.cid, self.au, self.seed, self.off, self.budget = cid, angle_u, seed, off, budget
+    def __init__(self, cid, angle_u, x0, seed, off, budget, ndim=8, full=None):
+        """ndim free unit coordinates (default 8: the 9-D design without the angle); full (optional): map from the free
+        coordinates to the evaluated point (default: insert the fixed angle coordinate). Defaults unchanged (2026-10-21)."""
+        self.cid, self.au, self.seed, self.off, self.budget, self.ndim, self._full = cid, angle_u, seed, off, budget, ndim, full
         x0 = np.clip(np.asarray(x0, float), 0, 1); S = [x0]
-        for i in range(8):
+        for i in range(ndim):
             v = x0.copy(); v[i] = v[i]+STEP0 if v[i]+STEP0 <= 1 else v[i]-STEP0; S.append(v)
-        self.S, self.F = np.array(S), np.full(9, np.nan); self.n_eval = 0; self.state = "init"; self.pending = list(range(9))
+        self.S, self.F = np.array(S), np.full(ndim+1, np.nan); self.n_eval = 0; self.state = "init"; self.pending = list(range(ndim+1))
         self.best_hist = []
 
     def full(self, z):
+        if self._full is not None:
+            return self._full(np.clip(z, 0, 1))
         return np.insert(np.clip(z, 0, 1), 0, self.au)
 
     def done(self):
@@ -140,7 +144,7 @@ class NM:
                 self.S[-1], self.F[-1] = z, f; self._reflect()
             else:                                     # shrink towards the best vertex
                 self.S[1:] = self.S[0]+0.5*(self.S[1:]-self.S[0]); self.F[1:] = np.nan
-                self.pending = list(range(1, 9)); self.state = "shrink"
+                self.pending = list(range(1, self.ndim+1)); self.state = "shrink"
         if self.state == "shrink" and not self.pending:
             self._reflect()
 
