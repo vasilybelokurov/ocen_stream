@@ -3,7 +3,9 @@
 
 Columns (best chain by 256k mean; its best-scoring 256k seed is plotted): inflated bar 12.5 deg (step-2 profile), published bar at
 12.5 / 17.5 / 27 deg (null_fits.py, fixedbar_fit.py), static bar, no bar (Hunter axisymmetric, disc mass free), no bar (McMillan17).
-Rows vs phi1: Delta phi2, mu_alpha*, mu_delta, v_los (model debris chi > 0, age < 700 Myr as a 2-D histogram; members orange),
+Rows vs phi1: Delta phi2, mu_alpha*, mu_delta, v_los: members (orange points) and model debris (chi > 0, age < 700 Myr) as
+contours of the conditional density p(y | phi1) (as in the score): 2-D histogram (0.5 deg in phi1, ~1/60 of the y range), Gaussian
+smoothing of 1.5 bins, each phi1 column normalised to its peak, contour levels LEVELS of the column peak;
 and binned residuals data - model (2-deg bins; plot_bestfit_real.resid). Column titles: Delta ln L (+ prior, 256k) vs the
 inflated 12.5-deg best.
 Output: plots/nullfits_gallery.png
@@ -14,10 +16,21 @@ from pathlib import Path
 import numpy as np
 ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter
 from grid4_common import d, du, dx
 from plot_bestfit_real import load, resid
 
 NF, FB, PR = (ROOT/f"results/streams/{s}" for s in ("nullfits_20261022", "fixedbar_20261021", "profile_step2_20261020"))
+
+
+LEVELS = (0.2, 0.5, 0.8)
+
+
+def contours(ax, u, y, ext, lim, color="navy"):
+    """Contours of p(y | phi1): smoothed 2-D histogram, each phi1 column scaled to its peak."""
+    H, xe, ye = np.histogram2d(u, y, bins=(int(round((ext[1]-ext[0])/0.5)), 60), range=(ext, lim))
+    H = gaussian_filter(H, 1.5); pk = H.max(1, keepdims=True); H = np.divide(H, pk, out=np.zeros_like(H), where=pk > H.max()*1e-3)
+    ax.contour(0.5*(xe[1:]+xe[:-1]), 0.5*(ye[1:]+ye[:-1]), H.T, levels=LEVELS, colors=color, linewidths=(0.7, 1.1, 1.6), zorder=2)
 
 
 def best_seed(pattern):
@@ -48,8 +61,12 @@ def main():
     for j, (lab, dl, pat) in enumerate(C):
         npz, p = best_seed(pat); m = load(npz)
         for i, (q, dq, yl, lim) in enumerate(rows):
-            ax[i, j].hist2d(m["u"], m[q], bins=(150, 130), range=(ext, lim), cmap="Greys", cmin=1, norm=matplotlib.colors.LogNorm())
-            ok = np.isfinite(dq); ax[i, j].plot(du[ok], dq[ok], ".", color="C1", ms=2 if q != "v" else 5, alpha=0.6)
+            ok = np.isfinite(dq)
+            if q == "v":
+                ax[i, j].plot(du[ok], dq[ok], "o", color="C1", mec="k", mew=0.5, ms=5, zorder=3)
+            else:
+                ax[i, j].plot(du[ok], dq[ok], ".", color="C1", ms=2, alpha=0.4, zorder=1)
+            contours(ax[i, j], m["u"], m[q], ext, lim)
             ax[i, j].set_ylim(lim)
             if j == 0:
                 ax[i, j].set_ylabel(yl)
@@ -61,7 +78,7 @@ def main():
         ax[0, j].set_title(f"{lab}\n$\\Delta\\ln L$ = {dl:+.0f}\n{bar}d {p['dist']:.2f}, $v_c$ {p['vc']:.0f}, q {p['halo_q']:.2f}"
                            + (f", disc x{p['disc']:.2f}" if p.get("disc", 1) != 1 else ""), fontsize=9)
     ax[4, 0].set_ylabel("data - model\n(deg; mas/yr)"); ax[4, 0].legend(fontsize=8, loc="lower left")
-    fig.suptitle("Stream 54: data (orange) vs the best model of each kind (grey: debris < 700 Myr); "
+    fig.suptitle("Stream 54: members (orange) vs the best model of each kind (contours: debris < 700 Myr, p(y | $\\phi_1$) at 0.2, 0.5, 0.8 of the column peak); "
                  r"$\Delta\ln L$ (256k, + prior) vs the inflated-bar best; statistical sd ~80", fontsize=12)
     out = ROOT/"plots/nullfits_gallery.png"; fig.savefig(out, dpi=100); print(out)
 
