@@ -23,14 +23,14 @@ from plot_bestfit_real import load, resid
 NF, FB, PR = (ROOT/f"results/streams/{s}" for s in ("nullfits_20261022", "fixedbar_20261021", "profile_step2_20261020"))
 
 
-LEVELS = (0.2, 0.5, 0.8)
+LEVELS = (0.05, 0.2, 0.5, 0.8)
 
 
 def contours(ax, u, y, ext, lim, color="navy"):
     """Contours of p(y | phi1): smoothed 2-D histogram, each phi1 column scaled to its peak."""
     H, xe, ye = np.histogram2d(u, y, bins=(int(round((ext[1]-ext[0])/0.5)), 60), range=(ext, lim))
     H = gaussian_filter(H, 1.5); pk = H.max(1, keepdims=True); H = np.divide(H, pk, out=np.zeros_like(H), where=pk > H.max()*1e-3)
-    ax.contour(0.5*(xe[1:]+xe[:-1]), 0.5*(ye[1:]+ye[:-1]), H.T, levels=LEVELS, colors=color, linewidths=(0.7, 1.1, 1.6), zorder=2)
+    ax.contour(0.5*(xe[1:]+xe[:-1]), 0.5*(ye[1:]+ye[:-1]), H.T, levels=LEVELS, colors=color, linewidths=(0.5, 0.7, 1.1, 1.6), linestyles=("dotted", "solid", "solid", "solid"), zorder=2)
 
 
 def best_seed(pattern):
@@ -78,7 +78,7 @@ def main():
         ax[0, j].set_title(f"{lab}\n$\\Delta\\ln L$ = {dl:+.0f}\n{bar}d {p['dist']:.2f}, $v_c$ {p['vc']:.0f}, q {p['halo_q']:.2f}"
                            + (f", disc x{p['disc']:.2f}" if p.get("disc", 1) != 1 else ""), fontsize=9)
     ax[4, 0].set_ylabel("data - model\n(deg; mas/yr)"); ax[4, 0].legend(fontsize=8, loc="lower left")
-    fig.suptitle("Stream 54: members (orange) vs the best model of each kind (contours: debris < 700 Myr, p(y | $\\phi_1$) at 0.2, 0.5, 0.8 of the column peak); "
+    fig.suptitle("Stream 54: members (orange) vs the best model of each kind (contours: debris < 700 Myr, p(y | $\\phi_1$) at 0.05 (dotted), 0.2, 0.5, 0.8 of the column peak); "
                  r"$\Delta\ln L$ (256k, + prior) vs the inflated-bar best; statistical sd ~80", fontsize=12)
     out = ROOT/"plots/nullfits_gallery.png"; fig.savefig(out, dpi=100); print(out)
 
