@@ -37,7 +37,7 @@ def peri_release_times(host, today, nrel, window_myr=1000., sigma_myr=50.):
     return np.sort(T-ages/AGAMA_T_MYR), peri
 
 
-def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10., frame="baumgardt", proj_frame=None, mass_factor=1.0, max_age_myr=None, accuracy=1e-8, escape_recipe="fardal", arm_only=1, epoch_offset=None):
+def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=None, window_myr=1000., release="uniform", peri_sigma_myr=10., frame="baumgardt", proj_frame=None, mass_factor=1.0, max_age_myr=None, accuracy=1e-8, escape_recipe="fardal", arm_only=1, epoch_offset=None, host=None):
     """Trailing-arm spray (observables, chi, age). host_kw: extra host_potential options (bar_eta, bar_size, bar_model).
     release: 'uniform' (epochs uniform over the last window_myr) or 'peri' (concentrated at pericentres, peri_release_times,
     Gaussian width peri_sigma_myr; omega Cen's pericentres are ~88 Myr apart). frame: solar frame (frames.FRAMES) used both
@@ -51,9 +51,10 @@ def make_spray(om, an, am, dist, nrel=8000, seed=1, spin=None, pm=None, host_kw=
     arm_only=None returns both launch arms, allowing the score to select trailing chi regardless of launch label.
     epoch_offset (release='uniform' only; default None = the legacy grid, linspace(T - window, T, nrel)): u in [0, 1)
     gives a systematic grid with a random start, t_k = T - window + (k + u) window/nrel, k = 0..nrel-1, so independent
-    replicates (u drawn per seed) re-randomise the release-epoch sampling as well as the escape offsets (2026-10-18)."""
+    replicates (u drawn per seed) re-randomise the release-epoch sampling as well as the escape offsets (2026-10-18).
+    host (optional, 2026-10-22): an explicit AGAMA host (e.g. McMillan17); om, an, am, host_kw are then ignored."""
     pa, pd = (PMRA, PMDEC) if pm is None else pm
-    host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am, **(host_kw or {}))
+    host = host_potential("x", bar_omega=om, bar_angle_deg=an, t_today=T, bar_amp=am, **(host_kw or {})) if host is None else host
     today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], dist, pa, pd, OCEN_OBS["vlos"], frame)[0]
     if release == "uniform" and epoch_offset is not None:
         if not 0. <= epoch_offset < 1.:
