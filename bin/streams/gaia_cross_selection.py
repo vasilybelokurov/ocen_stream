@@ -16,7 +16,8 @@ sky and pmra* masks; counts divided by their median in each phi1 column (left) a
 off the ridge, area-scaled). (4) CMDs of stars passing all three masks minus the same selection shifted 4-12 deg off the ridge
 on the sky (area-scaled), in phi1 ranges. Third column of gaia_xsel.png: the masks with the STREAMFINDER members only.
 Output: plots/gaia_xsel.png, plots/gaia_xsel_cmd.png, results/plot_data/gaia_xsel_tracks.json
-Usage: PYTHONPATH=src python bin/streams/gaia_cross_selection.py
+Usage: PYTHONPATH=src python bin/streams/gaia_cross_selection.py [--dphi1 1.0]  (phi1 pixel; default 0.5 deg = 80 pixels;
+       other values write plots/gaia_xsel_<N>px.png and skip the CMD figure)
 """
 import json, sys
 from pathlib import Path
@@ -81,7 +82,8 @@ def main():
     skysel = np.abs(x-sx(u)) < W_SKY; selA = np.abs(pa-sa(u)) < W_PM; selD = np.abs(pd-sd(u)) < W_PM
     offsky = (np.abs(x-sx(u)) > 4) & (np.abs(x-sx(u)) < 12)
     # area scaling of the off-sky bands (fraction of the 16-deg band inside the footprint vs the 4-deg on band), per phi1 bin
-    E1 = np.arange(-8, 32.01, 0.5); c1 = 0.5*(E1[1:]+E1[:-1])
+    dp = float(sys.argv[sys.argv.index("--dphi1")+1]) if "--dphi1" in sys.argv else 0.5          # phi1 pixel [deg]
+    E1 = np.arange(-8, 32.01, dp); c1 = 0.5*(E1[1:]+E1[:-1]); tag = "" if dp == 0.5 else f"_{len(c1)}px"
     n_on = np.histogram(u[skysel], E1)[0]; n_off = np.histogram(u[offsky], E1)[0]
     ratio = np.divide(n_on, n_off, out=np.zeros(len(c1)), where=n_off > 0)               # field ratio (stream < 1 per cent of all stars)
     fig, ax = plt.subplots(3, 3, figsize=(21, 12.5), constrained_layout=True, sharex=True)
@@ -116,7 +118,9 @@ def main():
         a_.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Gaia DR3 (G < 20, parallax cut, GC masks): each panel selected by the masks of the other projections (blue bands); "
                  "right column: masks and STREAMFINDER members", fontsize=11)
-    fig.savefig(ROOT/"plots/gaia_xsel.png", dpi=105); plt.close(fig)
+    fig.savefig(ROOT/f"plots/gaia_xsel{tag}.png", dpi=105); plt.close(fig)
+    if tag:
+        return
     # CMDs: all three masks, on minus off-sky (field-ratio scaled)
     allsel = pmsel & skysel; offsel = pmsel & offsky; Ec, Eg = np.arange(0, 2.01, 0.05), np.arange(12, 20.01, 0.1)
     rng = ((-2, 6), (6, 14), (14, 20), (20, 28))
