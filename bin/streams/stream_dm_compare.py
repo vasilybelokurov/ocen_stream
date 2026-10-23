@@ -29,6 +29,8 @@ for R, off, col, lab in ((new, 0., "C0", "new: CMD template fit (marked-start ma
         ax.errorbar(x, r["all_dm"], yerr=e, fmt="o", color=col, mfc=col if r["accepted"] else "none", ms=7, capsize=3, label=lab if i == 0 else None)
     cf = R["relation"]["coef"]; ax.plot(ph, np.polyval(cf, ph), "-", color=col, lw=0.8, label=f"linear fit to accepted bins: {cf[1]:+.2f} {cf[0]:+.4f} $\\phi_1$")
 for i, r in enumerate(new["bins"]):
+    ax.errorbar(r["phi1"]-0.7, r["msc_dm"], yerr=r["msc_err"], fmt="s", color="k", mfc="none", ms=6, capsize=2, label="old method (MS colour centring), new masks" if i == 0 else None)
+for i, r in enumerate(new["bins"]):
     ax.plot(r["phi1"]-0.35, r["ms_dm"], "v", color="C0", ms=5, alpha=0.6, label="new, MS only" if i == 0 else None)
     ax.plot(r["phi1"]-0.35, r["tosgb_dm"], "^", color="C0", ms=5, alpha=0.6, label="new, TO/SGB only" if i == 0 else None)
 ax.axhline(0, color="k", lw=0.4); ax.set(xlabel=r"$\phi_1$ [deg]", ylabel="dm (stream - cluster) [mag]", xlim=(-3, 31), ylim=(-1.4, 0.6),

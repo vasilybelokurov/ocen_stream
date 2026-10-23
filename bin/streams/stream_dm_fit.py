@@ -57,7 +57,7 @@ def pm_mask(S, R, shift=0.):
     return m
 
 
-def hess_on_bg(S, R, sel, a0, a1):
+def hess_on_bg(S, R, sel, a0, a1, EC=EC, EG=EG, smooth=1.5):
     """on-window Hess diagram and per-pixel background (interpolated across dphi2 from the off-sky bands)."""
     G = np.array(R["grid"]); u = S["phi1"]; yv = S["dphi2"]-np.interp(u, G, R["sky_window"]["centre"]); hw = np.interp(u, G, R["sky_window"]["half_width"])
     k = sel & (u >= a0) & (u < a1); on = k & (np.abs(yv) < hw); h = float(np.median(hw[on])) if on.any() else 3.
@@ -67,7 +67,27 @@ def hess_on_bg(S, R, sel, a0, a1):
     ob = offb & (H3.sum((1, 2)) > 0); dg = 3 if ((ob & (cb < 0)).sum() >= 3 and (ob & (cb > 0)).sum() >= 3) else 1
     coef = np.tensordot(np.linalg.pinv(np.vander(cb[ob], dg)), H3[ob], 1); yy = np.linspace(-h, h, 41)
     B = np.clip(np.tensordot(np.vander(yy, dg), coef, 1), 0, None).mean(0)*(2*h)
-    return Hn, gaussian_filter(B, 1.5), h
+    return Hn, gaussian_filter(B, smooth), h
+
+
+def ms_centring(S, R, sel, a0, a1, M, nboot=200, seed=5):
+    """Old estimator with the new masks/background: dm at which the background-subtracted mean MS colour residual (G0 < 19.6,
+    template-frame G0 >= 17.8, |r| < 0.15) crosses zero. Background per pixel on a fine grid (0.01 x 0.05 mag); error from
+    Poisson resampling of the on-window counts."""
+    ec, eg = np.arange(0.3, 1.4001, 0.01), np.arange(15.5, 19.6001, 0.05); Hn, B, _ = hess_on_bg(S, R, sel, a0, a1, ec, eg, smooth=3.)
+    cc, gg = np.meshgrid(0.5*(ec[1:]+ec[:-1]), 0.5*(eg[1:]+eg[:-1]), indexing="ij"); cc, gg = cc.ravel(), gg.ravel()
+    dms = np.arange(-1.2, 0.41, 0.02)
+    def mean_r(H):
+        out = []
+        for d in dms:
+            Gt = gg-d; r = cc-(M.ms_fn(Gt)+np.polyval(M.P["dc_ms"], np.minimum(Gt, 19.6))); w = (Gt >= 17.8) & (gg < 19.6) & (np.abs(r) < 0.15)
+            ex = (H.ravel()-B.ravel())*w; out.append(np.sum(ex*r)/max(np.sum(ex), 1.))
+        out = np.array(out); j = np.where(np.diff(np.sign(out)) != 0)[0]
+        if len(j) == 0:
+            return np.nan
+        j = j[0]; return float(dms[j]-out[j]*(dms[j+1]-dms[j])/(out[j+1]-out[j]))
+    best = mean_r(Hn); rng = np.random.default_rng(seed); bs = np.array([mean_r(rng.poisson(Hn)) for _ in range(nboot)])
+    return dict(dm=best, err=float(np.nanstd(bs)), fail=float(np.mean(~np.isfinite(bs))))
 
 
 def template(clus, dm, idx=None):
@@ -102,6 +122,8 @@ def main():
     P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); coef0 = P["dm_relation"]["coef"]
     dm_rel = lambda p: float(np.minimum(np.polyval(coef0, p), 0.))
     print(f"cluster template: {len(clus['C'][0])} stars, PM control {len(clus['F'][0])}", flush=True)
+    from gaia_cmd_mask import CMDMask
+    global MSK; MSK = CMDMask(P)
     sel, nulls = pm_mask(S, R), [pm_mask(S, R, shift=sh) for sh in (-6., 6.)]; seln = nulls[1]
     if "--inject" in sys.argv:
         return inject(S, R, clus, seln, dm_rel)
@@ -111,10 +133,11 @@ def main():
         res = {k: profile(Hn, B, clus, dm0, m) for k, m in D.items()}
         nul = max((profile(*hess_on_bg(S, R, sn, a0, a1)[:2], clus, dm0, D["all"]) for sn in nulls), key=lambda r_: r_["sig"])
         acc = res["all"]["sig"] >= 3 and nul["sig"] < 2 and not res["all"]["edge"]
-        rows.append(dict(phi1=c, dm0=dm0, accepted=acc, null_sig=nul["sig"], null_dm=nul["dm"], **{f"{k}_{q}": v[q] for k, v in res.items() for q in ("dm", "lo", "hi", "A", "sig", "edge")}))
+        mc = ms_centring(S, R, sel, a0, a1, MSK)
+        rows.append(dict(phi1=c, dm0=dm0, accepted=acc, null_sig=nul["sig"], null_dm=nul["dm"], msc_dm=mc["dm"], msc_err=mc["err"], msc_fail=mc["fail"], **{f"{k}_{q}": v[q] for k, v in res.items() for q in ("dm", "lo", "hi", "A", "sig", "edge")}))
         r = res["all"]; print(f"phi1 {a0}-{a1}: dm {r['dm']:+.2f} [{r['lo']:+.2f}, {r['hi']:+.2f}] A {r['A']:.0f} sig {r['sig']:.1f}{' EDGE' if r['edge'] else ''} | "
                               f"MS {res['ms']['dm']:+.2f} ({res['ms']['sig']:.1f}) TO/SGB {res['tosgb']['dm']:+.2f} ({res['tosgb']['sig']:.1f}) | "
-                              f"null sig {nul['sig']:.1f} dm {nul['dm']:+.2f} | old {dm0:+.2f} -> {'ACCEPT' if acc else 'reject'}", flush=True)
+                              f"null sig {nul['sig']:.1f} dm {nul['dm']:+.2f} | MS centring {mc['dm']:+.2f} +- {mc['err']:.2f} | old {dm0:+.2f} -> {'ACCEPT' if acc else 'reject'}", flush=True)
         for k, col in (("all", "k"), ("ms", "C0"), ("tosgb", "C3")):
             a.plot(res[k]["dms"], res[k]["L"], "-", color=col, label=f"{k}: {res[k]['dm']:+.2f} ({res[k]['sig']:.1f}$\\sigma$)")
         a.plot(nul["dms"], nul["L"], ":", color="0.5", label=f"null: {nul['sig']:.1f}$\\sigma$"); a.axvline(dm0, color="C2", lw=0.8, ls="--", label=f"old relation {dm0:+.2f}")
