@@ -273,7 +273,7 @@ if __name__ == "__main__":
     main()
 
 
-G_BRIGHT = 16.5     # template-frame G0 limit: no clear excess above the subgiant branch (RGB) -> excluded to limit contamination
+G_BRIGHT = 17.0     # template-frame G0 limit (user 2026-10-23: 16.5 -> 17.0; the SGB added mostly background): brighter stars excluded
 
 
 def cmd_pass(k=2.0, g_bright=G_BRIGHT):
