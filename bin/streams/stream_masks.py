@@ -37,7 +37,9 @@ where not fitted). Dashed lines in the figure.
 Member-free test (--free, user 2026-10-23): initial PM tracks from the 2-D PM excess peaks, tracked by continuity from the
 strongest bin (pm_peak_tracks; no hand-marked tracks), no anchoring, PM fits started at widths 0.3 / 0.8 / 1.5 mas/yr; outputs with suffix _free and
 plots/stream_masks_free_vs_default.png (track differences at the >= 4 sigma bins).
-Usage: PYTHONPATH=src python bin/streams/stream_masks.py [--free]
+--orbit: the same cross-selection figure with omega Cen's orbit (McMillan17, gravity21 frame, d = 5.43 kpc, VB21 PM, v_los 232.7;
+integrated 4 Myr forward and 45 Myr back) drawn in every panel -> plots/stream_masks_xsel_orbit.png.
+Usage: PYTHONPATH=src python bin/streams/stream_masks.py [--free] [--orbit]
 """
 import json, sys
 from pathlib import Path
@@ -57,6 +59,25 @@ DAMP, SIG_MIN = 0.5, 4.0                                # damped track updates; 
 FLOOR = dict(pmra=0.15, pmdec=0.15, dphi2=0.3)   # zero-width spikes on noise (null test) -> floors; floor-collapsed bins not used
 FREE = "--free" in sys.argv
 SUF = "_free" if FREE else ""
+ORBIT = "--orbit" in sys.argv
+
+
+def cluster_orbit():
+    """omega Cen's orbit in McMillan17 projected on the stream frame: dict phi1, dphi2, pmra, pmdec, dist (past branch = trailing side,
+    phi1 > 0; forward branch to phi1 ~ -5), points inside the footprint |dphi2| < 15 only."""
+    from ocen_dm.streams.restricted import host_potential, agama_kpc, AGAMA_T_MYR
+    from ocen_dm.streams.frames import to_model, OCEN_OBS, observables
+    from ocen_dm.streams.path import project_gc
+    from ocen_dm.cluster import OCEN_DISTANCE_KPC
+    agama = agama_kpc(); GCf = json.loads((ROOT/"results/plot_data/stream54_gc_frame_chord.json").read_text()); h = host_potential("McMillan17")
+    ic = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], OCEN_DISTANCE_KPC, OCEN_OBS["pmra"], OCEN_OBS["pmdec"], OCEN_OBS["vlos"], "gravity21")[0]
+    out = []
+    for dt in (-45., 4.):
+        _, o = agama.orbit(potential=h, ic=ic, time=dt/AGAMA_T_MYR, trajsize=2001)
+        ob = observables(o, "gravity21"); l = np.where(ob["l"] > 180, ob["l"]-360, ob["l"]); p1, p2 = project_gc(l, ob["b"], GCf)
+        out.append(dict(phi1=p1, dphi2=p2, pmra=ob["pmra"], pmdec=ob["pmdec"], dist=ob["dist"]))
+    O = {k: np.concatenate((out[1][k][::-1], out[0][k])) for k in out[0]}; k = np.abs(O["dphi2"]) < 15
+    return {kk: v[k] for kk, v in O.items()}
 
 
 def load_data():
@@ -481,9 +502,18 @@ def main():
         ax[i, 1].set_title("blue: Gaussian-core mask (k = 2, median error); orange: 95% empirical border (points: per bin); green: members", fontsize=9)
     for a_ in ax[-1]:
         a_.set_xlabel(r"$\phi_1$ [deg]")
-    fig.suptitle("Data-driven masks (alternating unbinned fits, CMD-filtered Gaia DR3)", fontsize=11)
-    fig.savefig(ROOT/f"plots/stream_masks{SUF}_xsel.png", dpi=100); plt.close(fig)
-    print(f"plots/stream_masks{SUF}_fits.png, plots/stream_masks{SUF}_xsel.png")
+    if ORBIT:
+        O = cluster_orbit()
+        for i, q in enumerate(("dphi2", "pmra", "pmdec")):
+            for a_ in ax[i]:
+                a_.plot(O["phi1"], O[q], "k-", lw=1.6, label="omega Cen orbit (McMillan17)"); a_.set_xlim(E1[0], E1[-1])
+        ax[0, 1].legend(fontsize=8, loc="lower right")
+        print("orbit: " + " ".join(f"phi1 {p:.0f}: dphi2 {np.interp(p, O['phi1'][O['phi1'].argsort()], O['dphi2'][O['phi1'].argsort()]):+.2f} "
+                                   f"pmra {np.interp(p, np.sort(O['phi1']), O['pmra'][O['phi1'].argsort()]):+.2f} pmdec {np.interp(p, np.sort(O['phi1']), O['pmdec'][O['phi1'].argsort()]):+.2f} "
+                                   f"d {np.interp(p, np.sort(O['phi1']), O['dist'][O['phi1'].argsort()]):.2f}" for p in (0, 5, 10, 15, 20, 25, 30)), flush=True)
+    fig.suptitle("Data-driven masks (alternating unbinned fits, CMD-filtered Gaia DR3)" + ("; black: omega Cen orbit in McMillan17 (4 Myr forward, 45 Myr back)" if ORBIT else ""), fontsize=11)
+    fig.savefig(ROOT/f"plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}.png", dpi=100); plt.close(fig)
+    print(f"plots/stream_masks{SUF}_fits.png, plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}.png")
     if FREE:
         compare_default(T, tables, PEAKS)
 
