@@ -457,6 +457,9 @@ def main():
                tables={q: [{k: float(v) for k, v in r.items()} for r in rows] for q, rows in tables.items()}, history=hist,
                k_iter=K_ITER, k_final=K_FINAL, note="mask: |q - c(phi1)| < k sqrt(s(phi1)^2 + e_i^2); outside 'range' the track is held at the end value")
     (ROOT/f"results/plot_data/stream_masks{SUF}.json").write_text(json.dumps(out, indent=1, default=float))
+    if NULL:                                                        # diagnostic only: pass/fail line, no figures
+        acc = [r["c"] for r in tables["pmra"] if r.get("accepted")]
+        print(f"NULL (pmra start +3 mas/yr): accepted pmra bins {acc} -> {'PASS' if not acc else 'FAIL'}", flush=True); return
     # --- figure 1: fits
     fig, ax = plt.subplots(2, 3, figsize=(18, 8), constrained_layout=True)
     for j, q in enumerate(("dphi2", "pmra", "pmdec")):
@@ -548,9 +551,7 @@ def main():
     print(f"plots/stream_masks{SUF}_fits.png, plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}.png")
     if FREE or OSTART:
         compare_default(T, tables, PEAKS)
-    if NULL:
-        acc = [r["c"] for r in tables["pmra"] if r.get("accepted")]
-        print(f"NULL (pmra start +3 mas/yr): accepted pmra bins {acc}; pooled {[r['c'] for r in tables['pmra'] if r.get('accepted') and 'pooled' in r]}", flush=True)
+
 
 
 def compare_default(T, tables, PEAKS):
