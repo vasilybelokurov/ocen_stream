@@ -4,8 +4,9 @@
 Procedure (docs/reviews/masks_fable_codex_20261023.md): stars = footprint (G < 20, parallax cut, GC masks) inside the isochrone CMD
 mask (bin/streams/gaia_cmd_mask.cmd_pass, k = 2). Alternating 1-D unbinned fits per phi1 bin, for q in (pmdec, pmra*, dphi2):
   - select by the OTHER two masks at k_iter = 2.5 (per-star width sqrt(s_int^2 + e_i^2));
-  - PMs: residual v = q - track_q(phi1) of stars in the sky window; background shape = histogram of the residuals of the same
-    selection in sky bands 4-12 deg off the track (upper-branch window excluded); model (1 - f) B(v) + f N(v; mu + beta (phi1 - c),
+  - PMs: residual v = q - track_q(phi1) of stars in the sky window |dphi2| < 2 (fixed, user 2026-10-23: the on-sky signal is too
+    complex for a fitted border; |dphi2| < 2 adopted 2026-10-23); background shape = residuals of the same selection at 4 < |dphi2 - centre| < 14; the window is centred on the
+    starting (user-marked) sky track, ~0 at phi1 < 20 rising to +3 at 28; model (1 - f) B(v) + f N(v; mu + beta (phi1 - c),
     s^2 + e_i^2) on |v| < 4 mas/yr;
   - sky: residual v = dphi2 - track(phi1) of stars passing both PM masks, |v| < 8 deg; model f1 N(mu1, s1) [+ f2 N(mu2, s2) for the
     upper branch at phi1 14-21] + (1 - f1 - f2) quadratic background (normalised on the window); phi1 >= 4 only (footprint edge);
@@ -18,7 +19,9 @@ quadratic in phi1 over the significant range (previous width kept outside). A GC
 all centres move by < 0.1 of their errors.
 Initial tracks: the user-marked sequences (gaia_xsel_marked.MARK); initial widths 0.5 mas/yr, 1 deg.
 Empirical (completeness) borders: after convergence, per bin the central interval holding 95 per cent of the background-subtracted
-excess in a wide window (completeness_borders), smoothed by weighted quadratics in phi1 (bins >= 4 sigma); drawn in orange and stored
+excess in a wide window (completeness_borders), 3-bin running mean, linearly interpolated in phi1 (bins >= 3 sigma);
+tracks are anchored within 1.5 / 1.0 mas/yr and 2 deg of the starting (marked) tracks (with the wide |dphi2| < 5 window the pmra
+iteration otherwise ran onto field structure at phi1 5-17); drawn in orange and stored
 as lo95 / hi95 offsets from the track (the Gaussian core underestimates the borders where the stream has wings).
 Outputs: results/plot_data/stream_masks.json (tracks and widths on a phi1 grid, per-bin fit tables, iteration history),
 plots/stream_masks_fits.png (per-bin centres/widths with errors per iteration), plots/stream_masks_xsel.png (cross-selection with the
@@ -63,10 +66,24 @@ def ev(T, q, u, key="c"):
     return np.interp(u, GRID, T[q][key])
 
 
-def other_masks(D, T, q, k):
+SKY_HALF, OFF_SKY = 2.0, (4.0, 14.0)    # user: sky selection for the other panels = |dphi2| < 2 (was 5; on-sky signal too complex for a
+                                         # fitted border); PM backgrounds from 6 < |dphi2| < 14
+
+
+def SKYC(u):
+    """centre of the fixed sky window: the starting (user-marked lower-branch) track -- ~0 at phi1 < 20, rising to +3 at phi1 28
+    where the stream bends steeply in the chord frame (members' dphi2 +1.0..+1.6 at 24-27)."""
+    return np.interp(u, GRID, SKY0)
+
+
+def other_masks(D, T, q, k, sky=True):
     u = D["phi1"]; m = np.ones(len(u), bool)
     for p, col, err in (("pmra", "pmra", "pmra_error"), ("pmdec", "pmdec", "pmdec_error"), ("dphi2", "dphi2", None)):
         if p == q:
+            continue
+        if p == "dphi2":
+            if sky:
+                m &= np.abs(D["dphi2"]-SKYC(u)) < SKY_HALF
             continue
         e2 = D[err]**2 if err else 0.
         m &= np.abs(D[col]-ev(T, p, u)) < k*np.sqrt(ev(T, p, u, "s")**2+e2)
@@ -188,7 +205,7 @@ w95 = first w with F >= frac (clipping the excess to positive values made noise 
     u, x = D["phi1"], D["dphi2"]; out = {}; Wd = dict(pmdec=4., pmra=6., dphi2=8.)
     for q in ("dphi2", "pmra", "pmdec"):
         W = Wd[q]; E = np.linspace(-W, W, int(2*W/0.1)+1); cc = 0.5*(E[1:]+E[:-1]); rows = []
-        sel = other_masks(D, T, q, K_ITER) if q == "dphi2" else other_masks(D, {**T, "dphi2": dict(c=T["dphi2"]["c"], s=np.full(GRID.size, 1e6))}, q, K_ITER)
+        sel = other_masks(D, T, q, K_ITER) if q == "dphi2" else other_masks(D, T, q, K_ITER, sky=False)
         for a0, a1 in BINS:
             c = 0.5*(a0+a1); kb = sel & (u >= a0) & (u < a1)
             vu = np.nan
@@ -199,7 +216,7 @@ w95 = first w with F >= frac (clipping the excess to positive values made noise 
                 vu = tu(np.array([c]))[0]-ev(T, q, np.array([c]))[0]; wing = (np.abs(cc) > 4) & ~(np.abs(cc-vu) < 2 if np.isfinite(vu) else False)
                 B = np.clip(np.polyval(np.polyfit(cc[wing], h[wing], 2), cc), 0, None)
             else:
-                dsky = x-ev(T, "dphi2", u); on = kb & (np.abs(dsky) < K_ITER*ev(T, "dphi2", u, "s")); off = kb & (np.abs(dsky) > 4) & (np.abs(dsky) < 12) & ~(np.abs(x-tu(u)) < 2)
+                dsky = x-ev(T, "dphi2", u); on = kb & (np.abs(x-SKYC(u)) < SKY_HALF); off = kb & (np.abs(x-SKYC(u)) > OFF_SKY[0]) & (np.abs(x-SKYC(u)) < OFF_SKY[1])
                 h = np.histogram((D[q]-ev(T, q, u))[on], E)[0].astype(float); hf = np.histogram((D[q]-ev(T, q, u))[off], E)[0].astype(float)
                 wing = np.abs(cc) > W-2; B = hf*h[wing].sum()/max(hf[wing].sum(), 1)
             fit = [r for r in TAB[q] if abs(r["c"]-c) < 0.1]
@@ -220,23 +237,23 @@ w95 = first w with F >= frac (clipping the excess to positive values made noise 
 
 
 def main():
-    D, T, up = load_data(); u, x = D["phi1"], D["dphi2"]
+    D, T, up = load_data(); u, x = D["phi1"], D["dphi2"]; global SKY0; SKY0 = T["dphi2"]["c"].copy()
     print(f"{len(u)} stars in the CMD mask", flush=True)
     tu = lambda p: np.interp(p, up[:, 0], up[:, 1], left=np.nan, right=np.nan)
-    hist, tables = [], {}
+    hist, tables = [], {}; T0 = {q: T[q]["c"].copy() for q in T}; ANCHOR = dict(pmra=1.5, pmdec=1.0, dphi2=2.0)   # max departure from the start
     for it in range(NIT):
         moved = []
         for q in ("pmdec", "pmra", "dphi2"):
             if q == "dphi2":
                 sel = other_masks(D, T, q, K_ITER)
             else:                                                     # PM fits: other-PM mask only; the sky window/off bands are applied below
-                sel = other_masks(D, {**T, "dphi2": dict(c=T["dphi2"]["c"], s=np.full(GRID.size, 1e6))}, q, K_ITER)
+                sel = other_masks(D, T, q, K_ITER, sky=False)
             rows = []
             for a0, a1 in BINS:
                 c = 0.5*(a0+a1); kb = sel & (u >= a0) & (u < a1)
                 if q in ("pmra", "pmdec"):
-                    dsky = x-ev(T, "dphi2", u); w_on = np.abs(dsky) < K_ITER*ev(T, "dphi2", u, "s")
-                    offb = (np.abs(dsky) > 4) & (np.abs(dsky) < 12) & ~(np.abs(x-tu(u)) < 2)
+                    w_on = np.abs(x-SKYC(u)) < SKY_HALF
+                    offb = (np.abs(x-SKYC(u)) > OFF_SKY[0]) & (np.abs(x-SKYC(u)) < OFF_SKY[1])
                     v = D[q]-ev(T, q, u); e = D[q+"_error"]
                     r = fit_pm(v[kb & w_on], e[kb & w_on], u[kb & w_on]-c, v[kb & offb])
                 else:
@@ -252,7 +269,7 @@ def main():
             ok = (sig >= SIG_MIN) & np.isfinite(me) & (me > 0) & np.isfinite(se) & (ss > 1.05*FLOOR[q]) & (ss < CAP[q]) & (np.abs(mu) < 1.5*np.maximum(cur_s, 0.5))
             sm = smooth_offset(cs, mu, me, ok); sw = smooth_logwidth(cs, np.log(ss), se/np.maximum(ss, 1e-3), ok, T[q]["s"])
             if sm is not None:
-                T[q]["c"] = T[q]["c"]+DAMP*sm[0](GRID); moved.append(np.max(np.abs(mu[ok])/np.maximum(me[ok], 1e-3)))
+                T[q]["c"] = np.clip(T[q]["c"]+DAMP*sm[0](GRID), T0[q]-ANCHOR[q], T0[q]+ANCHOR[q]); moved.append(np.max(np.abs(mu[ok])/np.maximum(me[ok], 1e-3)))
             if sw is not None:
                 T[q]["s"] = np.clip(np.exp(DAMP*np.log(np.maximum(sw(GRID), 1e-3))+(1-DAMP)*np.log(T[q]["s"])), FLOOR[q], CAP[q])
             T[q]["range"] = sm[1] if sm is not None else None
@@ -267,10 +284,10 @@ def main():
         mid = np.array([r["mid"] for r in rows]); lo = np.array([r["lo"] for r in rows]); hi = np.array([r["hi"] for r in rows])
         T[q]["c_emp"], T[q]["lo_emp"], T[q]["hi_emp"] = T[q]["c"].copy(), np.full(GRID.size, np.nan), np.full(GRID.size, np.nan)
         if okb.sum() >= 4:
-            dg = 1 if q == "dphi2" else 2                                 # sky: few bins -> linear (a quadratic pinched the border)
-            pl = np.polyfit(cs[okb], lo[okb], dg, w=np.sqrt(sig[okb])); ph = np.polyfit(cs[okb], hi[okb], dg, w=np.sqrt(sig[okb]))
-            a_, b_ = cs[okb].min(), cs[okb].max(); g = np.clip(GRID, a_, b_)
-            T[q]["lo_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.polyval(pl, g), np.nan); T[q]["hi_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.polyval(ph, g), np.nan)
+            xs, l_, h_ = cs[okb], lo[okb], hi[okb]
+            sm3 = lambda y: np.convolve(np.pad(y, 1, mode="edge"), np.ones(3)/3, mode="valid") if len(y) >= 3 else y
+            l_, h_ = sm3(l_), sm3(h_); a_, b_ = xs.min(), xs.max(); g = np.clip(GRID, a_, b_)
+            T[q]["lo_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.interp(g, xs, l_), np.nan); T[q]["hi_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.interp(g, xs, h_), np.nan)
         print(f"{q} 95% borders: " + " ".join(f"[{r['c']:.0f}: {r['lo']:+.2f}..{r['hi']:+.2f} N{r['N']:.0f} {r['sig']:.0f}s]" for r in rows), flush=True)
     out = dict(grid=GRID.tolist(), tracks={q: dict(c=T[q]["c"].tolist(), s=T[q]["s"].tolist(), range=T[q]["range"],
                                                   lo95=np.nan_to_num(T[q]["lo_emp"], nan=-99).tolist(), hi95=np.nan_to_num(T[q]["hi_emp"], nan=99).tolist()) for q in T},
@@ -307,14 +324,17 @@ def main():
                 if off.sum() > 10:
                     B[jj] = np.clip(np.polyval(np.polyfit(cy[off], H[jj, off], 2), cy), 0, None)
         else:
-            dsky = x-ev(T, "dphi2", u); onS = np.abs(dsky) < K_FINAL*ev(T, "dphi2", u, "s"); offS = (np.abs(dsky) > 4) & (np.abs(dsky) < 12) & ~(np.abs(x-tu(u)) < 2)
+            dsky = x-ev(T, "dphi2", u); onS = np.abs(x-SKYC(u)) < SKY_HALF; offS = (np.abs(x-SKYC(u)) > OFF_SKY[0]) & (np.abs(x-SKYC(u)) < OFF_SKY[1])
             sel2 = other_masks(D, T, q, K_FINAL) | True
-            selp = other_masks(D, {**T, "dphi2": dict(c=T["dphi2"]["c"], s=np.full(GRID.size, 1e6))}, q, K_FINAL)
+            selp = other_masks(D, T, q, K_FINAL, sky=False)
             H = np.histogram2d(u[selp & onS], v[selp & onS], (E1, Ey))[0]; Hf = np.histogram2d(u[selp & offS], v[selp & offS], (E1, Ey))[0]
             nn = np.histogram(u[onS], E1)[0]; nf = np.histogram(u[offS], E1)[0]; B = Hf*np.divide(nn, nf, out=np.zeros(len(c1)), where=nf > 0)[:, None]
         e = (E1[0], E1[-1], Ey[0], Ey[-1])
         ax[i, 0].imshow(gaussian_filter((H-B)/np.sqrt(np.maximum(B, 1)), 1.).T, origin="lower", extent=e, aspect="auto", cmap="RdBu_r", vmin=-4, vmax=4)
         wt = np.median(D[err]) if err else 0.
+        if q == "dphi2":
+            for a_ in ax[i]:
+                a_.plot(ph, SKYC(ph)+SKY_HALF, "k--", lw=0.8); a_.plot(ph, SKYC(ph)-SKY_HALF, "k--", lw=0.8)
         for a_ in ax[i]:
             a_.fill_between(ph, ev(T, q, ph)-K_FINAL*np.sqrt(ev(T, q, ph, "s")**2+wt**2), ev(T, q, ph)+K_FINAL*np.sqrt(ev(T, q, ph, "s")**2+wt**2),
                             color="C0", alpha=0.15 if a_ is ax[i, 0] else 0.3, lw=0)
