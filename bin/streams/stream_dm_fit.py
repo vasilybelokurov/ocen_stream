@@ -158,11 +158,16 @@ def main():
     chi2a = float(np.sum(((Y-slope*X)/Ei)**2))
     anch = dict(form="anchored_linear", slope=slope, slope_err=slope_err, phi1_min=0., phi1_max=float(X.max()), chi2=chi2a, dof=len(X)-1,
                 accepted=X.tolist(), err_inflation=ERR_INFL, note="dm = slope x clip(phi1, phi1_min, phi1_max); errors x ERR_INFL")
+    cq = np.polyfit(X, Y, 2, w=1/E); chi2q = float(np.sum(((Y-np.polyval(cq, X))/E)**2))
+    poly = dict(form="poly", coef=[float(v) for v in cq], phi1_lo=-2., phi1_hi=30., chi2=chi2q, dof=len(X)-3, accepted=X.tolist(),
+                note="quadratic through the accepted bins (user 2026-10-23: the mask line must go through the points); phi1 clipped to [-2, 30]")
+    print(f"quadratic: dm = {cq[2]:+.3f} {cq[1]:+.5f} phi1 {cq[0]:+.6f} phi1^2; chi2 {chi2q:.1f} for {len(X)-3} dof; at 0/8/16/24/28: "
+          + " ".join(f"{np.polyval(cq, p_):+.2f}" for p_ in (0, 8, 16, 24, 28)), flush=True)
     print(f"anchored linear (errors x{ERR_INFL:g}): dm = {slope:+.4f} +- {slope_err:.4f} x clip(phi1, 0, {X.max():g}); chi2 {chi2a:.1f} for {len(X)-1} dof", flush=True)
     fig.suptitle(f"dm profile likelihood per phi1 bin (Poisson CMD fit, cluster template, masks: {'orbit start' if TAG else 'marked start'}); "
                  f"anchored relation dm = {slope:+.4f} phi1 (to phi1 {X.max():g})")
     out = ROOT/f"plots/stream_dm_fit{'_' + TAG if TAG else ''}.png"; fig.savefig(out, dpi=90); plt.close(fig)
-    json.dump(dict(bins=rows, relation=dict(coef=[float(cf[0]), float(cf[1])], cov=np.asarray(cov).tolist(), chi2=chi2, accepted=X.tolist()), relation_anchored=anch,
+    json.dump(dict(bins=rows, relation=dict(coef=[float(cf[0]), float(cf[1])], cov=np.asarray(cov).tolist(), chi2=chi2, accepted=X.tolist()), relation_anchored=anch, relation_poly=poly,
                    masks=f"stream_masks{'_' + TAG if TAG else ''}.json", old_relation=coef0),
               open(ROOT/f"results/plot_data/stream_dm_fit{'_' + TAG if TAG else ''}.json", "w"), indent=1)
     print(out.relative_to(ROOT), flush=True)

@@ -16,7 +16,9 @@ b = [r for r in F["bins"]]; x = np.array([r["phi1"] for r in b]); acc = np.array
 fig, ax = plt.subplots(figsize=(9, 5.5), constrained_layout=True)
 P0 = json.loads((ROOT/"results/plot_data/gaia_cmd_mask_pre_iterate.json").read_text())
 ax.plot(ph, dm_of(P0, ph), "k:", lw=1.5, label="old line (before iteration): +0.556 - 0.0544 $\\phi_1$, capped at 0")
-R = P["dm_relation"]; ax.plot(ph, dm_of(P, ph), "k-", lw=2.5, label=f"iterated line used by the CMD mask: {R['slope']:+.4f} $\\phi_1$ (0 at the cluster, flat beyond {R['phi1_max']:g})")
+R = P["dm_relation"]
+lab = (f"line used by the CMD mask: quadratic {np.round(R['coef'], 5).tolist()}" if R.get("form") == "poly" else f"line used by the CMD mask: {R.get('form', 'legacy')}")
+ax.plot(ph, dm_of(P, ph), "k-", lw=2.5, label=lab)
 t, tl, th = (np.array([r[k] for r in b]) for k in ("all_dm", "all_lo", "all_hi")); m, me = np.array([r["msc_dm"] for r in b]), np.array([r["msc_err"] for r in b])
 for y, e, col, mk, lab, d in ((t, [t-tl, th-t], "C0", "o", "template fit (MS + TO, counts)", -0.2), (m, me, "C3", "s", "MS colour centring", 0.2)):
     ax.errorbar(x[acc]+d, y[acc], yerr=np.array(e)[:, acc] if np.ndim(e) == 2 else e[acc], fmt=mk, color=col, ms=7, capsize=3, label=lab)

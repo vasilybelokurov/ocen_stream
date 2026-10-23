@@ -280,6 +280,8 @@ def dm_of(P, u):
     """dm(phi1) from gaia_cmd_mask.json dm_relation: form 'anchored_linear' -> slope x clip(phi1, phi1_min, phi1_max) (dm = 0 at
     the cluster, held constant outside the measured range; 2026-10-23 iteration); legacy -> min(polyval(coef, phi1), 0)."""
     R = P["dm_relation"]; u = np.asarray(u, float)
+    if R.get("form") == "poly":                                   # free low-degree polynomial on clip(phi1, phi1_lo, phi1_hi)
+        return np.polyval(R["coef"], np.clip(u, R["phi1_lo"], R["phi1_hi"]))
     if R.get("form") == "anchored_linear":
         return R["slope"]*np.clip(u, R.get("phi1_min", 0.), R["phi1_max"])
     return np.minimum(np.polyval(R["coef"], u), 0.)
