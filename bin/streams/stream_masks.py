@@ -5,7 +5,7 @@ Procedure (docs/reviews/masks_fable_codex_20261023.md): stars = footprint (G < 2
 mask (bin/streams/gaia_cmd_mask.cmd_pass, k = 2). Alternating 1-D unbinned fits per phi1 bin, for q in (pmdec, pmra*, dphi2):
   - select by the OTHER two masks at k_iter = 2.5 (per-star width sqrt(s_int^2 + e_i^2));
   - PMs: residual v = q - track_q(phi1) of stars in the sky window |dphi2| < 2 (fixed, user 2026-10-23: the on-sky signal is too
-    complex for a fitted border; |dphi2| < 2 adopted 2026-10-23); background shape = residuals of the same selection at 4 < |dphi2 - centre| < 14; the window is centred on the
+    complex for a fitted border; |dphi2 - centre| < 3 adopted 2026-10-23); background shape = residuals of the same selection at 4 < |dphi2 - centre| < 14; the window is centred on the
     starting (user-marked) sky track, ~0 at phi1 < 20 rising to +3 at 28; model (1 - f) B(v) + f N(v; mu + beta (phi1 - c),
     s^2 + e_i^2) on |v| < 4 mas/yr;
   - sky: residual v = dphi2 - track(phi1) of stars passing both PM masks, |v| < 8 deg; model f1 N(mu1, s1) [+ f2 N(mu2, s2) for the
@@ -66,7 +66,7 @@ def ev(T, q, u, key="c"):
     return np.interp(u, GRID, T[q][key])
 
 
-SKY_HALF, OFF_SKY = 2.0, (4.0, 14.0)    # user: sky selection for the other panels = |dphi2| < 2 (was 5; on-sky signal too complex for a
+SKY_HALF, OFF_SKY = 3.0, (5.0, 14.0)    # user: sky selection for the other panels = |dphi2| < 2 (was 5; on-sky signal too complex for a
                                          # fitted border); PM backgrounds from 6 < |dphi2| < 14
 
 
@@ -230,8 +230,13 @@ w95 = first w with F >= frac (clipping the excess to positive values made noise 
             if N < 20 or sig < 3 or sig > 50:                            # > 50 sigma: failed background fit
                 continue
             ws = np.arange(0.1, Wm+1e-9, 0.05); F = np.array([ex[d_ < w_].sum() for w_ in ws])/N; F = np.maximum.accumulate(F)
-            w95 = float(ws[np.argmax(F >= frac)]) if (F >= frac).any() else float(Wm)
-            rows.append(dict(c=c, lo=float(mu-w95), mid=float(mu), hi=float(mu+w95), N=float(N), sig=float(sig), w95=w95, s_gauss=float(st)))
+            w_emp = float(ws[np.argmax(F >= frac)]) if (F >= frac).any() else float(Wm)
+            # wings tested: use the empirical width only if the excess beyond +-2 sigma_tot is significant (>= 2 sigma); otherwise
+            # the Gaussian 1.96 sigma_tot (noise in the background-subtracted wings otherwise inflates w95, e.g. pmdec at phi1 < 6)
+            wo = inW & (d_ > 2*st); ex_out = ex[wo].sum(); e_out = np.sqrt(h[wo].sum()+B[wo].sum()+1)
+            wing = ex_out >= 2*e_out; w95 = w_emp if wing else float(1.96*st)
+            rows.append(dict(c=c, lo=float(mu-w95), mid=float(mu), hi=float(mu+w95), N=float(N), sig=float(sig), w95=w95, w_emp=w_emp, s_gauss=float(st),
+                             wing=bool(wing), wing_sig=float(ex_out/e_out)))
         out[q] = rows
     return out
 
@@ -281,6 +286,8 @@ def main():
     CB = completeness_borders(D, T, tu, tables)
     for q, rows in CB.items():
         cs = np.array([r["c"] for r in rows]); sig = np.array([r["sig"] for r in rows]); okb = sig >= 3
+        if np.sum(sig >= 5) >= 6:                                     # enough strong bins: weak bins (noisy widths) are interpolated over
+            okb = sig >= 5
         mid = np.array([r["mid"] for r in rows]); lo = np.array([r["lo"] for r in rows]); hi = np.array([r["hi"] for r in rows])
         T[q]["c_emp"], T[q]["lo_emp"], T[q]["hi_emp"] = T[q]["c"].copy(), np.full(GRID.size, np.nan), np.full(GRID.size, np.nan)
         if okb.sum() >= 4:
@@ -288,7 +295,7 @@ def main():
             sm3 = lambda y: np.convolve(np.pad(y, 1, mode="edge"), np.ones(3)/3, mode="valid") if len(y) >= 3 else y
             l_, h_ = sm3(l_), sm3(h_); a_, b_ = xs.min(), xs.max(); g = np.clip(GRID, a_, b_)
             T[q]["lo_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.interp(g, xs, l_), np.nan); T[q]["hi_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.interp(g, xs, h_), np.nan)
-        print(f"{q} 95% borders: " + " ".join(f"[{r['c']:.0f}: {r['lo']:+.2f}..{r['hi']:+.2f} N{r['N']:.0f} {r['sig']:.0f}s]" for r in rows), flush=True)
+        print(f"{q} 95% borders: " + " ".join(f"[{r['c']:.0f}: {r['lo']:+.2f}..{r['hi']:+.2f} N{r['N']:.0f} {r['sig']:.0f}s {'W' if r['wing'] else 'g'}{r['wing_sig']:.1f}]" for r in rows), flush=True)
     out = dict(grid=GRID.tolist(), tracks={q: dict(c=T[q]["c"].tolist(), s=T[q]["s"].tolist(), range=T[q]["range"],
                                                   lo95=np.nan_to_num(T[q]["lo_emp"], nan=-99).tolist(), hi95=np.nan_to_num(T[q]["hi_emp"], nan=99).tolist()) for q in T},
                borders95=CB,
