@@ -39,7 +39,8 @@ strongest bin (pm_peak_tracks; no hand-marked tracks), no anchoring, PM fits sta
 plots/stream_masks_free_vs_default.png (track differences at the >= 4 sigma bins).
 --orbit: the same cross-selection figure with omega Cen's orbit (McMillan17, gravity21 frame, d = 5.43 kpc, VB21 PM, v_los 232.7;
 integrated 4 Myr forward and 45 Myr back) drawn in every panel -> plots/stream_masks_xsel_orbit.png.
-Usage: PYTHONPATH=src python bin/streams/stream_masks.py [--free] [--orbit]
+--orbit-start: as --free but the PM tracks start on the orbit (sky track as default); offsets up to 3 mas/yr accepted per bin.
+Usage: PYTHONPATH=src python bin/streams/stream_masks.py [--free | --orbit-start] [--orbit]
 """
 import json, sys
 from pathlib import Path
@@ -57,8 +58,9 @@ K_ITER, K_FINAL, NIT = 2.5, 2.0, 6
 CAP = dict(pmra=1.5, pmdec=1.5, dphi2=2.5)              # width caps
 DAMP, SIG_MIN = 0.5, 4.0                                # damped track updates; bins accepted at >= 4 sigma
 FLOOR = dict(pmra=0.15, pmdec=0.15, dphi2=0.3)   # zero-width spikes on noise (null test) -> floors; floor-collapsed bins not used
-FREE = "--free" in sys.argv
-SUF = "_free" if FREE else ""
+OSTART = "--orbit-start" in sys.argv        # PM tracks started on omega Cen's orbit (McMillan17); otherwise as --free
+FREE = "--free" in sys.argv or OSTART
+SUF = "_orbitstart" if OSTART else ("_free" if FREE else "")
 ORBIT = "--orbit" in sys.argv
 
 
@@ -353,7 +355,11 @@ def pm_peak_tracks(D, R_AP=0.75, STEP=2.5):
 def main():
     D, T, up = load_data(); u, x = D["phi1"], D["dphi2"]; global SKY0, SKYW; SKY0 = T["dphi2"]["c"].copy(); SKYW = np.full(GRID.size, SKY_HALF)
     print(f"{len(u)} stars in the CMD mask", flush=True)
-    if FREE:
+    if OSTART:
+        O = cluster_orbit(); o = np.argsort(O["phi1"]); PEAKS = np.column_stack((O["phi1"][o], O["pmra"][o], O["pmdec"][o]))
+        for q in ("pmra", "pmdec"):
+            T[q]["c"] = np.interp(GRID, O["phi1"][o], O[q][o])
+    elif FREE:
         st, PEAKS = pm_peak_tracks(D)
         for q in ("pmra", "pmdec"):
             T[q]["c"] = st[q].copy()
@@ -388,7 +394,7 @@ def main():
             cs = np.array([r["c"] for r in rows]); mu = np.array([r["mu"] for r in rows]); me = np.array([r["mu_err"] for r in rows])
             ss = np.array([r["s"] for r in rows]); se = np.array([max(r["s_err"], 1e-3) for r in rows]); sig = np.array([r["sig"] for r in rows])
             cur_s = np.array([ev(T, q, np.array([c_]), "s")[0] for c_ in cs])
-            ok = (sig >= SIG_MIN) & np.isfinite(me) & (me > 0) & np.isfinite(se) & (ss > 1.05*FLOOR[q]) & (ss < CAP[q]) & (np.abs(mu) < 1.5*np.maximum(cur_s, 0.5))
+            ok = (sig >= SIG_MIN) & np.isfinite(me) & (me > 0) & np.isfinite(se) & (ss > 1.05*FLOOR[q]) & (ss < CAP[q]) & (np.abs(mu) < (3.0 if FREE and q != "dphi2" else 1.5*np.maximum(cur_s, 0.5)))
             sm = smooth_offset(cs, mu, me, ok); sw = smooth_logwidth(cs, np.log(ss), se/np.maximum(ss, 1e-3), ok, T[q]["s"])
             if sm is not None:
                 T[q]["c"] = np.clip(T[q]["c"]+DAMP*sm[0](GRID), T0[q]-ANCHOR[q], T0[q]+ANCHOR[q]); moved.append(np.max(np.abs(mu[ok])/np.maximum(me[ok], 1e-3)))
@@ -524,8 +530,8 @@ def compare_default(T, tables, PEAKS):
     for j, q in enumerate(("pmra", "pmdec")):
         c0 = np.array(R["tracks"][q]["c"]); c1 = np.array(T[q]["c"]); s0 = {r["c"]: r["sig"] for r in R["tables"][q]}; s1 = {r["c"]: r["sig"] for r in tables[q]}
         strong = [c for c in s1 if s1[c] >= SIG_MIN and s0.get(c, 0) >= SIG_MIN]; dd = np.interp(strong, GRID, c1-c0)
-        ax[0, j].plot(GRID, c0, "k-", label="default (marked start, anchored)"); ax[0, j].plot(GRID, c1, "C3--", label="free start, no anchor")
-        ax[0, j].plot(PEAKS[:, 0], PEAKS[:, 1 if q == "pmra" else 2], "o", mfc="none", color="C0", label="excess peaks")
+        ax[0, j].plot(GRID, c0, "k-", label="default (marked start, anchored)"); ax[0, j].plot(GRID, c1, "C3--", label=("orbit" if OSTART else "free") + " start, no anchor")
+        ax[0, j].plot(PEAKS[:, 0], PEAKS[:, 1 if q == "pmra" else 2], "o", mfc="none", color="C0", label="orbit" if OSTART else "excess peaks", ms=2 if OSTART else 6)
         ax[1, j].plot(GRID, c1-c0, "C3-"); ax[1, j].plot(strong, dd, "ko", ms=4); ax[1, j].axhspan(-0.2, 0.2, color="0.85")
         for c in s1:
             ax[1, j].text(c, 0.02, f"{s1[c]:.0f}", transform=ax[1, j].get_xaxis_transform(), ha="center", fontsize=7)
@@ -535,7 +541,7 @@ def compare_default(T, tables, PEAKS):
               f"{'PASS' if ok.all() else 'FAIL at ' + str([c for c, o in zip(strong, ok) if not o])}", flush=True)
         print(f"   free-run significance per bin: " + " ".join(f"{c:.0f}:{s1[c]:.1f}" for c in sorted(s1)), flush=True)
     fig.suptitle("Member-free start (PM excess peaks, no anchoring, multi-start widths) vs default masks; numbers: free-run significance")
-    fig.savefig(ROOT/"plots/stream_masks_free_vs_default.png", dpi=100); plt.close(fig)
+    fig.savefig(ROOT/f"plots/stream_masks{SUF}_vs_default.png", dpi=100); plt.close(fig)
 
 
 if __name__ == "__main__":
