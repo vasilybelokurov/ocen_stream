@@ -28,6 +28,7 @@ def gc_masked(l, b):
     """True for positions within a globular-cluster mask: omega Cen 2 deg, other clusters max(0.25 deg, 10 r_h)
     (catalogue $OCEN_CATALOGUES/gc_catalog_full.fits; RH in pc, DIST in kpc)."""
     import os
+    import ocen_dm  # noqa: F401  (loads .env: OCEN_CATALOGUES)
     import astropy.coordinates as coord
     from astropy.table import Table
     t = Table.read(os.path.expanduser(os.path.expandvars("$OCEN_CATALOGUES/gc_catalog_full.fits")))
