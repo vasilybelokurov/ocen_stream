@@ -14,7 +14,7 @@ Panels vs phi1: (1) dphi2 selected by both PM masks; (2) pmra* selected by the s
 sky and pmra* masks; counts divided by their median in each phi1 column (left) and the same minus a background from the unselected dimension
 (dphi2: quadratic fit to the off-ridge bands 4-12 deg on both sides; PMs: the same PM-selected stars from sky bands 4-12 deg
 off the ridge, area-scaled). (4) CMDs of stars passing all three masks minus the same selection shifted 4-12 deg off the ridge
-on the sky (area-scaled), in phi1 ranges.
+on the sky (area-scaled), in phi1 ranges. Third column of gaia_xsel.png: the masks with the STREAMFINDER members only.
 Output: plots/gaia_xsel.png, plots/gaia_xsel_cmd.png, results/plot_data/gaia_xsel_tracks.json
 Usage: PYTHONPATH=src python bin/streams/gaia_cross_selection.py
 """
@@ -84,7 +84,7 @@ def main():
     E1 = np.arange(-8, 32.01, 0.5); c1 = 0.5*(E1[1:]+E1[:-1])
     n_on = np.histogram(u[skysel], E1)[0]; n_off = np.histogram(u[offsky], E1)[0]
     ratio = np.divide(n_on, n_off, out=np.zeros(len(c1)), where=n_off > 0)               # field ratio (stream < 1 per cent of all stars)
-    fig, ax = plt.subplots(3, 2, figsize=(16, 12.5), constrained_layout=True, sharex=True)
+    fig, ax = plt.subplots(3, 3, figsize=(21, 12.5), constrained_layout=True, sharex=True)
     ph = np.linspace(-6, 31, 300)
     rows = (("dphi2", x, pmsel, np.arange(-15, 15.01, 0.25), r"$\Delta\phi_2$ [deg]", sx, W_SKY, "both PM masks"),
             ("pmra", pa, skysel & selD, np.arange(-28, 4.01, 0.25), r"$\mu_{\alpha*}$ [mas/yr]", sa, W_PM, r"sky + $\mu_\delta$ masks"),
@@ -106,15 +106,16 @@ def main():
         ax[i, 0].imshow((Hs/np.where(colmed > 0, colmed, np.nan)).T, origin="lower", extent=e, aspect="auto", cmap="Greys", vmin=0.5, vmax=3)
         ax[i, 1].imshow(gaussian_filter((H-B)/np.sqrt(np.maximum(B, 1)), 1.).T, origin="lower", extent=e, aspect="auto", cmap="RdBu_r", vmin=-4, vmax=4)
         for a_ in ax[i]:
-            a_.fill_between(ph, tr(ph)-w, tr(ph)+w, color="C0", alpha=0.12, lw=0)
-            a_.plot(du, {"dphi2": dx, "pmra": d["pmra"], "pmdec": d["pmdec"]}[q], ",", color="C2", alpha=0.35)
+            a_.fill_between(ph, tr(ph)-w, tr(ph)+w, color="C0", alpha=0.12 if a_ is not ax[i, 2] else 0.25, lw=0)
             a_.set_ylabel(yl); a_.set_ylim(Ey[0], Ey[-1])
+        ax[i, 2].plot(du, {"dphi2": dx, "pmra": d["pmra"], "pmdec": d["pmdec"]}[q], ".", color="C2", ms=1.5, alpha=0.6)
+        ax[i, 2].set_xlim(E1[0], E1[-1]); ax[i, 2].set_title(f"mask (blue) and STREAMFINDER members (green)", fontsize=10)
         ax[i, 0].set_title(f"{yl.split(' [')[0]}: stars passing the {lab} (counts / column median)", fontsize=10)
         ax[i, 1].set_title("same, minus background from the unselected dimension: (N - B)/sqrt(B)", fontsize=10)
     for a_ in ax[-1]:
         a_.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Gaia DR3 (G < 20, parallax cut, GC masks): each panel selected by the masks of the other projections (blue bands); "
-                 "green dots: STREAMFINDER members", fontsize=11)
+                 "right column: masks and STREAMFINDER members", fontsize=11)
     fig.savefig(ROOT/"plots/gaia_xsel.png", dpi=105); plt.close(fig)
     # CMDs: all three masks, on minus off-sky (field-ratio scaled)
     allsel = pmsel & skysel; offsel = pmsel & offsky; Ec, Eg = np.arange(0, 2.01, 0.05), np.arange(12, 20.01, 0.1)
