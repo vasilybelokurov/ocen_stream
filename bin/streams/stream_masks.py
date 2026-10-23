@@ -17,6 +17,9 @@ Smoothing (accepted bins): centre offsets by a weighted least-squares cubic spli
 quadratic in phi1 over the significant range (previous width kept outside). A GCV smoothing spline under-smoothed (oscillating widths). 4 iterations or until
 all centres move by < 0.1 of their errors.
 Initial tracks: the user-marked sequences (gaia_xsel_marked.MARK); initial widths 0.5 mas/yr, 1 deg.
+Empirical (completeness) borders: after convergence, per bin the central interval holding 95 per cent of the background-subtracted
+excess in a wide window (completeness_borders), smoothed by weighted quadratics in phi1 (bins >= 4 sigma); drawn in orange and stored
+as lo95 / hi95 offsets from the track (the Gaussian core underestimates the borders where the stream has wings).
 Outputs: results/plot_data/stream_masks.json (tracks and widths on a phi1 grid, per-bin fit tables, iteration history),
 plots/stream_masks_fits.png (per-bin centres/widths with errors per iteration), plots/stream_masks_xsel.png (cross-selection with the
 final masks at k = 2, background-subtracted, with STREAMFINDER members in a separate column).
@@ -162,6 +165,43 @@ def smooth_logwidth(cs, logs, err, ok, old, deg=2):
     return f
 
 
+def completeness_borders(D, T, tu, TAB, frac=0.95):
+    """Empirical borders per 2-deg bin: background-subtracted residual distribution in a wide window (pmdec +-4, pmra +-6 mas/yr,
+    dphi2 +-8 deg), the same other-dimension selection as the fits (k_iter); background: PMs = off-sky stars scaled on the outer
+    wings (|v| > W - 2), sky = quadratic fit to 4 < |v| < 8 with the upper-branch window excluded. Border = central interval holding
+    `frac` of the excess: F(w) = excess within +-w of the fitted centre / excess within +-4 sigma_tot (no clipping, monotonised),
+w95 = first w with F >= frac (clipping the excess to positive values made noise look like wings). Sky: phi1 >= 14 only."""
+    u, x = D["phi1"], D["dphi2"]; out = {}; Wd = dict(pmdec=4., pmra=6., dphi2=8.)
+    for q in ("dphi2", "pmra", "pmdec"):
+        W = Wd[q]; E = np.linspace(-W, W, int(2*W/0.1)+1); cc = 0.5*(E[1:]+E[:-1]); rows = []
+        sel = other_masks(D, T, q, K_ITER) if q == "dphi2" else other_masks(D, {**T, "dphi2": dict(c=T["dphi2"]["c"], s=np.full(GRID.size, 1e6))}, q, K_ITER)
+        for a0, a1 in BINS:
+            c = 0.5*(a0+a1); kb = sel & (u >= a0) & (u < a1)
+            if q == "dphi2":
+                if c < 14:
+                    continue
+                v = x[kb]-ev(T, q, u[kb]); h = np.histogram(v, E)[0].astype(float)
+                vu = tu(np.array([c]))[0]-ev(T, q, np.array([c]))[0]; wing = (np.abs(cc) > 4) & ~(np.abs(cc-vu) < 2 if np.isfinite(vu) else False)
+                B = np.clip(np.polyval(np.polyfit(cc[wing], h[wing], 2), cc), 0, None)
+            else:
+                dsky = x-ev(T, "dphi2", u); on = kb & (np.abs(dsky) < K_ITER*ev(T, "dphi2", u, "s")); off = kb & (np.abs(dsky) > 4) & (np.abs(dsky) < 12) & ~(np.abs(x-tu(u)) < 2)
+                h = np.histogram((D[q]-ev(T, q, u))[on], E)[0].astype(float); hf = np.histogram((D[q]-ev(T, q, u))[off], E)[0].astype(float)
+                wing = np.abs(cc) > W-2; B = hf*h[wing].sum()/max(hf[wing].sum(), 1)
+            fit = [r for r in TAB[q] if abs(r["c"]-c) < 0.1]
+            if not fit:
+                continue
+            mu = fit[0]["mu"]; e_med = float(np.median(D[q+"_error"][kb])) if q != "dphi2" else 0.; st = np.hypot(fit[0]["s"], e_med)
+            Wm = min(max(4*st, 1.5), W-0.5); ex = h-B; d_ = np.abs(cc-mu); inW = d_ < Wm
+            N = ex[inW].sum(); sig = N/np.sqrt(max(B[inW].sum(), 1))
+            if N < 20 or sig < 3:
+                continue
+            ws = np.arange(0.1, Wm+1e-9, 0.05); F = np.array([ex[d_ < w_].sum() for w_ in ws])/N; F = np.maximum.accumulate(F)
+            w95 = float(ws[np.argmax(F >= frac)]) if (F >= frac).any() else float(Wm)
+            rows.append(dict(c=c, lo=float(mu-w95), mid=float(mu), hi=float(mu+w95), N=float(N), sig=float(sig), w95=w95, s_gauss=float(st)))
+        out[q] = rows
+    return out
+
+
 def main():
     D, T, up = load_data(); u, x = D["phi1"], D["dphi2"]
     print(f"{len(u)} stars in the CMD mask", flush=True)
@@ -204,7 +244,19 @@ def main():
         hist.append({q: dict(c=T[q]["c"].tolist(), s=T[q]["s"].tolist()) for q in T})
         if moved and max(moved) < 0.1:
             break
-    out = dict(grid=GRID.tolist(), tracks={q: dict(c=T[q]["c"].tolist(), s=T[q]["s"].tolist(), range=T[q]["range"]) for q in T},
+    CB = completeness_borders(D, T, tu, tables)
+    for q, rows in CB.items():
+        cs = np.array([r["c"] for r in rows]); sig = np.array([r["sig"] for r in rows]); okb = sig >= 4
+        mid = np.array([r["mid"] for r in rows]); lo = np.array([r["lo"] for r in rows]); hi = np.array([r["hi"] for r in rows])
+        T[q]["c_emp"], T[q]["lo_emp"], T[q]["hi_emp"] = T[q]["c"].copy(), np.full(GRID.size, np.nan), np.full(GRID.size, np.nan)
+        if okb.sum() >= 4:
+            pl = np.polyfit(cs[okb], lo[okb], 2, w=np.sqrt(sig[okb])); ph = np.polyfit(cs[okb], hi[okb], 2, w=np.sqrt(sig[okb]))
+            a_, b_ = cs[okb].min(), cs[okb].max(); g = np.clip(GRID, a_, b_)
+            T[q]["lo_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+1), np.polyval(pl, g), np.nan); T[q]["hi_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+1), np.polyval(ph, g), np.nan)
+        print(f"{q} 95% borders: " + " ".join(f"[{r['c']:.0f}: {r['lo']:+.2f}..{r['hi']:+.2f} N{r['N']:.0f} {r['sig']:.0f}s]" for r in rows), flush=True)
+    out = dict(grid=GRID.tolist(), tracks={q: dict(c=T[q]["c"].tolist(), s=T[q]["s"].tolist(), range=T[q]["range"],
+                                                  lo95=np.nan_to_num(T[q]["lo_emp"], nan=-99).tolist(), hi95=np.nan_to_num(T[q]["hi_emp"], nan=99).tolist()) for q in T},
+               borders95=CB,
                tables={q: [{k: float(v) for k, v in r.items()} for r in rows] for q, rows in tables.items()}, history=hist,
                k_iter=K_ITER, k_final=K_FINAL, note="mask: |q - c(phi1)| < k sqrt(s(phi1)^2 + e_i^2); outside 'range' the track is held at the end value")
     (ROOT/"results/plot_data/stream_masks.json").write_text(json.dumps(out, indent=1, default=float))
@@ -249,6 +301,11 @@ def main():
             a_.fill_between(ph, ev(T, q, ph)-K_FINAL*np.sqrt(ev(T, q, ph, "s")**2+wt**2), ev(T, q, ph)+K_FINAL*np.sqrt(ev(T, q, ph, "s")**2+wt**2),
                             color="C0", alpha=0.15 if a_ is ax[i, 0] else 0.3, lw=0)
             a_.set_ylabel(yl); a_.set_ylim(Ey[0], Ey[-1])
+        lo_e, hi_e = ev(T, q, ph)+T[q]["lo_emp"], ev(T, q, ph)+T[q]["hi_emp"]
+        for a_ in ax[i]:
+            a_.plot(ph, lo_e, "C1-", lw=1.2); a_.plot(ph, hi_e, "C1-", lw=1.2)
+        cbr = CB[q]; ax[i, 1].errorbar([r["c"] for r in cbr], [ev(T, q, np.array([r["c"]]))[0]+0.5*(r["lo"]+r["hi"]) for r in cbr],
+                                       yerr=[0.5*(r["hi"]-r["lo"]) for r in cbr], fmt="o", color="C1", ms=3, capsize=2)
         rows = tables[q]; ax[i, 1].errorbar([r["c"] for r in rows], [ev(T, q, np.array([r["c"]]))[0] for r in rows], fmt="none")
         ax[i, 1].plot(du, {"dphi2": dx, "pmra": d["pmra"], "pmdec": d["pmdec"]}[q], ".", color="C2", ms=1.5, alpha=0.5)
         rg = T[q]["range"]
@@ -256,7 +313,7 @@ def main():
             for a_ in ax[i]:
                 a_.axvspan(E1[0], rg[0], color="0.85", alpha=0.4, lw=0); a_.axvspan(rg[1], E1[-1], color="0.85", alpha=0.4, lw=0)
         ax[i, 0].set_title(f"{yl.split(' [')[0]}: CMD + other two data-driven masks (k = {K_FINAL:g}), background-subtracted", fontsize=10)
-        ax[i, 1].set_title("final mask (median-error width) and STREAMFINDER members; grey: track held (no >= 3 sigma bins)", fontsize=9)
+        ax[i, 1].set_title("blue: Gaussian-core mask (k = 2, median error); orange: 95% empirical border (points: per bin); green: members", fontsize=9)
     for a_ in ax[-1]:
         a_.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Data-driven masks (alternating unbinned fits, CMD-filtered Gaia DR3)", fontsize=11)
