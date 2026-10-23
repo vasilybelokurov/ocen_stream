@@ -325,7 +325,7 @@ def main():
     from grid4_common import du, dx, d
     E1 = np.linspace(-8, 32, 61); c1 = 0.5*(E1[1:]+E1[:-1]); ph = GRID
     fig, ax = plt.subplots(3, 3, figsize=(23, 12), constrained_layout=True, sharex=True)
-    rows_ = (("dphi2", x, np.arange(-15, 15.01, 0.25), r"$\Delta\phi_2$ [deg]", None), ("pmra", D["pmra"], np.arange(-28, 4.01, 0.25), r"$\mu_{\alpha*}$ [mas/yr]", "pmra_error"),
+    rows_ = (("dphi2", x, np.arange(-10, 10.01, 0.25), r"$\Delta\phi_2$ [deg]", None), ("pmra", D["pmra"], np.arange(-28, 4.01, 0.25), r"$\mu_{\alpha*}$ [mas/yr]", "pmra_error"),
              ("pmdec", D["pmdec"], np.arange(-18, 2.01, 0.25), r"$\mu_\delta$ [mas/yr]", "pmdec_error"))
     for i, (q, v, Ey, yl, err) in enumerate(rows_):
         sel = other_masks(D, T, q, K_FINAL); H = np.histogram2d(u[sel], v[sel], (E1, Ey))[0]
