@@ -356,7 +356,9 @@ def main():
             ax[0, j].plot(GRID, h[q]["c"], "-", color=plt.cm.viridis(ih/max(len(hist)-1, 1)), lw=1, label=f"iteration {ih}")
             ax[1, j].plot(GRID, h[q]["s"], "-", color=plt.cm.viridis(ih/max(len(hist)-1, 1)), lw=1)
         ax[0, j].errorbar(cs, ev(T, q, cs)+cen*0, yerr=[r["mu_err"] for r in rows], fmt="none", ecolor="0.5")
-        ax[1, j].errorbar(cs, [r["s"] for r in rows], yerr=[r["s_err"] for r in rows], fmt="o", color="k", ms=3)
+        sw, se = np.array([r["s"] for r in rows]), np.array([r["s_err"] for r in rows])
+        okw = np.isfinite(se) & (sw <= 2*CAP[q])                       # runaway fits (e.g. pmdec phi1 -3, s ~ 1e5, rejected) not drawn
+        ax[1, j].errorbar(cs[okw], sw[okw], yerr=se[okw], fmt="o", color="k", ms=3)
         for cc, sg in zip(cs, sig):
             ax[1, j].text(cc, 0.02, f"{sg:.0f}", ha="center", fontsize=7, transform=ax[1, j].get_xaxis_transform())
         ax[0, j].set(title=f"{q}: track per iteration", xlabel=r"$\phi_1$"); ax[1, j].set(title=f"{q}: intrinsic width (bins; numbers: significance)", xlabel=r"$\phi_1$")
