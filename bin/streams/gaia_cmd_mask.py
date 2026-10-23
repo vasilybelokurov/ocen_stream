@@ -80,7 +80,8 @@ class CMDMask:
         dms = np.polyval(P["dc_ms"], np.minimum(G, 19.6))
         r[ms] = c[ms]-(self.ms_fn(G[ms])+dms[ms]); seg[ms] = 0
         r[rgb] = c[rgb]-(self.rgb_fn(G[rgb])+P["dc_rgb"]); seg[rgb] = 2
-        sgb = (G > G_RGB-0.3) & (G < G_MS+0.3); seg[sgb & (seg < 0)] = 1                # TO/SGB: ellipse distance in z()
+        sgb = (G > 15.9) & (G < G_MS+0.4); seg[sgb & (seg < 0)] = 1                     # TO/SGB window: ellipse distance in z()
+        self.in_sgb = sgb
         return seg, r
 
     def sgb_dist(self, c, G, sc, sg):
@@ -101,7 +102,7 @@ class CMDMask:
         slope = np.abs(np.gradient(self.ms_fn(np.array([17.6, 21.5]))).mean()/3.9)          # dc/dG on the MS (~0.1)
         e2 = sc**2+np.where(seg == 0, (slope*SIG_DM)**2, 0.)
         zz = np.abs(r-mu)/np.sqrt(s**2+e2); zz[seg < 0] = np.inf
-        m = seg == 1
+        m = self.in_sgb                                                                   # all stars in the TO/SGB window, any segment
         if m.any():
             zs = self.sgb_dist(c[m], Gt[m], sc[m], sg[m]); zz[m] = np.where(np.isfinite(zz[m]), np.minimum(zz[m], zs), zs)
         return zz
@@ -138,10 +139,11 @@ def main():
     # G0 16.9), joined to the MS and RGB ridges; densely resampled
     c_to = float(M.ms_fn(17.6)+np.polyval(dc_ms, 17.6)); c_rb = float(M.rgb_fn(G_RGB)+dc_rgb)
     cb = np.arange(c_to, c_rb+0.001, 0.02); pts = []
-    for cc in cb:
-        m = (np.abs(cC-cc) < 0.015) & (gC > G_RGB-0.3) & (gC < G_MS+0.3)
+    gg_ = np.arange(16.0, 17.9, 0.01)
+    for cc in cb:                                  # peak (not median: TO/MS stars dominate the colour bins) of G0 in the SGB window
+        m = (np.abs(cC-cc) < 0.015) & (gC > 16.0) & (gC < 17.9)
         if m.sum() > 20:
-            pts.append((cc, float(np.median(gC[m]))))
+            kde = np.exp(-0.5*((gg_[:, None]-gC[m][None, :])/0.05)**2).sum(1); pts.append((cc, float(gg_[np.argmax(kde)])))
     gm_ = np.linspace(G_MS+0.3, G_MS, 6); gr_ = np.linspace(G_RGB, G_RGB-0.3, 6)            # ordered: MS (faint -> TO), SGB by colour, RGB (base -> up)
     pts = [p_ for p_ in sorted(pts) if c_to+0.01 < p_[0] < c_rb-0.01]
     P_ = [(float(M.ms_fn(g)+np.polyval(dc_ms, g)), float(g)) for g in gm_]+pts+[(float(M.rgb_fn(g)+dc_rgb), float(g)) for g in gr_]
@@ -197,16 +199,12 @@ def main():
         Nn = np.sum(on & k2 & w_); Nb = s_*np.sum(off & k2 & w_); return Nn-Nb, Nb, s_
     # --- figure
     fig = plt.figure(figsize=(24, 11), constrained_layout=True); gs = fig.add_gridspec(2, 5)
+    cg_, gg2 = np.linspace(-0.2, 2.0, 441), np.linspace(12.0, 21.6, 481); CG, GG = np.meshgrid(cg_, gg2)
     def borders(ax, dm, Gref_shift, k, color, lw=0.9):
-        Gt = np.linspace(G_MS, 21.6, 200); e = np.interp(Gt+dm+0.3, gcen, med_sc); s = np.clip(np.polyval(M.P["s_ms"], Gt), M.P["s_ms_min"], 0.12)
-        cr = M.ms_fn(Gt)+np.polyval(M.P["dc_ms"], np.minimum(Gt, 19.6)); w = k*np.sqrt(s**2+e**2+(0.1*SIG_DM)**2)
-        for sgn in (-1, 1):
-            ax.plot(cr+sgn*w, Gt+dm, "-", color=color, lw=lw)
-        Gt = np.linspace(13.5, G_RGB, 100); e = np.interp(Gt+dm+0.3, gcen, med_sc); cr = M.rgb_fn(Gt)+M.P["dc_rgb"]; w = k*np.sqrt(M.P["s_rgb"]**2+e**2)
-        for sgn in (-1, 1):
-            ax.plot(cr+sgn*w, Gt+dm, "-", color=color, lw=lw)
-        pc_, pg_ = np.array(M.P["sgb_poly_c"]), np.array(M.P["sgb_poly_G"]); wg = k*np.sqrt(M.P["s_G_sgb"]**2+SIG_DM**2+0.005**2)
-        ax.fill_between(pc_, pg_-wg+dm, pg_+wg+dm, color=color, alpha=0.12, lw=0); ax.plot(pc_, pg_+dm, ":", color=color, lw=lw)
+        """mask boundary z = k on a fine grid (photometric errors = median at the raw G = G0 + 0.3 of the stream field)."""
+        e_c = np.interp(GG.ravel()+0.3, gcen, med_sc); e_g = np.interp(GG.ravel()+0.3, gcen, med_sg)
+        zg = M.z(CG.ravel(), GG.ravel(), e_c, e_g, dm).reshape(CG.shape); zg[~np.isfinite(zg)] = 99
+        ax.contour(cg_, gg2, zg, levels=[k], colors=color, linewidths=lw)
     a = fig.add_subplot(gs[0, 0]); a.plot(cC, gC, ",", color="k", alpha=0.35); a.plot(M.iso[1], M.iso[0], "C2-", lw=0.8, label="MIST 12.5 Gyr [Fe/H] -1.7 (+0.085)")
     borders(a, 0., 0, k_def, "C3"); a.plot([], [], "C3-", label=f"mask, k = {k_def:g} (cluster frame)")
     a.set(xlim=(0.2, 1.6), ylim=(20.3, 13.5), xlabel=r"(BP-RP)$_0$", ylabel=r"G$_0$", title=f"omega Cen 20-40', |dPM| < 0.7 ({C.sum()} stars)"); a.legend(fontsize=7)
