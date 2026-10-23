@@ -35,7 +35,7 @@ from scipy.interpolate import make_smoothing_spline
 from scipy.ndimage import gaussian_filter
 
 GRID = np.arange(-6, 32.01, 0.5)
-BINS = [(c-1, c+1) for c in range(3, 30, 2)]          # phi1 >= 2 (footprint edge and the omega Cen mask below)
+BINS = [(c-1, c+1) for c in range(-3, 30, 2)]          # from phi1 -4 (user: signal near the cluster); sky fits phi1 >= 4 (footprint edge)
 K_ITER, K_FINAL, NIT = 2.5, 2.0, 6
 CAP = dict(pmra=1.5, pmdec=1.5, dphi2=1.5)              # width caps
 DAMP, SIG_MIN = 0.5, 4.0                                # damped track updates; bins accepted at >= 4 sigma
@@ -147,7 +147,12 @@ def smooth_offset(cs, y, err, ok, taper=3.0):
     if ok.sum() < 5:
         return None
     x, yy, w = cs[ok], y[ok], 1/np.maximum(err[ok], 1e-3); lo, hi = x.min(), x.max()
-    kn = np.arange(lo+6, hi-5.9, 6.); sp = LSQUnivariateSpline(x, yy, kn, w=w, k=3) if len(kn) else np.poly1d(np.polyfit(x, yy, min(3, len(x)-1), w=w))
+    kn = list(np.arange(lo+6, hi-5.9, 6.)); sp = None
+    while sp is None:                                             # drop knots until the Schoenberg-Whitney conditions hold (gaps in accepted bins)
+        try:
+            sp = LSQUnivariateSpline(x, yy, kn, w=w, k=3) if kn else np.poly1d(np.polyfit(x, yy, min(3, len(x)-1), w=w))
+        except ValueError:
+            kn = kn[1:-1] if len(kn) > 1 else []
     def f(g):
         g = np.asarray(g, float); v = sp(np.clip(g, lo, hi))
         t = np.clip(1-np.maximum(lo-g, g-hi).clip(0)/taper, 0, 1); return v*t
@@ -177,6 +182,7 @@ w95 = first w with F >= frac (clipping the excess to positive values made noise 
         sel = other_masks(D, T, q, K_ITER) if q == "dphi2" else other_masks(D, {**T, "dphi2": dict(c=T["dphi2"]["c"], s=np.full(GRID.size, 1e6))}, q, K_ITER)
         for a0, a1 in BINS:
             c = 0.5*(a0+a1); kb = sel & (u >= a0) & (u < a1)
+            vu = np.nan
             if q == "dphi2":
                 if c < 14:
                     continue
@@ -192,8 +198,10 @@ w95 = first w with F >= frac (clipping the excess to positive values made noise 
                 continue
             mu = fit[0]["mu"]; e_med = float(np.median(D[q+"_error"][kb])) if q != "dphi2" else 0.; st = np.hypot(fit[0]["s"], e_med)
             Wm = min(max(4*st, 1.5), W-0.5); ex = h-B; d_ = np.abs(cc-mu); inW = d_ < Wm
+            if q == "dphi2" and np.isfinite(vu):
+                ex = np.where(np.abs(cc-vu) < 1.25, 0., ex)               # the upper branch has its own window
             N = ex[inW].sum(); sig = N/np.sqrt(max(B[inW].sum(), 1))
-            if N < 20 or sig < 3:
+            if N < 20 or sig < 3 or sig > 50:                            # > 50 sigma: failed background fit
                 continue
             ws = np.arange(0.1, Wm+1e-9, 0.05); F = np.array([ex[d_ < w_].sum() for w_ in ws])/N; F = np.maximum.accumulate(F)
             w95 = float(ws[np.argmax(F >= frac)]) if (F >= frac).any() else float(Wm)
@@ -250,7 +258,8 @@ def main():
         mid = np.array([r["mid"] for r in rows]); lo = np.array([r["lo"] for r in rows]); hi = np.array([r["hi"] for r in rows])
         T[q]["c_emp"], T[q]["lo_emp"], T[q]["hi_emp"] = T[q]["c"].copy(), np.full(GRID.size, np.nan), np.full(GRID.size, np.nan)
         if okb.sum() >= 4:
-            pl = np.polyfit(cs[okb], lo[okb], 2, w=np.sqrt(sig[okb])); ph = np.polyfit(cs[okb], hi[okb], 2, w=np.sqrt(sig[okb]))
+            dg = 1 if q == "dphi2" else 2                                 # sky: few bins -> linear (a quadratic pinched the border)
+            pl = np.polyfit(cs[okb], lo[okb], dg, w=np.sqrt(sig[okb])); ph = np.polyfit(cs[okb], hi[okb], dg, w=np.sqrt(sig[okb]))
             a_, b_ = cs[okb].min(), cs[okb].max(); g = np.clip(GRID, a_, b_)
             T[q]["lo_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+1), np.polyval(pl, g), np.nan); T[q]["hi_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+1), np.polyval(ph, g), np.nan)
         print(f"{q} 95% borders: " + " ".join(f"[{r['c']:.0f}: {r['lo']:+.2f}..{r['hi']:+.2f} N{r['N']:.0f} {r['sig']:.0f}s]" for r in rows), flush=True)
