@@ -273,11 +273,14 @@ if __name__ == "__main__":
     main()
 
 
-def cmd_pass(k=2.0):
-    """Boolean over the raw footprint catalogue (results/streams/gaia_footprint_dr3.npz order): inside the CMD mask (k, dm relation
+G_BRIGHT = 16.5     # template-frame G0 limit: no clear excess above the subgiant branch (RGB) -> excluded to limit contamination
+
+
+def cmd_pass(k=2.0, g_bright=G_BRIGHT):
+    """Boolean over the raw footprint catalogue (stars brighter than template-frame G0 = g_bright, i.e. the RGB, excluded) (results/streams/gaia_footprint_dr3.npz order): inside the CMD mask (k, dm relation
     and segment parameters from results/plot_data/gaia_cmd_mask.json; photometric errors = median sigma(G) of the footprint).
     Cached in results/streams/gaia_cmd_pass_k<k>.npy (keyed by the json's modification time)."""
-    P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); tag = f"k{k:g}_{int((ROOT/'results/plot_data/gaia_cmd_mask.json').stat().st_mtime)}"
+    P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); tag = f"k{k:g}_gb{g_bright:g}_{int((ROOT/'results/plot_data/gaia_cmd_mask.json').stat().st_mtime)}"
     f = ROOT/f"results/streams/gaia_cmd_pass_{tag}.npy"
     if f.exists():
         return np.load(f)
@@ -289,5 +292,5 @@ def cmd_pass(k=2.0):
     out = np.zeros(len(u), bool); ok = np.isfinite(c0) & np.isfinite(g0)
     for i in range(0, len(u), 200_000):
         s_ = slice(i, i+200_000); m = ok[s_]; z = np.full(m.size, np.inf)
-        z[m] = M.z(c0[s_][m], g0[s_][m], sc[s_][m], sg[s_][m], dm[s_][m]); out[s_] = z < k
+        z[m] = M.z(c0[s_][m], g0[s_][m], sc[s_][m], sg[s_][m], dm[s_][m]); out[s_] = (z < k) & (g0[s_]-dm[s_] >= g_bright)
     np.save(f, out); return out

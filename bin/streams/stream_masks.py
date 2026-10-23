@@ -35,7 +35,8 @@ from scipy.interpolate import make_smoothing_spline
 from scipy.ndimage import gaussian_filter
 
 GRID = np.arange(-6, 32.01, 0.5)
-BINS = [(c-1, c+1) for c in range(-3, 30, 2)]          # from phi1 -4 (user: signal near the cluster); sky fits phi1 >= 4 (footprint edge)
+BINS = [(c-1, c+1) for c in range(-3, 25, 2)]+[(23, 27), (25, 29), (27, 31)]   # 2-deg bins from phi1 -4; 4-deg bins at the far end
+# (user: signal to phi1 27-28; 2-deg bins there collapsed onto the width floor); sky fits phi1 >= 14 only (footprint edge)
 K_ITER, K_FINAL, NIT = 2.5, 2.0, 6
 CAP = dict(pmra=1.5, pmdec=1.5, dphi2=1.5)              # width caps
 DAMP, SIG_MIN = 0.5, 4.0                                # damped track updates; bins accepted at >= 4 sigma
@@ -110,8 +111,16 @@ def fit_sky(v, du, two, mu2_0, W=8.0):
             return -np.sum(np.log(f1*np.exp(-0.5*((v-mu1-be*du)/np.exp(ls1))**2)/(np.sqrt(2*np.pi)*np.exp(ls1))+f2*comp(mu2, ls2)+(1-f1-f2)*bg((a1, a2))+1e-300))
         mu1, ls1, lf1, be, a1, a2 = p; f1 = 1/(1+np.exp(-lf1))
         return -np.sum(np.log(f1*np.exp(-0.5*((v-mu1-be*du)/np.exp(ls1))**2)/(np.sqrt(2*np.pi)*np.exp(ls1))+(1-f1)*bg((a1, a2))+1e-300))
-    x0 = (0., np.log(0.8), -2., mu2_0, np.log(0.8), -3., 0., 0., 0.) if two else (0., np.log(0.8), -2., 0., 0., 0.)
-    r = minimize(nll, x0, method="Nelder-Mead", options=dict(xatol=1e-5, fatol=1e-5, maxiter=20000))
+    # starts: peak of the histogram minus a linear background within |v| < 3, and 0 (the single-start fit often stalled at f -> 0)
+    E_ = np.linspace(-W, W, int(2*W/0.25)+1); c_ = 0.5*(E_[1:]+E_[:-1]); h_ = np.histogram(v, E_)[0].astype(float)
+    wg = np.abs(c_) > 4; lin = np.polyval(np.polyfit(c_[wg], h_[wg], 1), c_); pk = c_[np.argmax(np.where(np.abs(c_) < 3, gaussian_filter(h_-lin, 2), -np.inf))]
+    r = None
+    for m0 in (float(pk), 0.):
+        for ls0 in (np.log(0.6), np.log(1.2)):
+            x0 = (m0, ls0, -2., mu2_0, np.log(0.8), -3., 0., 0., 0.) if two else (m0, ls0, -2., 0., 0., 0.)
+            rr = minimize(nll, x0, method="Nelder-Mead", options=dict(xatol=1e-5, fatol=1e-5, maxiter=20000, adaptive=True))
+            if r is None or rr.fun < r.fun:
+                r = rr
     p = r.x.copy(); p[1] = max(p[1], np.log(FLOOR["dphi2"])); r = type("R", (), dict(fun=nll(p)))
     r0 = minimize(lambda a: -np.sum(np.log(bg(a)+1e-300)), (0., 0.), method="Nelder-Mead"); dL = r0.fun-r.fun
     f1 = (np.exp(p[2])/(1+np.exp(p[2])+np.exp(p[5]))) if two else 1/(1+np.exp(-p[2]))
@@ -254,14 +263,14 @@ def main():
             break
     CB = completeness_borders(D, T, tu, tables)
     for q, rows in CB.items():
-        cs = np.array([r["c"] for r in rows]); sig = np.array([r["sig"] for r in rows]); okb = sig >= 4
+        cs = np.array([r["c"] for r in rows]); sig = np.array([r["sig"] for r in rows]); okb = sig >= 3
         mid = np.array([r["mid"] for r in rows]); lo = np.array([r["lo"] for r in rows]); hi = np.array([r["hi"] for r in rows])
         T[q]["c_emp"], T[q]["lo_emp"], T[q]["hi_emp"] = T[q]["c"].copy(), np.full(GRID.size, np.nan), np.full(GRID.size, np.nan)
         if okb.sum() >= 4:
             dg = 1 if q == "dphi2" else 2                                 # sky: few bins -> linear (a quadratic pinched the border)
             pl = np.polyfit(cs[okb], lo[okb], dg, w=np.sqrt(sig[okb])); ph = np.polyfit(cs[okb], hi[okb], dg, w=np.sqrt(sig[okb]))
             a_, b_ = cs[okb].min(), cs[okb].max(); g = np.clip(GRID, a_, b_)
-            T[q]["lo_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+1), np.polyval(pl, g), np.nan); T[q]["hi_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+1), np.polyval(ph, g), np.nan)
+            T[q]["lo_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.polyval(pl, g), np.nan); T[q]["hi_emp"] = np.where((GRID >= a_-1) & (GRID <= b_+2), np.polyval(ph, g), np.nan)
         print(f"{q} 95% borders: " + " ".join(f"[{r['c']:.0f}: {r['lo']:+.2f}..{r['hi']:+.2f} N{r['N']:.0f} {r['sig']:.0f}s]" for r in rows), flush=True)
     out = dict(grid=GRID.tolist(), tracks={q: dict(c=T[q]["c"].tolist(), s=T[q]["s"].tolist(), range=T[q]["range"],
                                                   lo95=np.nan_to_num(T[q]["lo_emp"], nan=-99).tolist(), hi95=np.nan_to_num(T[q]["hi_emp"], nan=99).tolist()) for q in T},
