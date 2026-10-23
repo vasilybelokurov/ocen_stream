@@ -7,7 +7,8 @@ Background per CMD pixel: quadratic in y = dphi2 - centre fitted to 1-deg bands 
 integrated over the window (as the PM panels of stream_masks.py; no red-control normalisation).
 Panels: 4-deg phi1 bins, excess Hess diagram with the CMD mask (k = 2, dm(phi1) relation of gaia_cmd_mask.json; dashed: the
 template-frame G0 = 16.5 limit above which the CMD cut is not applied).
-Usage: PYTHONPATH=src python bin/streams/stream_cmd_excess_masks.py [--masks orbitstart] -> plots/stream_cmd_excess_masks[_orbitstart].png
+--g-bright G: template-frame bright limit of the CMD cut (default gaia_cmd_mask.G_BRIGHT = 16.5).
+Usage: PYTHONPATH=src python bin/streams/stream_cmd_excess_masks.py [--masks orbitstart] [--g-bright 17] -> plots/stream_cmd_excess_masks[_orbitstart].png
 """
 import json, sys
 from pathlib import Path
@@ -23,7 +24,8 @@ EC, EG = np.arange(-0.2, 2.01, 0.04), np.arange(12, 21.51, 0.1)
 
 def main():
     from gaia_footprint_plots import gc_masked
-    from gaia_cmd_mask import CMDMask, G_BRIGHT
+    from gaia_cmd_mask import CMDMask, G_BRIGHT as GB0
+    G_BRIGHT = float(sys.argv[sys.argv.index("--g-bright")+1]) if "--g-bright" in sys.argv else GB0
     raw = dict(np.load(ROOT/"results/streams/gaia_footprint_dr3.npz")); z0 = np.load(ROOT/"results/streams/gaia_footprint_dered.npz")
     assert np.array_equal(z0["source_id"], raw["source_id"])
     lg = np.where(raw["l"] > 180, raw["l"]-360, raw["l"]).astype(float); keep = ~gc_masked(lg, raw["b"].astype(float)) & np.isfinite(z0["c0"])
@@ -61,7 +63,7 @@ def main():
     for a in ax[:, 0]:
         a.set_ylabel(r"G$_0$")
     fig.suptitle(f"CMD excess (on-sky minus per-pixel off-sky interpolation) of stars in the data-driven PM + sky masks "
-                 f"({'orbit start' if TAG == 'orbitstart' else 'marked start'}); black: CMD mask k = 2 at dm($\\phi_1$); dotted: RGB limit (no CMD cut above)")
+                 f"({'orbit start' if TAG == 'orbitstart' else 'marked start'}); black: CMD mask k = 2 at dm($\\phi_1$); dotted: bright limit G$_0$ = {G_BRIGHT:g} + dm (no stars kept above)")
     out = ROOT/f"plots/stream_cmd_excess_masks{'_' + TAG if TAG else ''}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
 
 
