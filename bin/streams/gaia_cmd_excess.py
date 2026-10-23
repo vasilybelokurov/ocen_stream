@@ -15,8 +15,11 @@ the ratio of on/off counts in a red CMD control region ((BP-RP)_0 1.25-2.5, wher
 and sky selection, per phi1 bin (area scaling over-subtracted near phi1 6-14).
 Distance shift: per phi1 bin, the magnitude offset dm of the (unextended) template that maximises the Poisson likelihood of the
 on-sample given (scaled off-sample + a x shifted template), compared only at G0 < 19.4 + dm where the shifted template is complete;
-error from Delta lnL = 0.5. The ADOPTED relation dm(phi1) is a weighted quadratic through dm = 0 +- 0.05 at the cluster and the bins
-with Delta lnL >= 10; the masks use the relation, not the per-bin values (noisy bins wander to the grid edges).
+error from Delta lnL = 0.5. The ADOPTED relation dm(phi1) is a weighted linear fit to the three bins with a clear CMD excess (phi1 14-18, 18-22,
+22-26; the user's choice), capped at dm = 0 (the cluster) where the extrapolation would place the stream beyond the cluster
+(phi1 < ~11); the masks use the relation, extrapolated elsewhere (noisy bins wander to the grid edges).
+Green curve: MIST 12.5 Gyr, [Fe/H] = -1.7 isochrone (minimint, Gaia EDR3 bands) at 5.43 kpc + dm, shifted in colour to the
+cluster's ridge at G0 17.6-19.3 (MIST colour systematics).
 Figures: plots/gaia_cmd_excess.png (per phi1 bin: excess Hess diagram with the shifted template mask; template panel);
 results/plot_data/gaia_cmd_shift.json (dm per bin).
 Usage: PYTHONPATH=src python bin/streams/gaia_cmd_excess.py [--dm0]  (--dm0: mask at the cluster's dm in all panels ->
@@ -65,6 +68,16 @@ def template(D, g0, c0):
     return Tfit, M, k.sum()
 
 
+def isochrone(age_gyr=12.5, feh=-1.7, d_kpc=5.43):
+    """MIST (minimint, $OCEN_ISOCHRONES/minimint) Gaia EDR3 isochrone up to the RGB tip: (BP-RP, G) at distance d_kpc."""
+    import minimint
+    import ocen_dm  # noqa: F401  (loads .env)
+    ii = minimint.Interpolator(["Gaia_G_EDR3", "Gaia_BP_EDR3", "Gaia_RP_EDR3"], data_prefix=os.path.join(os.path.expanduser(os.path.expandvars("$OCEN_ISOCHRONES")), "minimint"))
+    m = np.linspace(0.1, ii.getMaxMass(np.log10(age_gyr*1e9), feh)-1e-4, 3000); r = ii(m, np.log10(age_gyr*1e9), feh)
+    dmod = 5*np.log10(d_kpc*1e3)-5; ok = np.isfinite(r["Gaia_G_EDR3"])
+    return (r["Gaia_BP_EDR3"]-r["Gaia_RP_EDR3"])[ok], r["Gaia_G_EDR3"][ok]+dmod
+
+
 def main():
     import gaia_xsel_marked as GX
     from gaia_cross_selection import KNOTS
@@ -89,10 +102,17 @@ def main():
     from branch_search_gaia import GC
     rng = np.random.default_rng(2); n = 6_000_000; l = rng.uniform(-110, 10, n); b = np.degrees(np.arcsin(rng.uniform(np.sin(np.radians(-20)), np.sin(np.radians(75)), n)))
     ru, rx = project_gc(l, b, GC); ok = (b > 8) & ~gc_masked(l, b); ron = ok & (np.abs(rx-tl(ru)) < 1.5); roff = ok & (np.abs(rx-tl(ru)) > 4) & (np.abs(rx-tl(ru)) < 12)
-    dms = np.arange(-1.5, 0.51, 0.05); out = {}; cg = 0.5*(EG[1:]+EG[:-1])
+    dms = np.arange(-1.5, 0.51, 0.02); out = {}; cg = 0.5*(EG[1:]+EG[:-1])
     fig, ax = plt.subplots(1, len(BINS)+2, figsize=(27, 6), constrained_layout=True)
     ax[0].imshow(np.log10(T+1e-9).T, origin="lower", extent=(EC[0], EC[-1], EG[0], EG[-1]), aspect="auto", cmap="Greys", vmin=-5, vmax=-2)
     ax[0].contour(0.5*(EC[1:]+EC[:-1]), cg, Tmask.T.astype(float), levels=[0.5], colors="C0")
+    iso0 = isochrone(); cc_ = 0.5*(EC[1:]+EC[:-1]); r_ = (cg > 17.6) & (cg < 19.3)
+    ridge = np.array([np.sum(cc_*T[:, j])/np.sum(T[:, j]) for j in np.where(r_)[0]])
+    ms = iso0[1] > 17.0                                                   # main sequence below the turnoff (monotonic in G)
+    o = np.argsort(iso0[1][ms]); dcol = float(np.median(ridge-np.interp(cg[r_], iso0[1][ms][o], iso0[0][ms][o])))
+    ISO = (iso0[0]+dcol, iso0[1]); print(f"isochrone colour offset (cluster ridge - MIST, G0 17.6-19.3): {dcol:+.3f} mag", flush=True)
+    ax[0].plot(*ISO, "-", color="C2", lw=1.2, label=f"MIST 12.5 Gyr, [Fe/H] -1.7, 5.43 kpc\n(colour {dcol:+.2f} to match the cluster)"); ax[0].legend(fontsize=7, loc="lower left")
+    ax[0].set_ylim(EG[-1], EG[0])
     ax[0].set_title(f"omega Cen 20-40', PM-selected\n({nT} stars); 95% mask (blue)\nMS extended below G0 19.4", fontsize=9); ax[0].set(xlabel=r"(BP-RP)$_0$", ylabel=r"G$_0$")
     ctl = (c0 > 1.25) & (c0 < 2.5) & (g0 < 20)                          # red control: no stream stars, same PM and sky selection
     hists = {}
@@ -113,27 +133,33 @@ def main():
         hists[(a0, a1)] = (Hn, Hf)
         print(f"phi1 {a0}-{a1}: on {int(Hn.sum())}, bg {Hf.sum():.0f}, dm {dms[i]:+.2f} +- {err:.2f}, dlnL {prof[i]:.1f}", flush=True)
     # smooth distance relation: dm(phi1) quadratic through the cluster (dm = 0 +- 0.05 at phi1 = 0) and bins with dlnL >= 10
-    good = [v for v in out.values() if v["dlnL"] >= 10]
-    X = np.array([0.]+[v["center"] for v in good]); Y = np.array([0.]+[v["dm"] for v in good]); E = np.array([0.05]+[v["err"] for v in good])
-    coef = np.polyfit(X, Y, 2 if len(X) >= 4 else 1, w=1/E); dmf = lambda p: np.polyval(coef, np.clip(p, 0, None))
+    # adopted relation: weighted linear fit dm = a + b phi1 to the three bins with a clear CMD excess (phi1 14-18, 18-22, 22-26)
+    good = [out[k] for k in ("14-18", "18-22", "22-26")]
+    X = np.array([v["center"] for v in good]); Y = np.array([v["dm"] for v in good]); E = np.array([v["err"] for v in good])
+    coef, cov = np.polyfit(X, Y, 1, w=1/E, cov="unscaled"); dmf = lambda p: np.minimum(np.polyval(coef, p), 0.)   # capped at the cluster's dm
+    print(f"dm(phi1) = {coef[1]:+.3f} + {coef[0]:+.4f} phi1  (errors {np.sqrt(cov[1,1]):.3f}, {np.sqrt(cov[0,0]):.4f}); "
+          f"d = 5.43 x 10^(dm/5): " + ", ".join(f"phi1 {p}: {5.43*10**(dmf(p)/5):.2f} kpc" for p in (0, 10, 16, 20, 24, 28)), flush=True)
+    iso = ISO
     for a_, (a0, a1) in zip(ax[1:-1], BINS):
         Hn, Hf = hists[(a0, a1)]; dm = 0. if DM0 else float(dmf(0.5*(a0+a1))); r = out[f"{a0}-{a1}"]
         a_.imshow(gaussian_filter(Hn-Hf, 1.).T, origin="lower", extent=(EC[0], EC[-1], EG[0], EG[-1]), aspect="auto", cmap="RdBu_r", vmin=-2, vmax=2)
         a_.contour(0.5*(EC[1:]+EC[:-1]), cg, ndshift(Tmask.astype(float), (0, dm/0.1), order=0, mode="constant").T, levels=[0.5], colors="k", linewidths=1)
+        a_.plot(iso[0], iso[1]+dm, "-", color="C2", lw=1.2)
         a_.set_title(f"$\\phi_1$ {a0}-{a1}: on {int(Hn.sum())}, bg {Hf.sum():.0f}\nmask dm = {dm:+.2f} ({'cluster' if DM0 else 'relation'})\nfit {r['dm']:+.2f} $\\pm$ {r['err']:.2f}, $\\Delta$lnL {r['dlnL']:.0f}", fontsize=9)
         a_.set(xlabel=r"(BP-RP)$_0$", ylim=(EG[-1], EG[0]))
     # dm vs phi1: fits, relation, model debris distances
     a_ = ax[-1]; ph = np.linspace(0, 31, 100)
     for v in out.values():
         a_.errorbar(v["center"], v["dm"], yerr=v["err"], fmt="o", color="k" if v["dlnL"] >= 10 else "0.7")
-    a_.plot(ph, dmf(ph), "C0-", label="adopted relation (fit to black points + cluster)")
+    a_.plot(ph, dmf(ph), "C0-", label="adopted relation: linear fit to the 3 black points (capped at 0)")
+    a_.plot(ph, np.polyval(coef, ph), "C0:", lw=0.8)
+    a_.axhline(0, color="0.6", lw=0.6)
     from grid4_common import project_gc as pg, GC as GC2
     m = dict(np.load(ROOT/"results/streams/profile_step2_20261020/runs/final_a12.5_3.npz")); mu_, mx_ = pg(m["l"], m["b"], GC2)
     kk = (m["chi"] > 0) & (m["age"] < 700) & (np.abs(mx_) < 2)
     e = np.arange(0, 32, 2.); md = [np.median(m["d"][kk & (mu_ >= a) & (mu_ < a+2)]) for a in e]
     a_.plot(e+1, 5*np.log10(np.array(md)/5.43), "C3--", label="best model debris (12.5 deg), 5 log(d/5.43)")
     a_.set(xlabel=r"$\phi_1$ [deg]", ylabel="dm [mag] (relative to omega Cen)", title="distance shift along the stream", ylim=(-1.6, 0.4)); a_.legend(fontsize=8)
-    ax[0].invert_yaxis()
     fig.suptitle("CMD excess (stars in sky + PM masks minus off-sky bands, normalised on a red control region), dereddened; black: omega Cen 95% template at the adopted dm(phi1)" if not DM0 else "CMD excess, dereddened; black: omega Cen 95% template at the cluster's distance (dm = 0) in every panel")
     fig.savefig(ROOT/f"plots/gaia_cmd_excess{'_dm0' if DM0 else ''}.png", dpi=100); plt.close(fig)
     if DM0:
