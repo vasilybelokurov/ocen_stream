@@ -19,6 +19,8 @@ each = isochrone + a smooth offset fitted to omega Cen (MIST's SGB/RGB do not ma
 Intrinsic width per bin (0.2 mag in G0 for MS/RGB, 0.04 mag in colour for SGB): maximise sum log[(1 - f) N(r; mu, s_int^2 + e_i^2)
 + f p_F(r)], p_F from a PM-offset control (same radii, 1.5 < |dPM| < 3, scaled on the red CMD region); s_int(G) on the MS fitted
 linearly in G0 and extrapolated (capped at 0.12), RGB/SGB: medians.
+dm(phi1): refitted with this mask (per signal bin phi1 14-18, 18-22, 22-26 the shift maximising the excess S/N inside the k mask),
+weighted linear relation capped at 0; stored in results/plot_data/gaia_cmd_mask.json.
 Mask for a star (stream frame: G0_t = G0 - dm(phi1)): inside the segment band |r - mu| < k sqrt(s_int^2 + e^2) (+ sigma_dm in the
 magnitude direction on the SGB; on the MS the colour equivalent dc/dG x sigma_dm); HB excluded; G0_t >= 13.5.
 Outputs: plots/gaia_cmd_mask.png (cluster CMD with borders; widths; completeness on the cluster; S/N vs k at phi1 18-22; CMD excess
@@ -192,8 +194,24 @@ def main():
     ml = np.array(GX.MARK["lower"]); tl = GX.track(GX.MARK["lower"], lambda q: np.where(q < ml[0, 0], 0., ml[-1, 1])+0.*q)
     pm = keep & (np.abs(pa-ta(u)) < 2.0) & (np.abs(pd-td(u)) < 1.5) & np.isfinite(c0)
     on = pm & (np.abs(x-tl(u)) < 1.5); off = pm & (np.abs(x-tl(u)) > 4) & (np.abs(x-tl(u)) < 12); sel = on | off
-    zz = np.full(len(u), np.inf); zz[sel] = M.z(c0[sel], g0[sel], sc_all[sel], sg_all[sel], dmf(u[sel])); zz[~np.isfinite(zz)] = np.inf
     ctl = (c0 > 1.25) & (c0 < 2.5) & (g0 < 20)
+    # refit dm with THIS mask: per signal bin, the shift maximising the excess S/N inside the k = 2 mask (grid 0.02 mag);
+    # error = half-width of the S/N peak above S/N_max - 1; then a weighted linear relation, capped at 0 (cluster)
+    dgrid = np.arange(-1.0, 0.31, 0.02); fits = {}
+    for a0, a1 in ((14, 18), (18, 22), (22, 26)):
+        k2 = (u >= a0) & (u < a1); s_ = np.sum(on & k2 & ctl)/max(np.sum(off & k2 & ctl), 1); i_on, i_off = sel & on & k2, sel & off & k2
+        sn = []
+        for d_ in dgrid:
+            zo = M.z(c0[i_on], g0[i_on], sc_all[i_on], sg_all[i_on], d_); zf = M.z(c0[i_off], g0[i_off], sc_all[i_off], sg_all[i_off], d_)
+            Nn, Nb = np.sum(zo < k_def), s_*np.sum(zf < k_def); sn.append((Nn-Nb)/np.sqrt(max(Nb, 1)))
+        sn = np.array(sn); ib = int(np.argmax(sn)); ok = sn >= sn[ib]-1; fits[(a0, a1)] = (float(dgrid[ib]), max(0.5*(dgrid[ok].max()-dgrid[ok].min()), 0.02), float(sn[ib]), sn)
+        print(f"  dm refit phi1 {a0}-{a1}: {dgrid[ib]:+.2f} +- {fits[(a0, a1)][1]:.2f} (S/N {sn[ib]:.1f}; old relation {float(dmf(0.5*(a0+a1))):+.2f})", flush=True)
+    X = np.array([0.5*(a+b) for a, b in fits]); Y = np.array([v[0] for v in fits.values()]); W = 1/np.array([v[1] for v in fits.values()])
+    coef = list(np.polyfit(X, Y, 1, w=W)); dmf = lambda p: np.minimum(np.polyval(coef, p), 0.)
+    print(f"  new relation dm = {coef[1]:+.3f} {coef[0]:+.4f} phi1 (capped at 0): " + ", ".join(f"phi1 {p}: {dmf(p):+.2f} ({5.43*10**(dmf(p)/5):.2f} kpc)" for p in (10, 16, 20, 24, 28)), flush=True)
+    zz = np.full(len(u), np.inf); zz[sel] = M.z(c0[sel], g0[sel], sc_all[sel], sg_all[sel], dmf(u[sel])); zz[~np.isfinite(zz)] = np.inf
+    json.dump(dict(json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()), dm_relation=dict(coef=coef, note="dm = min(polyval(coef, phi1), 0); refitted with this mask"),
+                   dm_fits={f"{a}-{b}": dict(dm=v[0], err=v[1], sn=v[2]) for (a, b), v in fits.items()}), open(ROOT/"results/plot_data/gaia_cmd_mask.json", "w"), indent=1, default=float)
     def counts(k2, kk):
         s_ = np.sum(on & k2 & ctl)/max(np.sum(off & k2 & ctl), 1); w_ = (zz < kk) if np.isfinite(kk) else np.ones(len(zz), bool)
         Nn = np.sum(on & k2 & w_); Nb = s_*np.sum(off & k2 & w_); return Nn-Nb, Nb, s_
