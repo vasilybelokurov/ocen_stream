@@ -34,7 +34,10 @@ final masks at k = 2, background-subtracted, with STREAMFINDER members in a sepa
 Sky mask (user 2026-10-23): fitted per 4-deg bin (overlapping, step 2) at phi1 0-24 (fit_sky_binned: Gaussian on the background-subtracted dphi2 profile,
 quadratic background from |v| > 4, upper-branch window excluded); the PM fits use the window centre +- clip(2 s, 1, 3) deg (3 deg
 where not fitted). Dashed lines in the figure.
-Usage: PYTHONPATH=src python bin/streams/stream_masks.py
+Member-free test (--free, user 2026-10-23): initial PM tracks from the 2-D PM excess peaks, tracked by continuity from the
+strongest bin (pm_peak_tracks; no hand-marked tracks), no anchoring, PM fits started at widths 0.3 / 0.8 / 1.5 mas/yr; outputs with suffix _free and
+plots/stream_masks_free_vs_default.png (track differences at the >= 4 sigma bins).
+Usage: PYTHONPATH=src python bin/streams/stream_masks.py [--free]
 """
 import json, sys
 from pathlib import Path
@@ -52,6 +55,8 @@ K_ITER, K_FINAL, NIT = 2.5, 2.0, 6
 CAP = dict(pmra=1.5, pmdec=1.5, dphi2=2.5)              # width caps
 DAMP, SIG_MIN = 0.5, 4.0                                # damped track updates; bins accepted at >= 4 sigma
 FLOOR = dict(pmra=0.15, pmdec=0.15, dphi2=0.3)   # zero-width spikes on noise (null test) -> floors; floor-collapsed bins not used
+FREE = "--free" in sys.argv
+SUF = "_free" if FREE else ""
 
 
 def load_data():
@@ -113,8 +118,8 @@ def fit_pm(v, e, du, vb, W=4.0):
         mu, be, ls, lf = p; s2 = np.exp(2*ls)+e**2; f = 1/(1+np.exp(-lf))
         return -np.sum(np.log((1-f)*pB+f*np.exp(-0.5*(v-mu-be*du)**2/s2)/np.sqrt(2*np.pi*s2)+1e-300))
     best = None
-    for mu0 in (0., -0.5, 0.5):
-        r = minimize(nll, (mu0, 0., np.log(0.4), -2.), method="Nelder-Mead", options=dict(xatol=1e-5, fatol=1e-5, maxiter=5000))
+    for mu0, ls0 in [(m_, l_) for m_ in (0., -0.5, 0.5) for l_ in ((np.log(0.3), np.log(0.8), np.log(1.5)) if FREE else (np.log(0.4),))]:
+        r = minimize(nll, (mu0, 0., ls0, -2.), method="Nelder-Mead", options=dict(xatol=1e-5, fatol=1e-5, maxiter=5000))
         if best is None or r.fun < best.fun:
             best = r
     p = best.x.copy(); p[2] = max(p[2], np.log(FLOOR["pmdec"])); best = type("R", (), dict(fun=nll(p)))
@@ -278,11 +283,63 @@ w95 = first w with F >= frac (clipping the excess to positive values made noise 
     return out
 
 
+def pm_peak_tracks(D, R_AP=0.75, STEP=2.5):
+    """Member-free start: per 2-deg bin (phi1 -3..29) the 2-D PM excess in the sky window, background per PM pixel = quadratic in
+    (dphi2 - window centre) fitted to 1-deg bands at 5-14 deg (constant where one-sided), counts in an aperture of radius R_AP
+    mas/yr, Z = (N - B)/sqrt(B). Tracking by continuity only: seeded at the cluster PM at phi1 -1, then step outward, searching within STEP mas/yr of the previous peak + its local slope. Peaks with Z >= 5
+    are smoothed by an iteratively clipped cubic in phi1 and held at the end values outside their range."""
+    from scipy.ndimage import convolve
+    u, x = D["phi1"], D["dphi2"]; Ea, Ed = np.arange(-28, 4.01, 0.25), np.arange(-18, 2.01, 0.25); ca, cd = 0.5*(Ea[1:]+Ea[:-1]), 0.5*(Ed[1:]+Ed[:-1])
+    Eb = np.arange(-14, 14.01, 1.); cb = 0.5*(Eb[1:]+Eb[:-1]); offb = np.abs(cb) >= OFF_SKY[0]; yv = x-SKYC(u)
+    r = np.arange(-4, 5)*0.25; ker = (np.add.outer(r**2, r**2) <= R_AP**2).astype(float)
+    A, Dd = np.meshgrid(ca, cd, indexing="ij"); edge = (A < Ea[0]+1) | (A > Ea[-1]-1) | (Dd < Ed[0]+1) | (Dd > Ed[-1]-1)
+    Zs = {}
+    for c in range(-3, 31, 2):
+        k = (u >= c-1) & (u < c+1) & (np.abs(yv) < OFF_SKY[1])
+        H3 = np.histogramdd(np.column_stack((yv[k], D["pmra"][k], D["pmdec"][k])), (Eb, Ea, Ed))[0]
+        on = np.abs(cb) < SKY_HALF; N = H3[on].sum(0); ob = offb & (H3.sum((1, 2)) > 0)
+        both = (ob & (cb < 0)).sum() >= 3 and (ob & (cb > 0)).sum() >= 3; dg = 3 if both else 1
+        coef = np.tensordot(np.linalg.pinv(np.vander(cb[ob], dg)), H3[ob], 1); B = np.clip(np.tensordot(np.vander(cb[on], dg), coef, 1), 0, None).sum(0)
+        Na, Ba = convolve(N, ker, mode="constant"), convolve(B, ker, mode="constant"); Z = (Na-Ba)/np.sqrt(np.maximum(Ba, 1.)); Z[edge] = -np.inf; Zs[c] = Z
+    # seed: the cluster's PM (Vasiliev & Baumgardt 2021: -3.25, -6.75 mas/yr) at the first bin outside the cluster mask; the global
+    # Z maximum (Z 90 at phi1 +1, pmdec -3) is the background artefact near the b = 8 edge, so it cannot seed the track
+    cs = sorted(Zs); start = -1; pk = {}
+    Z = np.where(np.hypot(A+3.25, Dd+6.75) < STEP, Zs[start], -np.inf); i, j = np.unravel_index(np.argmax(Z), Z.shape); pk[start] = (ca[i], cd[j], float(Z[i, j]))
+    for order in (cs[cs.index(start)+1:], cs[:cs.index(start)][::-1]):
+        prev = [start]
+        for c in order:
+            p0 = np.array(pk[prev[-1]][:2])
+            if len(prev) >= 2:
+                p0 = p0+(p0-np.array(pk[prev[-2]][:2]))*(c-prev[-1])/(prev[-1]-prev[-2])
+            Z = np.where(np.hypot(A-p0[0], Dd-p0[1]) < STEP, Zs[c], -np.inf); i, j = np.unravel_index(np.argmax(Z), Z.shape)
+            pk[c] = (ca[i], cd[j], float(Z[i, j]))
+            if pk[c][2] >= 5:
+                prev.append(c)
+    P = np.array([(c,)+pk[c] for c in cs])
+    for row in P:
+        print(f"  peak phi1 {row[0]:+.0f}: pmra {row[1]:+.2f} pmdec {row[2]:+.2f} Z {row[3]:.1f}", flush=True)
+    ok = P[:, 3] >= 5; out = {}
+    for col, q in ((1, "pmra"), (2, "pmdec")):
+        m = ok.copy()
+        for _ in range(5):
+            cf = np.polyfit(P[m, 0], P[m, col], 3); res = P[:, col]-np.polyval(cf, P[:, 0]); mad = 1.4826*np.median(np.abs(res[m]))
+            m = ok & (np.abs(res) < max(3*mad, 0.3))
+        lo, hi = P[m, 0].min(), P[m, 0].max(); out[q] = np.polyval(cf, np.clip(GRID, lo, hi))
+        print(f"  {q} start: {m.sum()} peaks used, phi1 {lo:.0f}..{hi:.0f}", flush=True)
+    return out, P
+
+
 def main():
     D, T, up = load_data(); u, x = D["phi1"], D["dphi2"]; global SKY0, SKYW; SKY0 = T["dphi2"]["c"].copy(); SKYW = np.full(GRID.size, SKY_HALF)
     print(f"{len(u)} stars in the CMD mask", flush=True)
+    if FREE:
+        st, PEAKS = pm_peak_tracks(D)
+        for q in ("pmra", "pmdec"):
+            T[q]["c"] = st[q].copy()
     tu = lambda p: np.interp(p, up[:, 0], up[:, 1], left=np.nan, right=np.nan)
     hist, tables = [], {}; T0 = {q: T[q]["c"].copy() for q in T}; ANCHOR = dict(pmra=1.5, pmdec=1.0, dphi2=2.0)   # max departure from the start
+    if FREE:
+        ANCHOR = dict(pmra=np.inf, pmdec=np.inf, dphi2=2.0)
     for it in range(NIT):
         moved = []
         for q in ("pmdec", "pmra", "dphi2"):
@@ -346,7 +403,7 @@ def main():
                borders95=CB,
                tables={q: [{k: float(v) for k, v in r.items()} for r in rows] for q, rows in tables.items()}, history=hist,
                k_iter=K_ITER, k_final=K_FINAL, note="mask: |q - c(phi1)| < k sqrt(s(phi1)^2 + e_i^2); outside 'range' the track is held at the end value")
-    (ROOT/"results/plot_data/stream_masks.json").write_text(json.dumps(out, indent=1, default=float))
+    (ROOT/f"results/plot_data/stream_masks{SUF}.json").write_text(json.dumps(out, indent=1, default=float))
     # --- figure 1: fits
     fig, ax = plt.subplots(2, 3, figsize=(18, 8), constrained_layout=True)
     for j, q in enumerate(("dphi2", "pmra", "pmdec")):
@@ -362,7 +419,7 @@ def main():
         for cc, sg in zip(cs, sig):
             ax[1, j].text(cc, 0.02, f"{sg:.0f}", ha="center", fontsize=7, transform=ax[1, j].get_xaxis_transform())
         ax[0, j].set(title=f"{q}: track per iteration", xlabel=r"$\phi_1$"); ax[1, j].set(title=f"{q}: intrinsic width (bins; numbers: significance)", xlabel=r"$\phi_1$")
-    ax[0, 0].legend(fontsize=7); fig.savefig(ROOT/"plots/stream_masks_fits.png", dpi=95); plt.close(fig)
+    ax[0, 0].legend(fontsize=7); fig.savefig(ROOT/f"plots/stream_masks{SUF}_fits.png", dpi=95); plt.close(fig)
     # --- figure 2: cross-selection with the final masks
     from grid4_common import du, dx, d
     E1 = np.linspace(-8, 32, 61); c1 = 0.5*(E1[1:]+E1[:-1]); ph = GRID
@@ -425,8 +482,30 @@ def main():
     for a_ in ax[-1]:
         a_.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Data-driven masks (alternating unbinned fits, CMD-filtered Gaia DR3)", fontsize=11)
-    fig.savefig(ROOT/"plots/stream_masks_xsel.png", dpi=100); plt.close(fig)
-    print("plots/stream_masks_fits.png, plots/stream_masks_xsel.png")
+    fig.savefig(ROOT/f"plots/stream_masks{SUF}_xsel.png", dpi=100); plt.close(fig)
+    print(f"plots/stream_masks{SUF}_fits.png, plots/stream_masks{SUF}_xsel.png")
+    if FREE:
+        compare_default(T, tables, PEAKS)
+
+
+def compare_default(T, tables, PEAKS):
+    """Free-start vs default (anchored, marked-track start) tracks; pass if |difference| < 0.2 mas/yr at every >= 4 sigma bin of both."""
+    R = json.loads((ROOT/"results/plot_data/stream_masks.json").read_text()); fig, ax = plt.subplots(2, 2, figsize=(14, 7), constrained_layout=True, sharex="col")
+    for j, q in enumerate(("pmra", "pmdec")):
+        c0 = np.array(R["tracks"][q]["c"]); c1 = np.array(T[q]["c"]); s0 = {r["c"]: r["sig"] for r in R["tables"][q]}; s1 = {r["c"]: r["sig"] for r in tables[q]}
+        strong = [c for c in s1 if s1[c] >= SIG_MIN and s0.get(c, 0) >= SIG_MIN]; dd = np.interp(strong, GRID, c1-c0)
+        ax[0, j].plot(GRID, c0, "k-", label="default (marked start, anchored)"); ax[0, j].plot(GRID, c1, "C3--", label="free start, no anchor")
+        ax[0, j].plot(PEAKS[:, 0], PEAKS[:, 1 if q == "pmra" else 2], "o", mfc="none", color="C0", label="excess peaks")
+        ax[1, j].plot(GRID, c1-c0, "C3-"); ax[1, j].plot(strong, dd, "ko", ms=4); ax[1, j].axhspan(-0.2, 0.2, color="0.85")
+        for c in s1:
+            ax[1, j].text(c, 0.02, f"{s1[c]:.0f}", transform=ax[1, j].get_xaxis_transform(), ha="center", fontsize=7)
+        ax[0, j].set(title=q, ylabel="track [mas/yr]"); ax[0, j].legend(fontsize=8); ax[1, j].set(xlabel=r"$\phi_1$", ylabel="free - default", ylim=(-1.5, 1.5))
+        ok = np.abs(dd) < 0.2
+        print(f"{q}: {len(strong)} bins >= {SIG_MIN:g} sigma in both; max |free - default| {np.max(np.abs(dd)):.2f} mas/yr; "
+              f"{'PASS' if ok.all() else 'FAIL at ' + str([c for c, o in zip(strong, ok) if not o])}", flush=True)
+        print(f"   free-run significance per bin: " + " ".join(f"{c:.0f}:{s1[c]:.1f}" for c in sorted(s1)), flush=True)
+    fig.suptitle("Member-free start (PM excess peaks, no anchoring, multi-start widths) vs default masks; numbers: free-run significance")
+    fig.savefig(ROOT/"plots/stream_masks_free_vs_default.png", dpi=100); plt.close(fig)
 
 
 if __name__ == "__main__":
