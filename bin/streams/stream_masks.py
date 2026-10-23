@@ -58,9 +58,13 @@ K_ITER, K_FINAL, NIT = 2.5, 2.0, 6
 CAP = dict(pmra=1.5, pmdec=1.5, dphi2=2.5)              # width caps
 DAMP, SIG_MIN = 0.5, 4.0                                # damped track updates; bins accepted at >= 4 sigma
 FLOOR = dict(pmra=0.15, pmdec=0.15, dphi2=0.3)   # zero-width spikes on noise (null test) -> floors; floor-collapsed bins not used
-OSTART = "--orbit-start" in sys.argv        # PM tracks started on omega Cen's orbit (McMillan17); otherwise as --free
-FREE = "--free" in sys.argv or OSTART
-SUF = "_orbitstart" if OSTART else ("_free" if FREE else "")
+OSTART = "--orbit-start" in sys.argv        # PM tracks started on omega Cen's orbit (McMillan17), no anchoring, default fit settings
+FREE = "--free" in sys.argv
+NULL = "--null" in sys.argv                 # pmra start displaced by +3 mas/yr (anchored there): no pmra bin should be accepted
+SUF = "_orbitstart" if OSTART else ("_free" if FREE else ("_null" if NULL else ""))
+SKY_MIN = 13.0                              # sky fits at phi1 >= 13 only (earlier bins never consistently >= 4 sigma; one lone accepted bin
+                                            # threw the track spline around)
+POOL_HW = (3.0, 5.0)                        # multi-scale acceptance: a PM bin failing on its own is refitted on +-3 then +-5 deg
 ORBIT = "--orbit" in sys.argv
 
 
@@ -244,8 +248,8 @@ def smooth_offset(cs, y, err, ok, taper=3.0):
             sp = LSQUnivariateSpline(x, yy, kn, w=w, k=3) if kn else np.poly1d(np.polyfit(x, yy, min(3, len(x)-1), w=w))
         except ValueError:
             kn = kn[1:-1] if len(kn) > 1 else []
-    def f(g):
-        g = np.asarray(g, float); v = sp(np.clip(g, lo, hi))
+    def f(g):                                                     # spline values at the accepted bins, LINEAR in between: the cubic
+        g = np.asarray(g, float); v = np.interp(np.clip(g, lo, hi), x, sp(x))   # overshot across gaps (+-1.5 anchor hit, +58 mas/yr)
         t = np.clip(1-np.maximum(lo-g, g-hi).clip(0)/taper, 0, 1); return v*t
     return f, (float(lo), float(hi))
 
@@ -359,16 +363,18 @@ def main():
         O = cluster_orbit(); o = np.argsort(O["phi1"]); PEAKS = np.column_stack((O["phi1"][o], O["pmra"][o], O["pmdec"][o]))
         for q in ("pmra", "pmdec"):
             T[q]["c"] = np.interp(GRID, O["phi1"][o], O[q][o])
+    elif NULL:
+        T["pmra"]["c"] = T["pmra"]["c"]+3.0
     elif FREE:
         st, PEAKS = pm_peak_tracks(D)
         for q in ("pmra", "pmdec"):
             T[q]["c"] = st[q].copy()
     tu = lambda p: np.interp(p, up[:, 0], up[:, 1], left=np.nan, right=np.nan)
     hist, tables = [], {}; T0 = {q: T[q]["c"].copy() for q in T}; ANCHOR = dict(pmra=1.5, pmdec=1.0, dphi2=2.0)   # max departure from the start
-    if FREE:
+    if FREE or OSTART:
         ANCHOR = dict(pmra=np.inf, pmdec=np.inf, dphi2=2.0)
-    for it in range(NIT):
-        moved = []
+    for it in range(2*NIT if OSTART else NIT):                     # the orbit start is up to 2 mas/yr off the ridge: more damped steps
+        moved, step = [], {}
         for q in ("pmdec", "pmra", "dphi2"):
             if q == "dphi2":
                 sel = other_masks(D, T, q, K_ITER)
@@ -383,7 +389,7 @@ def main():
                     v = D[q]-ev(T, q, u); e = D[q+"_error"]
                     r = fit_pm(v[kb & w_on], e[kb & w_on], u[kb & w_on]-c, v[kb & offb])
                 else:
-                    if c < 0 or c > 24:                                       # beyond 24 the sky fits latch onto noise (marked track kept)
+                    if c < SKY_MIN or c > 24:                                 # beyond 24 the sky fits latch onto noise (marked track kept)
                         continue
                     kb = sel & (np.abs(u-c) < 2.0)                            # sky: 4-deg bins (overlapping), 2-deg bins too noisy
                     v = x-ev(T, q, u); vu = tu(np.array([c]))[0]-ev(T, q, np.array([c]))[0]
@@ -394,10 +400,29 @@ def main():
             cs = np.array([r["c"] for r in rows]); mu = np.array([r["mu"] for r in rows]); me = np.array([r["mu_err"] for r in rows])
             ss = np.array([r["s"] for r in rows]); se = np.array([max(r["s_err"], 1e-3) for r in rows]); sig = np.array([r["sig"] for r in rows])
             cur_s = np.array([ev(T, q, np.array([c_]), "s")[0] for c_ in cs])
-            ok = (sig >= SIG_MIN) & np.isfinite(me) & (me > 0) & np.isfinite(se) & (ss > 1.05*FLOOR[q]) & (ss < CAP[q]) & (np.abs(mu) < (3.0 if FREE and q != "dphi2" else 1.5*np.maximum(cur_s, 0.5)))
+            ok = (sig >= SIG_MIN) & np.isfinite(me) & (me > 0) & np.isfinite(se) & (ss > 1.05*FLOOR[q]) & (ss < CAP[q]) & (np.abs(mu) < (3.0 if (FREE or OSTART) and q != "dphi2" else 1.5*np.maximum(cur_s, 0.5)))
+            thr = lambda i_: 3.0 if (FREE or OSTART) else 1.5*max(cur_s[i_], 0.5)
+            if q != "dphi2" and ok.sum() >= 2:                        # multi-scale acceptance inside the single-bin-accepted range
+                a_, b_ = cs[ok].min(), cs[ok].max(); vq = D[q]-ev(T, q, u); eq = D[q+"_error"]
+                w_on = np.abs(x-SKYC(u)) < SKYH(u); offb = (np.abs(x-SKYC(u)) > OFF_SKY[0]) & (np.abs(x-SKYC(u)) < OFF_SKY[1])
+                for i_, c_ in enumerate(cs):
+                    if ok[i_] or not (a_ < c_ < b_):
+                        continue
+                    for hw in POOL_HW:
+                        kb = sel & (np.abs(u-c_) < hw); r = fit_pm(vq[kb & w_on], eq[kb & w_on], u[kb & w_on]-c_, vq[kb & offb])
+                        if r is not None and r["sig"] >= SIG_MIN and np.isfinite(r["mu_err"]) and r["mu_err"] > 0 and np.isfinite(r["s_err"]) \
+                                and 1.05*FLOOR[q] < r["s"] < CAP[q] and abs(r["mu"]) < thr(i_):
+                            rows[i_].update(r, c=c_, pooled=hw); mu[i_], me[i_], ss[i_], se[i_], sig[i_] = r["mu"], r["mu_err"], r["s"], max(r["s_err"], 1e-3), r["sig"]
+                            ok[i_] = True; break
+            for i_, r in enumerate(rows):
+                r["accepted"] = bool(ok[i_])
             sm = smooth_offset(cs, mu, me, ok); sw = smooth_logwidth(cs, np.log(ss), se/np.maximum(ss, 1e-3), ok, T[q]["s"])
             if sm is not None:
-                T[q]["c"] = np.clip(T[q]["c"]+DAMP*sm[0](GRID), T0[q]-ANCHOR[q], T0[q]+ANCHOR[q]); moved.append(np.max(np.abs(mu[ok])/np.maximum(me[ok], 1e-3)))
+                dv = DAMP*sm[0](GRID)
+                if np.max(np.abs(dv)) > 2*DAMP*np.max(np.abs(mu[ok]))+1e-9:   # guard: the smoother must not exceed the measured offsets
+                    raise RuntimeError(f"{q}: smoothed offset {np.max(np.abs(dv)):.2f} exceeds 2 x max accepted offset")
+                new = np.clip(T[q]["c"]+dv, T0[q]-ANCHOR[q], T0[q]+ANCHOR[q]); step[q] = float(np.max(np.abs(new-T[q]["c"])))
+                T[q]["c"] = new; moved.append(np.max(np.abs(mu[ok])/np.maximum(me[ok], 1e-3)))
             if sw is not None:
                 T[q]["s"] = np.clip(np.exp(DAMP*np.log(np.maximum(sw(GRID), 1e-3))+(1-DAMP)*np.log(T[q]["s"])), FLOOR[q], CAP[q])
             T[q]["range"] = sm[1] if sm is not None else None
@@ -407,7 +432,8 @@ def main():
                 if sm is not None:
                     fitted = (GRID >= sm[1][0]-1) & (GRID <= sm[1][1]+1)
                 SKYW[:] = np.where(fitted, np.clip(2*T[q]["s"], 1.0, 3.0), SKY_HALF)
-            print(f"iter {it} {q:5s}: " + " ".join(f"[{r['c']:.0f}: d{r['mu']:+.2f}+-{r['mu_err']:.2f} s{r['s']:.2f} {r['sig']:.0f}s]" for r in rows), flush=True)
+            print(f"iter {it} {q:5s}: " + " ".join(f"[{r['c']:.0f}: d{r['mu']:+.2f}+-{r['mu_err']:.2f} s{r['s']:.2f} {r['sig']:.0f}s{'*' if r.get('accepted') else ''}{'p' + str(int(r['pooled'])) if 'pooled' in r else ''}]" for r in rows)
+                  + f"  max track step {step.get(q, 0.):.3f}", flush=True)
         hist.append({q: dict(c=T[q]["c"].tolist(), s=T[q]["s"].tolist()) for q in T})
         if moved and max(moved) < 0.1:
             break
@@ -520,8 +546,11 @@ def main():
     fig.suptitle("Data-driven masks (alternating unbinned fits, CMD-filtered Gaia DR3)" + ("; black: omega Cen orbit in McMillan17 (4 Myr forward, 45 Myr back)" if ORBIT else ""), fontsize=11)
     fig.savefig(ROOT/f"plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}.png", dpi=100); plt.close(fig)
     print(f"plots/stream_masks{SUF}_fits.png, plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}.png")
-    if FREE:
+    if FREE or OSTART:
         compare_default(T, tables, PEAKS)
+    if NULL:
+        acc = [r["c"] for r in tables["pmra"] if r.get("accepted")]
+        print(f"NULL (pmra start +3 mas/yr): accepted pmra bins {acc}; pooled {[r['c'] for r in tables['pmra'] if r.get('accepted') and 'pooled' in r]}", flush=True)
 
 
 def compare_default(T, tables, PEAKS):
