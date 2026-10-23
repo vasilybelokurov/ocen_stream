@@ -48,7 +48,7 @@ def main():
         ax[1].plot(R, pr[key]["z0"], st, lw=1.5, label=lab)
     ax[1].axvspan(1.5, 2.2, color="0.92"); ax[1].axvspan(6.4, 7.2, color="0.85")
     ax[1].text(1.85, 0.015, "peri", ha="center", fontsize=6.5); ax[1].text(6.8, 0.015, "apo", ha="center", fontsize=6.5)
-    ax[1].set(ylim=(0, 0.47), xlim=(1, 8.2)); ax[1].tick_params(labelsize=7)
+    ax[1].set(ylim=(0, 0.62), xlim=(1, 8.2)); ax[1].tick_params(labelsize=7)
     ax[1].set_xlabel(r"$R$ [kpc]", fontsize=8); ax[1].set_ylabel(r"max$_\phi |F_{m>0}|/|F_{\rm axi}|$", fontsize=8)
     ax[1].set_title("(b) non-axisymmetric force in the plane", fontsize=8); ax[1].legend(fontsize=6.5, loc="upper right")
     for ext in ("png", "pdf"):
