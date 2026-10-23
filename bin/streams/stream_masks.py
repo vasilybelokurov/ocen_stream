@@ -10,7 +10,9 @@ mask (bin/streams/gaia_cmd_mask.cmd_pass, k = 2). Alternating 1-D unbinned fits 
   - sky: residual v = dphi2 - track(phi1) of stars passing both PM masks, |v| < 8 deg; model f1 N(mu1, s1) [+ f2 N(mu2, s2) for the
     upper branch at phi1 14-21] + (1 - f1 - f2) quadratic background (normalised on the window); phi1 >= 4 only (footprint edge);
   - widths floored (PM 0.15 mas/yr, sky 0.3 deg; a fit collapsing onto the floor is a noise spike and is not used); significance from the likelihood ratio against f = 0.
-Smoothing (bins with significance >= 3 and width above 1.05 x floor): centre offsets by a weighted least-squares cubic spline
+Guard rails (a first version ran away near the cluster): bins at phi1 >= 2 only; accepted at >= 4 sigma, width between 1.05 x floor
+and the cap (1.5 mas/yr, 1.5 deg) and offset < 1.5 x the current width; damped updates (half the measured offset / log width).
+Smoothing (accepted bins): centre offsets by a weighted least-squares cubic spline
 (knots every 6 deg), tapered to 0 over 3 deg outside the significant range (previous track kept there); log width by a weighted
 quadratic in phi1 over the significant range (previous width kept outside). A GCV smoothing spline under-smoothed (oscillating widths). 4 iterations or until
 all centres move by < 0.1 of their errors.
@@ -30,8 +32,10 @@ from scipy.interpolate import make_smoothing_spline
 from scipy.ndimage import gaussian_filter
 
 GRID = np.arange(-6, 32.01, 0.5)
-BINS = [(c-1, c+1) for c in range(1, 30, 2)]
-K_ITER, K_FINAL, NIT = 2.5, 2.0, 5
+BINS = [(c-1, c+1) for c in range(3, 30, 2)]          # phi1 >= 2 (footprint edge and the omega Cen mask below)
+K_ITER, K_FINAL, NIT = 2.5, 2.0, 6
+CAP = dict(pmra=1.5, pmdec=1.5, dphi2=1.5)              # width caps
+DAMP, SIG_MIN = 0.5, 4.0                                # damped track updates; bins accepted at >= 4 sigma
 FLOOR = dict(pmra=0.15, pmdec=0.15, dphi2=0.3)   # zero-width spikes on noise (null test) -> floors; floor-collapsed bins not used
 
 
@@ -187,12 +191,13 @@ def main():
                     r.update(c=c); rows.append(r)
             cs = np.array([r["c"] for r in rows]); mu = np.array([r["mu"] for r in rows]); me = np.array([r["mu_err"] for r in rows])
             ss = np.array([r["s"] for r in rows]); se = np.array([max(r["s_err"], 1e-3) for r in rows]); sig = np.array([r["sig"] for r in rows])
-            ok = (sig >= 3) & np.isfinite(me) & (me > 0) & np.isfinite(se) & (ss > 1.05*FLOOR[q])
+            cur_s = np.array([ev(T, q, np.array([c_]), "s")[0] for c_ in cs])
+            ok = (sig >= SIG_MIN) & np.isfinite(me) & (me > 0) & np.isfinite(se) & (ss > 1.05*FLOOR[q]) & (ss < CAP[q]) & (np.abs(mu) < 1.5*np.maximum(cur_s, 0.5))
             sm = smooth_offset(cs, mu, me, ok); sw = smooth_logwidth(cs, np.log(ss), se/np.maximum(ss, 1e-3), ok, T[q]["s"])
             if sm is not None:
-                T[q]["c"] = T[q]["c"]+sm[0](GRID); moved.append(np.max(np.abs(mu[ok])/np.maximum(me[ok], 1e-3)))
+                T[q]["c"] = T[q]["c"]+DAMP*sm[0](GRID); moved.append(np.max(np.abs(mu[ok])/np.maximum(me[ok], 1e-3)))
             if sw is not None:
-                T[q]["s"] = np.maximum(sw(GRID), FLOOR[q])
+                T[q]["s"] = np.clip(np.exp(DAMP*np.log(np.maximum(sw(GRID), 1e-3))+(1-DAMP)*np.log(T[q]["s"])), FLOOR[q], CAP[q])
             T[q]["range"] = sm[1] if sm is not None else None
             tables[q] = rows
             print(f"iter {it} {q:5s}: " + " ".join(f"[{r['c']:.0f}: d{r['mu']:+.2f}+-{r['mu_err']:.2f} s{r['s']:.2f} {r['sig']:.0f}s]" for r in rows), flush=True)
