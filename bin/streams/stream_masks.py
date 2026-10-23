@@ -23,6 +23,9 @@ excess in a wide window (completeness_borders), 3-bin running mean, linearly int
 tracks are anchored within 1.5 / 1.0 mas/yr and 2 deg of the starting (marked) tracks (with the wide |dphi2| < 5 window the pmra
 iteration otherwise ran onto field structure at phi1 5-17); drawn in orange and stored
 as lo95 / hi95 offsets from the track (the Gaussian core underestimates the borders where the stream has wings).
+Displayed PM panels: background per (phi1 column, PM pixel) = quadratic in (dphi2 - window centre) fitted to 1-deg bands at
+5-14 deg on both sides and integrated over the +-3 deg window (no global or total-count scaling); where bands exist on one side only (b > 8 edge near
+the cluster) a constant from that side is used (a quadratic extrapolated badly there).
 Outputs: results/plot_data/stream_masks.json (tracks and widths on a phi1 grid, per-bin fit tables, iteration history),
 plots/stream_masks_fits.png (per-bin centres/widths with errors per iteration), plots/stream_masks_xsel.png (cross-selection with the
 final masks at k = 2, background-subtracted, with STREAMFINDER members in a separate column).
@@ -334,8 +337,20 @@ def main():
             dsky = x-ev(T, "dphi2", u); onS = np.abs(x-SKYC(u)) < SKY_HALF; offS = (np.abs(x-SKYC(u)) > OFF_SKY[0]) & (np.abs(x-SKYC(u)) < OFF_SKY[1])
             sel2 = other_masks(D, T, q, K_FINAL) | True
             selp = other_masks(D, T, q, K_FINAL, sky=False)
-            H = np.histogram2d(u[selp & onS], v[selp & onS], (E1, Ey))[0]; Hf = np.histogram2d(u[selp & offS], v[selp & offS], (E1, Ey))[0]
-            nn = np.histogram(u[onS], E1)[0]; nf = np.histogram(u[offS], E1)[0]; B = Hf*np.divide(nn, nf, out=np.zeros(len(c1)), where=nf > 0)[:, None]
+            H = np.histogram2d(u[selp & onS], v[selp & onS], (E1, Ey))[0]
+            # background per (phi1 column, PM pixel): quadratic in y = dphi2 - centre fitted to 1-deg bands at 5 <= |y| < 14 (both sides),
+            # integrated over the window |y| < 3; bands outside the footprint (empty in every column/pixel) are dropped per column
+            yv = x-SKYC(u); Eb = np.arange(-14, 14.01, 1.); cb = 0.5*(Eb[1:]+Eb[:-1]); offb = np.abs(cb) >= OFF_SKY[0]
+            H3 = np.histogramdd(np.column_stack((u[selp], yv[selp], v[selp])), (E1, Eb, Ey))[0]
+            yy = np.linspace(-SKY_HALF, SKY_HALF, 61); B = np.zeros_like(H)
+            for jj in range(len(c1)):
+                ob = offb & (H3[jj].sum(1) > 0)                              # bands with stars in this column
+                if ob.sum() < 6:
+                    continue
+                both = (ob & (cb < 0)).sum() >= 3 and (ob & (cb > 0)).sum() >= 3
+                dg = 3 if both else 1                                       # one-sided (footprint edge): constant, not extrapolated
+                Pm = np.linalg.pinv(np.vander(cb[ob], dg)); coef = Pm @ H3[jj, ob, :]          # (dg, n_pm) per unit band (1 deg)
+                B[jj] = np.clip(np.vander(yy, dg) @ coef, 0, None).mean(0)*(2*SKY_HALF)
         e = (E1[0], E1[-1], Ey[0], Ey[-1])
         ax[i, 0].imshow(gaussian_filter((H-B)/np.sqrt(np.maximum(B, 1)), 1.).T, origin="lower", extent=e, aspect="auto", cmap="RdBu_r", vmin=-4, vmax=4)
         wt = np.median(D[err]) if err else 0.
