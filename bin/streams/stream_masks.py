@@ -66,6 +66,7 @@ SKY_MIN = 13.0                              # sky fits at phi1 >= 13 only (earli
                                             # threw the track spline around)
 POOL_HW = (3.0, 5.0)                        # multi-scale acceptance: a PM bin failing on its own is refitted on +-3 then +-5 deg
 ORBIT = "--orbit" in sys.argv
+COARSE = "--coarse" in sys.argv            # figure only: dphi2 and pmra rows with half the phi1 bins (30 x 1.33 deg)
 
 
 def cluster_orbit():
@@ -490,6 +491,7 @@ def main():
     rows_ = (("dphi2", x, np.arange(-10, 10.01, 0.25), r"$\Delta\phi_2$ [deg]", None), ("pmra", D["pmra"], np.arange(-28, 4.01, 0.25), r"$\mu_{\alpha*}$ [mas/yr]", "pmra_error"),
              ("pmdec", D["pmdec"], np.arange(-18, 2.01, 0.25), r"$\mu_\delta$ [mas/yr]", "pmdec_error"))
     for i, (q, v, Ey, yl, err) in enumerate(rows_):
+        E1 = np.linspace(-8, 32, 31 if (COARSE and q in ("dphi2", "pmra")) else 61); c1 = 0.5*(E1[1:]+E1[:-1])   # --coarse: half the phi1 bins
         sel = other_masks(D, T, q, K_FINAL); H = np.histogram2d(u[sel], v[sel], (E1, Ey))[0]
         if q == "dphi2":
             cy = 0.5*(Ey[1:]+Ey[:-1]); B = np.zeros_like(H)
@@ -554,7 +556,7 @@ def main():
                                    f"pmra {np.interp(p, np.sort(O['phi1']), O['pmra'][O['phi1'].argsort()]):+.2f} pmdec {np.interp(p, np.sort(O['phi1']), O['pmdec'][O['phi1'].argsort()]):+.2f} "
                                    f"d {np.interp(p, np.sort(O['phi1']), O['dist'][O['phi1'].argsort()]):.2f}" for p in (0, 5, 10, 15, 20, 25, 30)), flush=True)
     fig.suptitle("Data-driven masks (alternating unbinned fits, CMD-filtered Gaia DR3)" + ("; black: omega Cen orbit in McMillan17 (4 Myr forward, 45 Myr back)" if ORBIT else ""), fontsize=11)
-    fig.savefig(ROOT/f"plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}.png", dpi=100); plt.close(fig)
+    fig.savefig(ROOT/f"plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}{'_coarse' if COARSE else ''}.png", dpi=100); plt.close(fig)
     print(f"plots/stream_masks{SUF}_fits.png, plots/stream_masks{SUF}_xsel{'_orbit' if ORBIT else ''}.png")
     if FREE or OSTART:
         compare_default(T, tables, PEAKS)
