@@ -37,7 +37,8 @@ def main():
         pm &= np.abs(raw[q].astype(float)[keep]-c) < 2*np.sqrt(s**2+e**2)
     yv = x-np.interp(u, G, R["sky_window"]["centre"]); hw = np.interp(u, G, R["sky_window"]["half_width"])
     P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); M = CMDMask(P); Z = np.load(ROOT/"results/plot_data/gaia_cmd_mask_errors.npz")
-    dmf = lambda p: np.minimum(np.polyval(P["dm_relation"]["coef"], p), 0.)
+    from gaia_cmd_mask import dm_of
+    dmf = lambda p: float(dm_of(P, p))
     cg_, gg_ = np.linspace(-0.2, 2.0, 221), np.linspace(12.0, 21.6, 241); CG, GG = np.meshgrid(cg_, gg_)
     Eb = np.arange(-14, 14.01, 1.); cb = 0.5*(Eb[1:]+Eb[:-1]); offb = np.abs(cb) >= 5
     fig, ax = plt.subplots(2, 4, figsize=(20, 11), constrained_layout=True, sharey=True)

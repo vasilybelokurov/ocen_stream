@@ -10,7 +10,8 @@ Plan: docs/reviews/dm_iteration_fable_codex_20261023.md. Per 4-deg phi1 bin:
   S(dm)  = stream template: omega Cen annulus stars (20-40', |dPM| < 0.7 mas/yr, ruwe < 1.4) minus the PM-control annulus
            (1.5 < |dPM| < 3, scaled by the PM-area ratio 0.49/6.75), shifted by dm in G0, Hess on the same pixels, smoothed by
            1 pixel, normalised to unit sum over the domain;
-  model  = Poisson(B + A S(dm)), A >= 0 free (profiled); dm on a 0.02-mag grid in [dm0 - 0.5, dm0 + 0.5] (dm0 = current relation).
+  model  = Poisson(B + A S(dm)), A >= 0 free (profiled); dm on a 0.02-mag grid in [dm0 - 0.5, dm0 + 0.5] (dm0 = FROZEN reference
+           line DM_REF_SLOPE x phi1, independent of the iterated relation).
   domain = FIXED per bin in observed quantities: 0.3 < c0 < 1.4, 15.5 < G0 < min(19.6, 19.4 + dm0 - 0.5) -- the faint edge keeps
            the template inside the calibrated cluster range (template-frame G0 <= 19.4) for every trial dm.
 Reported: dm (profile maximum), 68% interval (Delta lnL = 0.5), amplitude significance sqrt(2 [lnL(best) - lnL(A = 0)]); the same
@@ -32,7 +33,11 @@ from scipy.optimize import minimize_scalar
 TAG = sys.argv[sys.argv.index("--masks")+1] if "--masks" in sys.argv else ""
 BINS = [(a, a+4) for a in range(-2, 30, 4)]
 EC = np.arange(0.3, 1.4001, 0.03); EG = np.arange(15.5, 19.6001, 0.1)
-DGRID = 0.02; HALF = 0.5; G_SPLIT = 17.8; OC, MU = (201.69683, -47.47957), (-3.250, -6.746)
+DGRID = 0.02; HALF = 0.5; G_SPLIT = 17.8; DM_REF_SLOPE = -0.0266   # FROZEN reference line (Fable 2026-10-23, anchored template fit):
+# sets each bin's dm grid centre, faint domain edge and MS/TO split, so the measurement does not move with the iterated relation
+ERR_INFL = 2.0                                                          # injection: Delta lnL = 0.5 intervals ~2x too narrow
+dm_ref = lambda p: float(DM_REF_SLOPE*np.clip(p, 0., 24.))
+OC, MU = (201.69683, -47.47957), (-3.250, -6.746)
 
 
 def load():
@@ -119,58 +124,66 @@ def domain(dm0):
 
 def main():
     S, clus = load(); R = json.loads((ROOT/f"results/plot_data/stream_masks{'_' + TAG if TAG else ''}.json").read_text())
-    P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); coef0 = P["dm_relation"]["coef"]
-    dm_rel = lambda p: float(np.minimum(np.polyval(coef0, p), 0.))
+    from gaia_cmd_mask import dm_of
+    P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); coef0 = P["dm_relation"]
+    dm_rel = lambda p: float(dm_of(P, p))                                 # relation the CMD mask currently uses (for reference only)
     print(f"cluster template: {len(clus['C'][0])} stars, PM control {len(clus['F'][0])}", flush=True)
     from gaia_cmd_mask import CMDMask
     global MSK; MSK = CMDMask(P)
     sel, nulls = pm_mask(S, R), [pm_mask(S, R, shift=sh) for sh in (-6., 6.)]; seln = nulls[1]
     if "--inject" in sys.argv:
-        return inject(S, R, clus, seln, dm_rel)
+        return inject(S, R, clus, nulls)
     rows = []; fig, ax = plt.subplots(2, 4, figsize=(20, 9), constrained_layout=True)
     for a, (a0, a1) in zip(ax.ravel(), BINS):
-        c = 0.5*(a0+a1); dm0 = dm_rel(c); D = domain(dm0); Hn, B, h = hess_on_bg(S, R, sel, a0, a1)
+        c = 0.5*(a0+a1); dm0 = dm_ref(c); dmc = dm_rel(c); D = domain(dm0); Hn, B, h = hess_on_bg(S, R, sel, a0, a1)
         res = {k: profile(Hn, B, clus, dm0, m) for k, m in D.items()}
         nul = max((profile(*hess_on_bg(S, R, sn, a0, a1)[:2], clus, dm0, D["all"]) for sn in nulls), key=lambda r_: r_["sig"])
         acc = res["all"]["sig"] >= 3 and nul["sig"] < 2 and not res["all"]["edge"]
         mc = ms_centring(S, R, sel, a0, a1, MSK)
-        rows.append(dict(phi1=c, dm0=dm0, accepted=acc, null_sig=nul["sig"], null_dm=nul["dm"], msc_dm=mc["dm"], msc_err=mc["err"], msc_fail=mc["fail"], **{f"{k}_{q}": v[q] for k, v in res.items() for q in ("dm", "lo", "hi", "A", "sig", "edge")}))
+        rows.append(dict(phi1=c, dm0=dm0, dm_current=dmc, accepted=acc, null_sig=nul["sig"], null_dm=nul["dm"], msc_dm=mc["dm"], msc_err=mc["err"], msc_fail=mc["fail"], **{f"{k}_{q}": v[q] for k, v in res.items() for q in ("dm", "lo", "hi", "A", "sig", "edge")}))
         r = res["all"]; print(f"phi1 {a0}-{a1}: dm {r['dm']:+.2f} [{r['lo']:+.2f}, {r['hi']:+.2f}] A {r['A']:.0f} sig {r['sig']:.1f}{' EDGE' if r['edge'] else ''} | "
                               f"MS {res['ms']['dm']:+.2f} ({res['ms']['sig']:.1f}) TO/SGB {res['tosgb']['dm']:+.2f} ({res['tosgb']['sig']:.1f}) | "
-                              f"null sig {nul['sig']:.1f} dm {nul['dm']:+.2f} | MS centring {mc['dm']:+.2f} +- {mc['err']:.2f} | old {dm0:+.2f} -> {'ACCEPT' if acc else 'reject'}", flush=True)
+                              f"null sig {nul['sig']:.1f} dm {nul['dm']:+.2f} | MS centring {mc['dm']:+.2f} +- {mc['err']:.2f} | current {dmc:+.2f} -> {'ACCEPT' if acc else 'reject'}", flush=True)
         for k, col in (("all", "k"), ("ms", "C0"), ("tosgb", "C3")):
             a.plot(res[k]["dms"], res[k]["L"], "-", color=col, label=f"{k}: {res[k]['dm']:+.2f} ({res[k]['sig']:.1f}$\\sigma$)")
-        a.plot(nul["dms"], nul["L"], ":", color="0.5", label=f"null: {nul['sig']:.1f}$\\sigma$"); a.axvline(dm0, color="C2", lw=0.8, ls="--", label=f"old relation {dm0:+.2f}")
+        a.plot(nul["dms"], nul["L"], ":", color="0.5", label=f"null: {nul['sig']:.1f}$\\sigma$"); a.axvline(dmc, color="C2", lw=0.8, ls="--", label=f"current relation {dmc:+.2f}")
         a.set(ylim=(-15, 1), xlabel="dm", ylabel=r"$\Delta\ln L$", title=f"$\\phi_1$ {a0}-{a1}" + (" (accepted)" if acc else " (rejected)")); a.legend(fontsize=7)
     X = np.array([r["phi1"] for r in rows if r["accepted"]]); Y = np.array([r["all_dm"] for r in rows if r["accepted"]])
     E = np.array([max(0.5*(r["all_hi"]-r["all_lo"]), DGRID) for r in rows if r["accepted"]])
-    cf, cov = np.polyfit(X, Y, 1, w=1/E, cov="unscaled") if len(X) >= 3 else (np.array(coef0), np.zeros((2, 2)))
-    chi2 = float(np.sum(((Y-np.polyval(cf, X))/E)**2)) if len(X) >= 3 else np.nan
-    print(f"relation (accepted bins {X.tolist()}): dm = {cf[1]:+.3f} {cf[0]:+.4f} phi1 (errors {np.sqrt(cov[1, 1]):.3f}, {np.sqrt(cov[0, 0]):.4f}); "
-          f"chi2 {chi2:.1f} for {len(X)-2} dof; old: {coef0[1]:+.3f} {coef0[0]:+.4f} phi1 (capped at 0)", flush=True)
+    if len(X) < 3:
+        raise SystemExit(f"only {len(X)} accepted dm bins: no relation (refusing to keep the old one silently)")
+    cf, cov = np.polyfit(X, Y, 1, w=1/E, cov="unscaled"); chi2 = float(np.sum(((Y-np.polyval(cf, X))/E)**2))
+    print(f"free linear (accepted bins {X.tolist()}): dm = {cf[1]:+.3f} {cf[0]:+.4f} phi1; chi2 {chi2:.1f} for {len(X)-2} dof", flush=True)
+    Ei = ERR_INFL*E; wt = 1/Ei**2; slope = float(np.sum(wt*X*Y)/np.sum(wt*X*X)); slope_err = float(1/np.sqrt(np.sum(wt*X*X)))
+    chi2a = float(np.sum(((Y-slope*X)/Ei)**2))
+    anch = dict(form="anchored_linear", slope=slope, slope_err=slope_err, phi1_min=0., phi1_max=float(X.max()), chi2=chi2a, dof=len(X)-1,
+                accepted=X.tolist(), err_inflation=ERR_INFL, note="dm = slope x clip(phi1, phi1_min, phi1_max); errors x ERR_INFL")
+    print(f"anchored linear (errors x{ERR_INFL:g}): dm = {slope:+.4f} +- {slope_err:.4f} x clip(phi1, 0, {X.max():g}); chi2 {chi2a:.1f} for {len(X)-1} dof", flush=True)
     fig.suptitle(f"dm profile likelihood per phi1 bin (Poisson CMD fit, cluster template, masks: {'orbit start' if TAG else 'marked start'}); "
-                 f"relation dm = {cf[1]:+.3f} {cf[0]:+.4f} phi1")
+                 f"anchored relation dm = {slope:+.4f} phi1 (to phi1 {X.max():g})")
     out = ROOT/f"plots/stream_dm_fit{'_' + TAG if TAG else ''}.png"; fig.savefig(out, dpi=90); plt.close(fig)
-    json.dump(dict(bins=rows, relation=dict(coef=[float(cf[0]), float(cf[1])], cov=np.asarray(cov).tolist(), chi2=chi2, accepted=X.tolist()),
+    json.dump(dict(bins=rows, relation=dict(coef=[float(cf[0]), float(cf[1])], cov=np.asarray(cov).tolist(), chi2=chi2, accepted=X.tolist()), relation_anchored=anch,
                    masks=f"stream_masks{'_' + TAG if TAG else ''}.json", old_relation=coef0),
               open(ROOT/f"results/plot_data/stream_dm_fit{'_' + TAG if TAG else ''}.json", "w"), indent=1)
     print(out.relative_to(ROOT), flush=True)
 
 
-def inject(S, R, clus, seln, dm_rel, nrep=20):
-    """Half the cluster stars -> template, other half -> injected (shifted by dm_true) into the null field of the phi1 18-22 bin."""
+def inject(S, R, clus, nulls, nrep=20, N=100):
+    """Half the cluster stars -> template, other half (N in the domain) shifted by dm_true and added to the OBSERVED null-field Hess
+    diagram (pmra masks +6 mas/yr) of three bins; background = that null field's own interpolated background. Reports bias and
+    coverage of the raw and the x ERR_INFL intervals."""
     rng = np.random.default_rng(3); n = len(clus["C"][0]); perm = rng.permutation(n); iT, iI = np.sort(perm[:n//2]), np.sort(perm[n//2:])
-    a0, a1 = 18, 22; dm0 = dm_rel(20.); D = domain(dm0)["all"]; Hz, Bz, _ = hess_on_bg(S, R, seln, a0, a1)
-    cI, gI = clus["C"][0][iI], clus["C"][1][iI]; inwin = lambda d: np.histogram2d(cI, gI+d, (EC, EG))[0]
-    for dm_t in (dm0-0.3, dm0, dm0+0.3):
-        for N in (100, 200):
-            Hfull = inwin(dm_t); p = (Hfull*D).ravel(); p = p/p.sum(); bias, cover = [], []
+    cI, gI = clus["C"][0][iI], clus["C"][1][iI]
+    for a0, a1 in ((10, 14), (18, 22), (22, 26)):
+        dm0 = dm_ref(0.5*(a0+a1)); D = domain(dm0)["all"]; Hz, Bz, _ = hess_on_bg(S, R, nulls[1], a0, a1)
+        for dm_t in (dm0-0.3, dm0, dm0+0.3):
+            Hfull = np.histogram2d(cI, gI+dm_t, (EC, EG))[0]; p = (Hfull*D).ravel(); p = p/p.sum(); bias, cov1, cov2 = [], [], []
             for _ in range(nrep):
-                Hinj = rng.multinomial(N, p).reshape(Hfull.shape)
-                r = profile(rng.poisson(np.maximum(Bz, 0))+Hinj, Bz, clus, dm0, D, idx=iT)
-                bias.append(r["dm"]-dm_t); cover.append(r["lo"] <= dm_t <= r["hi"])
-            print(f"inject dm_true {dm_t:+.2f}, N {N} (in domain): bias {np.mean(bias):+.3f} +- {np.std(bias)/np.sqrt(nrep):.3f}, scatter {np.std(bias):.3f}, "
-                  f"coverage {np.mean(cover):.2f}", flush=True)
+                # null field resampled (Poisson around the observed counts) so the realisations differ; injected stars multinomial
+                r = profile(rng.poisson(Hz)+rng.multinomial(N, p).reshape(Hfull.shape), Bz, clus, dm0, D, idx=iT)
+                hw = 0.5*(r["hi"]-r["lo"]); bias.append(r["dm"]-dm_t); cov1.append(abs(r["dm"]-dm_t) <= max(hw, DGRID)); cov2.append(abs(r["dm"]-dm_t) <= ERR_INFL*max(hw, DGRID))
+            print(f"inject phi1 {a0}-{a1}, dm_true {dm_t:+.2f}, N {N}: bias {np.mean(bias):+.3f} +- {np.std(bias)/np.sqrt(nrep):.3f}, scatter {np.std(bias):.3f}, "
+                  f"coverage raw {np.mean(cov1):.2f}, x{ERR_INFL:g} {np.mean(cov2):.2f}", flush=True)
 
 
 if __name__ == "__main__":

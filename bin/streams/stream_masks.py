@@ -392,8 +392,15 @@ def main():
                     if c < SKY_MIN or c > 24:                                 # beyond 24 the sky fits latch onto noise (marked track kept)
                         continue
                     kb = sel & (np.abs(u-c) < 2.0)                            # sky: 4-deg bins (overlapping), 2-deg bins too noisy
-                    v = x-ev(T, q, u); vu = tu(np.array([c]))[0]-ev(T, q, np.array([c]))[0]
-                    excl = (lambda cc, vu=vu: np.abs(cc-vu) < 1.25) if np.isfinite(vu) else None
+                    v = x-ev(T, q, u)
+                    # upper branch: excluded over its full offset range within the 4-deg bin (the bin-centre value missed the branch
+                    # at phi1 13, where it starts at 14, and its 0.4 deg/deg drift across a bin)
+                    pe = np.clip(np.array([c-2., c+2.]), up[:, 0].min(), up[:, 0].max())
+                    if pe[1] > pe[0]:
+                        vv = [tu(np.array([p_]))[0]-ev(T, q, np.array([p_]))[0] for p_ in np.linspace(pe[0], pe[1], 9)]
+                        excl = (lambda cc, a_=min(vv), b_=max(vv): (cc > a_-1.25) & (cc < b_+1.25))
+                    else:
+                        excl = None
                     r = fit_sky_binned(v[kb], excl)
                 if r is not None:
                     r.update(c=c); rows.append(r)

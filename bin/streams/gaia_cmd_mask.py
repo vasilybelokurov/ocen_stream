@@ -276,11 +276,23 @@ if __name__ == "__main__":
 G_BRIGHT = 17.0     # template-frame G0 limit (user 2026-10-23: 16.5 -> 17.0; the SGB added mostly background): brighter stars excluded
 
 
+def dm_of(P, u):
+    """dm(phi1) from gaia_cmd_mask.json dm_relation: form 'anchored_linear' -> slope x clip(phi1, phi1_min, phi1_max) (dm = 0 at
+    the cluster, held constant outside the measured range; 2026-10-23 iteration); legacy -> min(polyval(coef, phi1), 0)."""
+    R = P["dm_relation"]; u = np.asarray(u, float)
+    if R.get("form") == "anchored_linear":
+        return R["slope"]*np.clip(u, R.get("phi1_min", 0.), R["phi1_max"])
+    return np.minimum(np.polyval(R["coef"], u), 0.)
+
+
 def cmd_pass(k=2.0, g_bright=G_BRIGHT):
     """Boolean over the raw footprint catalogue (stars brighter than template-frame G0 = g_bright, i.e. the RGB, excluded) (results/streams/gaia_footprint_dr3.npz order): inside the CMD mask (k, dm relation
     and segment parameters from results/plot_data/gaia_cmd_mask.json; photometric errors = median sigma(G) of the footprint).
-    Cached in results/streams/gaia_cmd_pass_k<k>.npy (keyed by the json's modification time)."""
-    P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); tag = f"k{k:g}_gb{g_bright:g}_{int((ROOT/'results/plot_data/gaia_cmd_mask.json').stat().st_mtime)}"
+    Cached in results/streams/gaia_cmd_pass_<tag>.npy, keyed by a hash of the json content (was its mtime in integer seconds:
+    two writes within a second returned a stale cache)."""
+    import hashlib
+    txt = (ROOT/"results/plot_data/gaia_cmd_mask.json").read_text(); P = json.loads(txt)
+    tag = f"k{k:g}_gb{g_bright:g}_{hashlib.sha1(txt.encode()).hexdigest()[:12]}"
     f = ROOT/f"results/streams/gaia_cmd_pass_{tag}.npy"
     if f.exists():
         return np.load(f)
@@ -288,7 +300,7 @@ def cmd_pass(k=2.0, g_bright=G_BRIGHT):
     assert np.array_equal(z0["source_id"], raw["source_id"])
     g0, c0, graw, u = z0["g0"].astype(float), z0["c0"].astype(float), raw["g"].astype(float), raw["phi1"].astype(float)
     Z = np.load(ROOT/"results/plot_data/gaia_cmd_mask_errors.npz"); sc = np.interp(graw, Z["gcen"], Z["med_sc"]); sg = np.interp(graw, Z["gcen"], Z["med_sg"])
-    M = CMDMask(P); coef = P["dm_relation"]["coef"]; dm = np.minimum(np.polyval(coef, u), 0.)
+    M = CMDMask(P); dm = dm_of(P, u)
     out = np.zeros(len(u), bool); ok = np.isfinite(c0) & np.isfinite(g0)
     for i in range(0, len(u), 200_000):
         s_ = slice(i, i+200_000); m = ok[s_]; z = np.full(m.size, np.inf)
