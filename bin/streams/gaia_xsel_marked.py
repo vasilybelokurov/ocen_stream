@@ -13,7 +13,8 @@ Figures: gaia_xsel_marked.png -- rows dphi2 / pmra* / pmdec, columns: counts / c
   + STREAMFINDER members (sky mask = lower branch);
   gaia_xsel_branches.png -- PM panels (background-subtracted) for stars selected by the LOWER vs the UPPER sky branch (each with the
   other PM mask), and the CMD of each branch (all masks minus the same PM selection off the branches).
-Usage: PYTHONPATH=src python bin/streams/gaia_xsel_marked.py
+Usage: PYTHONPATH=src python bin/streams/gaia_xsel_marked.py [--cmd]  (--cmd: common cut = inside the isochrone CMD mask,
+       bin/streams/gaia_cmd_mask.cmd_pass; outputs *_cmd.png)
 """
 import sys
 from pathlib import Path
@@ -46,6 +47,15 @@ def main():
     ta, td = track(MARK["pmra"], old_a), track(MARK["pmdec"], old_d)
     ml = np.array(MARK["lower"]); tl = track(MARK["lower"], lambda p: np.where(p < ml[0, 0], 0., ml[-1, 1])+0.*p); tu = lambda p: np.interp(p, *np.array(MARK["upper"]).T, left=np.nan, right=np.nan)
     D = load(); u, x, pa, pd = D["phi1"], D["dphi2"], D["pmra"], D["pmdec"]
+    CMD = "--cmd" in sys.argv
+    if CMD:                                                                               # common cut: inside the CMD mask (k = 2)
+        from gaia_cmd_mask import cmd_pass
+        from gaia_footprint_plots import gc_masked
+        raw = np.load(ROOT/"results/streams/gaia_footprint_dr3.npz"); lg = np.where(raw["l"] > 180, raw["l"]-360, raw["l"])
+        cp = cmd_pass(2.0)[~gc_masked(lg.astype(float), raw["b"].astype(float))]
+        print(f"CMD mask keeps {cp.sum()} of {cp.size} stars", flush=True)
+        D = {k_: v[cp] for k_, v in D.items()}; u, x, pa, pd = D["phi1"], D["dphi2"], D["pmra"], D["pmdec"]
+    tagc = "_cmd" if CMD else ""
     selA, selD = np.abs(pa-ta(u)) < W["pmra"], np.abs(pd-td(u)) < W["pmdec"]
     skyL = np.abs(x-tl(u)) < W["sky"]; skyU = np.abs(x-tu(u)) < W["sky"]                      # NaN outside 14-23 -> False
     offsky = (np.abs(x-tl(u)) > 4) & (np.abs(x-tl(u)) < 12) & ~(np.abs(x-tu(u)) < 2)
@@ -90,8 +100,8 @@ def main():
         ax[i, 2].set_title("masks (blue; orange: upper sky branch), marked points (x), STREAMFINDER members (green)", fontsize=9)
     for a_ in ax[-1]:
         a_.set_xlabel(r"$\phi_1$ [deg]")
-    fig.suptitle("Gaia DR3 cross-selection with masks drawn from the marked sequences (60 phi1 pixels)", fontsize=11)
-    fig.savefig(ROOT/"plots/gaia_xsel_marked.png", dpi=105); plt.close(fig)
+    fig.suptitle("Gaia DR3 cross-selection with masks drawn from the marked sequences (60 phi1 pixels)"+(" + CMD mask (k = 2, dm(phi1)) applied to all panels" if CMD else ""), fontsize=11)
+    fig.savefig(ROOT/f"plots/gaia_xsel_marked{tagc}.png", dpi=105); plt.close(fig)
     # --- lower vs upper sky branch: PMs and CMD
     fig, ax = plt.subplots(2, 3, figsize=(19, 9), constrained_layout=True)
     kU = (u > 13) & (u < 24); offU = offsky & kU
@@ -112,7 +122,7 @@ def main():
     for a_ in ax[-1, :2]:
         a_.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Lower vs upper sky branch (phi1 13-24): do they share the stream's proper motions and CMD?", fontsize=11)
-    fig.savefig(ROOT/"plots/gaia_xsel_branches.png", dpi=105); plt.close(fig)
+    fig.savefig(ROOT/f"plots/gaia_xsel_branches{tagc}.png", dpi=105); plt.close(fig)
     print("plots/gaia_xsel_marked.png, plots/gaia_xsel_branches.png")
 
 

@@ -180,6 +180,7 @@ def main():
     msr = [r_ for r_ in rows if r_[0] == "MS"]; Gm = np.array([r_[1] for r_ in msr]); Sm = np.array([r_[4] for r_ in msr])
     s_ms = np.polyfit(Gm, Sm, 1, w=np.sqrt([r_[2] for r_ in msr]))
     M.P.update(s_ms=list(s_ms), s_ms_min=float(Sm.min()), s_rgb=float(np.median([r_[4] for r_ in rows if r_[0] == "RGB"])))
+    np.savez(ROOT/"results/plot_data/gaia_cmd_mask_errors.npz", gcen=gcen, med_sc=med_sc, med_sg=med_sg)
     json.dump(dict(M.P, k=k_def, widths=[dict(seg=r_[0], G0=r_[1], N=r_[2], mu=r_[3], s_int=r_[4], f=r_[5], sigma_phot=r_[6], s_obs=r_[7]) for r_ in rows],
                    floors=FLOOR, col_shift=COL_SHIFT, sig_dm=SIG_DM), open(ROOT/"results/plot_data/gaia_cmd_mask.json", "w"), indent=1, default=float)
     # cluster completeness
@@ -270,3 +271,23 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def cmd_pass(k=2.0):
+    """Boolean over the raw footprint catalogue (results/streams/gaia_footprint_dr3.npz order): inside the CMD mask (k, dm relation
+    and segment parameters from results/plot_data/gaia_cmd_mask.json; photometric errors = median sigma(G) of the footprint).
+    Cached in results/streams/gaia_cmd_pass_k<k>.npy (keyed by the json's modification time)."""
+    P = json.loads((ROOT/"results/plot_data/gaia_cmd_mask.json").read_text()); tag = f"k{k:g}_{int((ROOT/'results/plot_data/gaia_cmd_mask.json').stat().st_mtime)}"
+    f = ROOT/f"results/streams/gaia_cmd_pass_{tag}.npy"
+    if f.exists():
+        return np.load(f)
+    raw = np.load(ROOT/"results/streams/gaia_footprint_dr3.npz"); z0 = np.load(ROOT/"results/streams/gaia_footprint_dered.npz")
+    assert np.array_equal(z0["source_id"], raw["source_id"])
+    g0, c0, graw, u = z0["g0"].astype(float), z0["c0"].astype(float), raw["g"].astype(float), raw["phi1"].astype(float)
+    Z = np.load(ROOT/"results/plot_data/gaia_cmd_mask_errors.npz"); sc = np.interp(graw, Z["gcen"], Z["med_sc"]); sg = np.interp(graw, Z["gcen"], Z["med_sg"])
+    M = CMDMask(P); coef = P["dm_relation"]["coef"]; dm = np.minimum(np.polyval(coef, u), 0.)
+    out = np.zeros(len(u), bool); ok = np.isfinite(c0) & np.isfinite(g0)
+    for i in range(0, len(u), 200_000):
+        s_ = slice(i, i+200_000); m = ok[s_]; z = np.full(m.size, np.inf)
+        z[m] = M.z(c0[s_][m], g0[s_][m], sc[s_][m], sg[s_][m], dm[s_][m]); out[s_] = z < k
+    np.save(f, out); return out
