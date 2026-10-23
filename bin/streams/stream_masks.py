@@ -26,6 +26,8 @@ as lo95 / hi95 offsets from the track (the Gaussian core underestimates the bord
 Displayed PM panels: background per (phi1 column, PM pixel) = quadratic in (dphi2 - window centre) fitted to 1-deg bands at
 5-14 deg on both sides and integrated over the +-3 deg window (no global or total-count scaling); where bands exist on one side only (b > 8 edge near
 the cluster) a constant from that side is used (a quadratic extrapolated badly there).
+Figure plots/stream_masks_xsel.png: left (N - B)/sqrt(B); middle excess normalised per phi1 column by the integral of the
+positive excess in that column; right masks and members.
 Outputs: results/plot_data/stream_masks.json (tracks and widths on a phi1 grid, per-bin fit tables, iteration history),
 plots/stream_masks_fits.png (per-bin centres/widths with errors per iteration), plots/stream_masks_xsel.png (cross-selection with the
 final masks at k = 2, background-subtracted, with STREAMFINDER members in a separate column).
@@ -322,7 +324,7 @@ def main():
     # --- figure 2: cross-selection with the final masks
     from grid4_common import du, dx, d
     E1 = np.linspace(-8, 32, 61); c1 = 0.5*(E1[1:]+E1[:-1]); ph = GRID
-    fig, ax = plt.subplots(3, 2, figsize=(16, 12), constrained_layout=True, sharex=True)
+    fig, ax = plt.subplots(3, 3, figsize=(23, 12), constrained_layout=True, sharex=True)
     rows_ = (("dphi2", x, np.arange(-15, 15.01, 0.25), r"$\Delta\phi_2$ [deg]", None), ("pmra", D["pmra"], np.arange(-28, 4.01, 0.25), r"$\mu_{\alpha*}$ [mas/yr]", "pmra_error"),
              ("pmdec", D["pmdec"], np.arange(-18, 2.01, 0.25), r"$\mu_\delta$ [mas/yr]", "pmdec_error"))
     for i, (q, v, Ey, yl, err) in enumerate(rows_):
@@ -353,6 +355,10 @@ def main():
                 B[jj] = np.clip(np.vander(yy, dg) @ coef, 0, None).mean(0)*(2*SKY_HALF)
         e = (E1[0], E1[-1], Ey[0], Ey[-1])
         ax[i, 0].imshow(gaussian_filter((H-B)/np.sqrt(np.maximum(B, 1)), 1.).T, origin="lower", extent=e, aspect="auto", cmap="RdBu_r", vmin=-4, vmax=4)
+        # middle: excess per column normalised by the column's integral of POSITIVE excess (smoothed 1 pixel)
+        Xs = gaussian_filter(H-B, 1.); pos = np.clip(Xs, 0, None).sum(1, keepdims=True)
+        ax[i, 1].imshow(np.divide(Xs, pos, out=np.zeros_like(Xs), where=pos > 0).T, origin="lower", extent=e, aspect="auto", cmap="RdBu_r", vmin=-0.08, vmax=0.08)
+        ax[i, 1].set_title("excess / column integral of positive excess", fontsize=10)
         wt = np.median(D[err]) if err else 0.
         if q == "dphi2":
             for a_ in ax[i]:
@@ -364,16 +370,16 @@ def main():
         lo_e, hi_e = ev(T, q, ph)+T[q]["lo_emp"], ev(T, q, ph)+T[q]["hi_emp"]
         for a_ in ax[i]:
             a_.plot(ph, lo_e, "C1-", lw=1.2); a_.plot(ph, hi_e, "C1-", lw=1.2)
-        cbr = CB[q]; ax[i, 1].errorbar([r["c"] for r in cbr], [ev(T, q, np.array([r["c"]]))[0]+0.5*(r["lo"]+r["hi"]) for r in cbr],
+        cbr = CB[q]; ax[i, 2].errorbar([r["c"] for r in cbr], [ev(T, q, np.array([r["c"]]))[0]+0.5*(r["lo"]+r["hi"]) for r in cbr],
                                        yerr=[0.5*(r["hi"]-r["lo"]) for r in cbr], fmt="o", color="C1", ms=3, capsize=2)
-        rows = tables[q]; ax[i, 1].errorbar([r["c"] for r in rows], [ev(T, q, np.array([r["c"]]))[0] for r in rows], fmt="none")
-        ax[i, 1].plot(du, {"dphi2": dx, "pmra": d["pmra"], "pmdec": d["pmdec"]}[q], ".", color="C2", ms=1.5, alpha=0.5)
+        rows = tables[q]; ax[i, 2].errorbar([r["c"] for r in rows], [ev(T, q, np.array([r["c"]]))[0] for r in rows], fmt="none")
+        ax[i, 2].plot(du, {"dphi2": dx, "pmra": d["pmra"], "pmdec": d["pmdec"]}[q], ".", color="C2", ms=1.5, alpha=0.5)
         rg = T[q]["range"]
         if rg:
             for a_ in ax[i]:
                 a_.axvspan(E1[0], rg[0], color="0.85", alpha=0.4, lw=0); a_.axvspan(rg[1], E1[-1], color="0.85", alpha=0.4, lw=0)
         ax[i, 0].set_title(f"{yl.split(' [')[0]}: CMD + other two data-driven masks (k = {K_FINAL:g}), background-subtracted", fontsize=10)
-        ax[i, 1].set_title("blue: Gaussian-core mask (k = 2, median error); orange: 95% empirical border (points: per bin); green: members", fontsize=9)
+        ax[i, 2].set_title("blue: Gaussian-core mask (k = 2, median error); orange: 95% empirical border (points: per bin); green: members", fontsize=9)
     for a_ in ax[-1]:
         a_.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Data-driven masks (alternating unbinned fits, CMD-filtered Gaia DR3)", fontsize=11)
