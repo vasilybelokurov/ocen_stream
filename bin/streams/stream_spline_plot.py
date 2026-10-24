@@ -112,14 +112,16 @@ def panel(q, S, R, F, axs, key=None):
         Xs = gaussian_filter(X, 1.); norm = np.clip(Xs, 0, None).sum(1, keepdims=True); norm[norm == 0] = 1
         nz = lambda A_: np.where(inside, gaussian_filter(np.nan_to_num(np.where(inside, A_, np.nan)), 1.)/norm, np.nan)
         imgs = (Xs/norm, nz(Smod), nz(X-Smod)); vm = 0.08
-        if len(axs) == 4 and len(comps) == 2:
+        if len(axs) >= 4 and len(comps) == 2:
             imgs = (Xs/norm, nz(comps[0]), nz(comps[1]), nz(X-Smod))
             titles = ("data excess", "model: main stream", "model: upper branch", "residual (data - background - both)")
+            if len(axs) == 5:
+                imgs = imgs[:3]+(nz(Smod),)+imgs[3:]; titles = titles[:3]+("model: main + branch",)+titles[3:]
     else:
         sb = np.sqrt(np.maximum(B, 1)); imgs = (gaussian_filter(X/sb, 1.), np.where(inside, gaussian_filter(np.nan_to_num(Sm)/sb, 1.), np.nan),
                                                   np.where(inside, gaussian_filter(np.nan_to_num(Rz)/sb, 1.), np.nan)); vm = 4
     ext = (E1[0], E1[-1], Ey[0], Ey[-1]); Gf = np.array(F[key]["grid"]); trk = (np.interp(Gf, G, R["sky_window"]["centre"] if q == "dphi2" else R["tracks"][q]["c"])+np.array(F[key]["m"]))
-    if len(axs) == 4 and len(imgs) == 3:                              # PM row in a --components figure: data | model | (empty) | residual
+    if len(axs) >= 4 and len(imgs) == 3:                              # PM row in a --components figure: data | model | (empty) | residual
         axs[2].axis("off"); axs = [axs[0], axs[1], axs[3]]
     for a, im, tl in zip(axs, imgs, titles):
         cm = plt.get_cmap("RdBu_r").copy(); cm.set_bad("0.92")
@@ -170,8 +172,10 @@ def pm_two(q, S, R, F, axs):
             if d["lo"] <= cc < d["hi"]:
                 ins[j] |= np.abs(cy-np.interp(cc, G, R["tracks"][q]["c"])) < W
     X = H-B; Sm = comps[0][0]+comps[1][0]; sb = np.sqrt(np.maximum(B, 1)); nz = lambda A_: np.where(ins, gaussian_filter(np.nan_to_num(np.where(ins, A_, 0.))/sb, 1.), np.nan)
-    imgs = (gaussian_filter(X/sb, 1.), nz(comps[0][0]), nz(comps[1][0]), nz(X-Sm))
-    titles = ("data excess (main + branch windows)", "model: main stream", "model: upper branch", "residual (data - background - both)")
+    imgs = (gaussian_filter(X/sb, 1.), nz(comps[0][0]), nz(comps[1][0]), nz(Sm), nz(X-Sm))
+    titles = ("data excess (main + branch windows)", "model: main stream", "model: upper branch", "model: main + branch", "residual (data - background - both)")
+    if len(axs) == 4:
+        imgs, titles = imgs[:3]+imgs[4:], titles[:3]+titles[4:]
     ext = (E1[0], E1[-1], Ey[0], Ey[-1])
     for a, im, tl in zip(axs, imgs, titles):
         cm = plt.get_cmap("RdBu_r").copy(); cm.set_bad("0.92"); a.imshow(np.asarray(im).T, origin="lower", aspect="auto", cmap=cm, vmin=-4, vmax=4, extent=ext)
@@ -184,7 +188,7 @@ def main():
     keys = sys.argv[sys.argv.index("--keys")+1].split(",") if "--keys" in sys.argv else None
     qs = keys or ([sys.argv[sys.argv.index("--q")+1]] if "--q" in sys.argv else ["dphi2", "pmra", "pmdec"])
     S = catalogue(); R = json.loads((ROOT/"results/plot_data/stream_masks.json").read_text()); F = json.loads((ROOT/"results/plot_data/stream_spline_fit.json").read_text())
-    nc = 4 if "--components" in sys.argv else 3
+    nc = (5 if "--combined" in sys.argv else 4) if "--components" in sys.argv else 3
     fig, ax = plt.subplots(len(qs), nc, figsize=(6.7*nc, 4.6*len(qs)), squeeze=False, sharex=True, constrained_layout=True)
     for i, q in enumerate(qs):
         if "--pmtwo" in sys.argv:
@@ -193,7 +197,7 @@ def main():
     for a in ax[-1]:
         a.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Spline mixture model (track, width, stream fraction as splines in phi1; knots by AIC, dotted: track knots); black line: fitted track")
-    out = ROOT/f"plots/stream_spline_{(qs[0] if len(qs) == 1 else 'all') if not keys else '_'.join(keys)}{'_components' if nc == 4 else ''}{'_pmtwo' if '--pmtwo' in sys.argv else ''}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
+    out = ROOT/f"plots/stream_spline_{(qs[0] if len(qs) == 1 else 'all') if not keys else '_'.join(keys)}{'_components' if nc >= 4 else ''}{'_combined' if nc == 5 else ''}{'_pmtwo' if '--pmtwo' in sys.argv else ''}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":
