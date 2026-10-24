@@ -31,7 +31,8 @@ SMAX = float(sys.argv[sys.argv.index("--smax")+1]) if "--smax" in sys.argv else 
 EXTENDED = "--extended" in sys.argv                                                     # sky: extended likelihood, background level fixed
 BGFIXED = "--bgfixed" in sys.argv or EXTENDED                                                       # sky: fixed empirical background
 TWO = "--two" in sys.argv                                  # sky: second stream component (upper branch), phi1 TWO_LO..TWO_HI
-TWO_LO, TWO_HI = 10., 23.
+TWO_LO, TWO_HI = map(float, sys.argv[sys.argv.index("--two-range")+1].split(",")) if "--two-range" in sys.argv else (10., 23.)
+SFIX = int(sys.argv[sys.argv.index("--sfix")+1]) if "--sfix" in sys.argv else 0   # main-stream width: N fixed equally spaced knots, not searched
 TAG = sys.argv[sys.argv.index("--tag")+1] if "--tag" in sys.argv else ""                  # result key suffix (variants)
 CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=W_SKY, lo=0., hi=float(sys.argv[sys.argv.index("--hi")+1]) if "--hi" in sys.argv else 28.))  # sky window (default +-7 deg; 6 and 10 tried)
 NG = 281                                                     # sky: integration grid in v over [-W, W]
@@ -264,6 +265,8 @@ def aic_search(d, verbose=True, min_sep=None, max_steps=25):
     """Greedy AIC knot insertion (Erkal+2017 Sec. 3.3) for the splines m, s, f (background splines fixed)."""
     min_sep = MINSEP if min_sep is None else min_sep
     knots = {k: start_knots(d["lo"], d["hi"]) for k in ("m", "s", "f")}
+    if SFIX:
+        knots["s"] = start_knots(d["lo"], d["hi"], SFIX)
     if TWO and d["q"] == "dphi2":                                    # upper branch: 4 fixed knots over TWO_LO..TWO_HI (not searched)
         k2 = list(np.linspace(TWO_LO, TWO_HI, 4)); knots |= dict(m2=k2, s2=k2, f2=k2)
     if d["q"] == "dphi2" and "lb" not in d:
@@ -274,7 +277,7 @@ def aic_search(d, verbose=True, min_sep=None, max_steps=25):
         print(f"  {d['q']}: start lnL {L:.1f} AIC {aic:.1f} ({k} params, {len(d['u'])} stars)", flush=True)
     for step in range(max_steps):
         best = None
-        for comp in ("m", "s", "f"):
+        for comp in (("m", "f") if SFIX else ("m", "s", "f")):
             kn = M.knots[comp]
             for a, b in zip(kn[:-1], kn[1:]):
                 for t in (0.25, 0.5, 0.75):
