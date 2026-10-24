@@ -30,7 +30,8 @@ def catalogue():
     keep = cmd_pass(2.0) & ~gc_masked(lg, raw["b"].astype(float)); return {k: v[keep].astype(float) for k, v in raw.items() if v.dtype.kind == "f"}
 
 
-def panel(q, S, R, F, axs):
+def panel(q, S, R, F, axs, key=None):
+    key = key or q
     G = np.array(R["grid"]); u, x = S["phi1"], S["dphi2"]; ev = lambda p, key="c": np.interp(u, G, R["tracks"][p][key])
     skc, skh = np.interp(u, G, R["sky_window"]["centre"]), np.interp(u, G, R["sky_window"]["half_width"])
     pmm = {p: np.abs(S[p]-ev(p)) < 2*np.sqrt(ev(p, "s")**2+S[p+"_error"]**2) for p in ("pmra", "pmdec")}
@@ -55,9 +56,9 @@ def panel(q, S, R, F, axs):
             kc = (u >= E1[j]) & (u < E1[j+1]); h = float(np.median(skh[kc])) if kc.any() else 3.
             yy = np.linspace(-h, h, 41); B[j] = np.clip(np.vander(yy, dg)@coef, 0, None).mean(0)*(2*h)
     # model: expected stream counts per pixel from the fit's stars
-    d = load(q); fit = F[q]["fit"]; knots = {k: v["knots"] for k, v in fit.items()}; M = Model(d, knots)
+    d = load(q); fit = F[key]["fit"]; knots = {k: v["knots"] for k, v in fit.items()}; M = Model(d, knots); M.smax = F[key].get("smax")
     th = np.concatenate([np.array(fit[k]["values"]) for k in M.sizes()])
-    P = M.unpack(torch.tensor(th)); m = (M.B["m"]@P["m"]).numpy(); s = np.sqrt(np.exp(2*(M.B["s"]@P["s"]).numpy())+M.smin**2); f = 1/(1+np.exp(-(M.B["f"]@P["f"]).numpy()))
+    P = M.unpack(torch.tensor(th)); m = (M.B["m"]@P["m"]).numpy(); s = M.width((M.B["s"]@P["s"]).numpy()); f = 1/(1+np.exp(-(M.B["f"]@P["f"]).numpy()))
     sig = np.sqrt(s**2+d["e"]**2); W = d["W"]
     if q == "dphi2":
         ctr = np.interp(d["u"], G, R["sky_window"]["centre"])
@@ -90,11 +91,11 @@ def panel(q, S, R, F, axs):
     else:
         sb = np.sqrt(np.maximum(B, 1)); imgs = (gaussian_filter(X/sb, 1.), np.where(inside, gaussian_filter(np.nan_to_num(Sm)/sb, 1.), np.nan),
                                                   np.where(inside, gaussian_filter(np.nan_to_num(Rz)/sb, 1.), np.nan)); vm = 4
-    ext = (E1[0], E1[-1], Ey[0], Ey[-1]); Gf = np.array(F[q]["grid"]); trk = (np.interp(Gf, G, R["sky_window"]["centre"] if q == "dphi2" else R["tracks"][q]["c"])+np.array(F[q]["m"]))
+    ext = (E1[0], E1[-1], Ey[0], Ey[-1]); Gf = np.array(F[key]["grid"]); trk = (np.interp(Gf, G, R["sky_window"]["centre"] if q == "dphi2" else R["tracks"][q]["c"])+np.array(F[key]["m"]))
     for a, im, tl in zip(axs, imgs, ("data excess", "model (stream component)", "residual (data - background - model)")):
         cm = plt.get_cmap("RdBu_r").copy(); cm.set_bad("0.92")
         a.imshow(np.asarray(im).T, origin="lower", aspect="auto", cmap=cm, vmin=-vm, vmax=vm, extent=ext)
-        a.set(ylabel=lab, title=f"{q}: {tl}"); a.plot(Gf, trk, "k-", lw=0.6, alpha=0.5)
+        a.set(ylabel=lab, title=f"{key}: {tl}"); a.plot(Gf, trk, "k-", lw=0.6, alpha=0.5)
         for k_ in fit["m"]["knots"]:
             a.axvline(k_, color="k", lw=0.4, ls=":")
     inn = inside & np.isfinite(Rz); chi = (Rz/np.sqrt(np.maximum(B+np.clip(Smod, 0, None), 1)))[inn]
@@ -103,15 +104,16 @@ def panel(q, S, R, F, axs):
 
 
 def main():
-    qs = [sys.argv[sys.argv.index("--q")+1]] if "--q" in sys.argv else ["dphi2", "pmra", "pmdec"]
+    keys = sys.argv[sys.argv.index("--keys")+1].split(",") if "--keys" in sys.argv else None
+    qs = keys or ([sys.argv[sys.argv.index("--q")+1]] if "--q" in sys.argv else ["dphi2", "pmra", "pmdec"])
     S = catalogue(); R = json.loads((ROOT/"results/plot_data/stream_masks.json").read_text()); F = json.loads((ROOT/"results/plot_data/stream_spline_fit.json").read_text())
     fig, ax = plt.subplots(len(qs), 3, figsize=(20, 4.6*len(qs)), squeeze=False, sharex=True, constrained_layout=True)
     for i, q in enumerate(qs):
-        panel(q, S, R, F, ax[i])
+        panel(q.split("_")[0] if q.startswith("dphi2") else q, S, R, F, ax[i], key=q)
     for a in ax[-1]:
         a.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Spline mixture model (track, width, stream fraction as splines in phi1; knots by AIC, dotted: track knots); black line: fitted track")
-    out = ROOT/f"plots/stream_spline_{qs[0] if len(qs) == 1 else 'all'}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
+    out = ROOT/f"plots/stream_spline_{(qs[0] if len(qs) == 1 else 'all') if not keys else '_'.join(keys)}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":

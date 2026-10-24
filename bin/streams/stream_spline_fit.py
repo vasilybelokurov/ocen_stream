@@ -26,7 +26,10 @@ torch.set_default_dtype(torch.float64)
 from scipy.interpolate import CubicSpline
 from scipy.ndimage import gaussian_filter
 
-CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=7.0, lo=0., hi=28.))    # sky window +-7 deg (user; 6 and 10 tried)
+W_SKY = float(sys.argv[sys.argv.index("--W")+1]) if "--W" in sys.argv else 7.0          # sky window half-width [deg]
+SMAX = float(sys.argv[sys.argv.index("--smax")+1]) if "--smax" in sys.argv else None     # optional cap on the intrinsic width
+TAG = sys.argv[sys.argv.index("--tag")+1] if "--tag" in sys.argv else ""                  # result key suffix (variants)
+CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=W_SKY, lo=0., hi=28.))  # sky window (default +-7 deg; 6 and 10 tried)
 NG = 281                                                     # sky: integration grid in v over [-W, W]
 SQ2 = np.sqrt(2.)
 
@@ -95,6 +98,7 @@ class Model:
         self.d, self.knots = d, {k: np.array(sorted(v), float) for k, v in knots.items()}
         self.B = {k: torch.tensor(basis(kn, d["u"])) for k, kn in self.knots.items()}
         self.v, self.e, self.W = torch.tensor(d["v"]), torch.tensor(d["e"]), d["W"]; self.smin = 0.1 if d["q"] == "dphi2" else 0.05
+        self.smax = SMAX if d["q"] == "dphi2" else None
         if d["q"] == "dphi2":
             self.vg = torch.tensor(d["vg"]); self.mask = torch.tensor(d["Aw"])          # observed-area weight x upper-branch hole
         else:
@@ -111,7 +115,7 @@ class Model:
 
     def lnl(self, th, per_star=False):
         P = self.unpack(th); m = self.B["m"]@P["m"]; fl = self.B["f"]@P["f"]   # logit f
-        s = torch.sqrt(torch.exp(2*(self.B["s"]@P["s"]))+self.smin**2)     # intrinsic width with a small floor (s -> 0 is a flat, degenerate direction)
+        s = self.width(self.B["s"]@P["s"])
         sig = torch.sqrt(s**2+self.e**2); W = self.W
         lg = -0.5*((self.v-m)/sig)**2-torch.log(sig)-0.5*np.log(2*np.pi)
         Z = Phi((W-m)/sig)-Phi((-W-m)/sig)
@@ -149,10 +153,17 @@ class Model:
         except np.linalg.LinAlgError:
             return np.linalg.pinv(H)
 
+    def width(self, x):
+        """intrinsic width from its spline value x: sqrt(e^2x + smin^2) (floor); with a cap (--smax): smin + (smax - smin) sigmoid(x)."""
+        lib = torch if torch.is_tensor(x) else np
+        if self.smax is None:
+            return lib.sqrt(lib.exp(2*x)+self.smin**2)
+        return self.smin+(self.smax-self.smin)/(1+lib.exp(-x))
+
     def curves(self, th, x):
         P = self.unpack(torch.tensor(th)); out = {}
         for k in ("m", "s", "f"):
-            b = basis(self.knots[k], x)@P[k].numpy(); out[k] = b if k == "m" else (np.sqrt(np.exp(2*b)+self.smin**2) if k == "s" else 1/(1+np.exp(-b)))
+            b = basis(self.knots[k], x)@P[k].numpy(); out[k] = b if k == "m" else (self.width(b) if k == "s" else 1/(1+np.exp(-b)))
         return out
 
 
@@ -261,7 +272,7 @@ def main():
                       f"m {len(Ma.knots['m'])} s {len(Ma.knots['s'])} f {len(Ma.knots['f'])} (data: {len(M.knots['m'])}/{len(M.knots['s'])}/{len(M.knots['f'])})", flush=True)
             z = np.concatenate(zs); print(f"  TEST {q}: track z mean {z.mean():+.2f}, sd {z.std():.2f} (expect 0, 1; n = {z.size})", flush=True)
         G = np.linspace(d["lo"], d["hi"], 121); c = M.curves(th, G)
-        res[q] = dict(fit=out, cov=C.tolist(), lnL=hist[-1]["lnL"], aic_history=hist, n_stars=len(d["u"]), window=d["W"], phi1_range=[d["lo"], d["hi"]],
+        res[q+TAG] = dict(smax=SMAX, fit=out, cov=C.tolist(), lnL=hist[-1]["lnL"], aic_history=hist, n_stars=len(d["u"]), window=d["W"], phi1_range=[d["lo"], d["hi"]],
                       grid=G.tolist(), m=c["m"].tolist(), s=c["s"].tolist(), f=c["f"].tolist(),
                       note="v = q - frozen track (stream_masks.json); track = frozen track + m")
         print(f"  {q} done in {time.time()-t0:.0f} s", flush=True)
