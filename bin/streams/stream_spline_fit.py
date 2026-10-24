@@ -52,7 +52,19 @@ def Phi(z):
 
 
 # ------------------------------------------------------------------ data
-def load(q, null_shift=0.):
+SKYWIN = sys.argv[sys.argv.index("--skywin")+1] if "--skywin" in sys.argv else None   # PMs: +-SKYWIN_HW sky window on the main or branch track
+
+
+def sky_tracks():
+    """main and upper-branch tracks (y = dphi2 - sky centre) of the two-component sky fit dphi2_sky_final."""
+    F = json.loads((ROOT/"results/plot_data/stream_spline_fit.json").read_text())["dphi2_sky_final"]["fit"]
+    return (lambda u: basis(F["m"]["knots"], u)@np.array(F["m"]["values"])), (lambda u: basis(F["m2"]["knots"], u)@np.array(F["m2"]["values"]))
+
+
+SKYWIN_HW, BRANCH_RANGE = 1.0, (10., 23.)
+
+
+def load(q, null_shift=0., skywin=SKYWIN):
     from gaia_cmd_mask import cmd_pass
     from gaia_footprint_plots import gc_masked
     import gaia_xsel_marked as GX
@@ -106,7 +118,12 @@ def load(q, null_shift=0.):
         return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None, Aw=Aw, vg=vg, **out,
                     area=dict(A=A, Eu=Eu, Ey=Ey), all=dict(u=u[sel], x=x[sel]))
     other = "pmdec" if q == "pmra" else "pmra"
-    v = S[q]-ev(q)+null_shift; win = np.abs(x-skc) < skh; offb = (np.abs(x-skc) > 5) & (np.abs(x-skc) < 14)
+    v = S[q]-ev(q)+null_shift; win = np.abs(x-skc) < skh
+    if skywin is not None:                                            # main / branch: +-1 deg around the two-component sky tracks
+        tm, tb = sky_tracks(); win = np.abs(x-skc-(tm(u) if skywin == "main" else tb(u))) < SKYWIN_HW
+        if skywin == "branch":
+            c = dict(c, lo=BRANCH_RANGE[0], hi=BRANCH_RANGE[1]); rng = (u >= c["lo"]) & (u < c["hi"])
+    offb = (np.abs(x-skc) > 5) & (np.abs(x-skc) < 14)
     on = rng & pmm[other] & win & (np.abs(v) < c["W"]); off = rng & pmm[other] & offb & (np.abs(v) < c["W"])
     # empirical background b(v | phi1): 1-deg x 0.1 histogram of the off-sky stars, smoothed, normalised per phi1 row
     Eu = np.arange(c["lo"], c["hi"]+1e-9, 1.); Ev = np.linspace(-c["W"], c["W"], int(20*c["W"])+1)

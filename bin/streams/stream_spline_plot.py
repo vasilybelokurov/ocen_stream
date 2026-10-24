@@ -134,6 +134,52 @@ def panel(q, S, R, F, axs, key=None):
           f"total data excess {X[inside].sum():.0f}, model {Smod[inside].sum():.0f}", flush=True)
 
 
+def pm_two(q, S, R, F, axs):
+    """PM row with separate main and branch components (fits <q>_main, <q>_branch: +-1 deg sky windows on the dphi2_sky_final
+    tracks). Data = stars in the union of both windows (other-PM mask k = 2); background per column from 1-deg dphi2 bands at
+    5-14 deg, quadratic in y, integrated over both windows; models = expected stream counts from each fit's stars."""
+    from stream_spline_fit import sky_tracks, SKYWIN_HW, BRANCH_RANGE
+    tm, tb = sky_tracks(); G = np.array(R["grid"]); u, x = S["phi1"], S["dphi2"]; ev = lambda p, key="c": np.interp(u, G, R["tracks"][p][key])
+    skc = np.interp(u, G, R["sky_window"]["centre"]); yv = x-skc; other = "pmdec" if q == "pmra" else "pmra"
+    sel = np.abs(S[other]-ev(other)) < 2*np.sqrt(ev(other, "s")**2+S[other+"_error"]**2)
+    inb = (u >= BRANCH_RANGE[0]) & (u < BRANCH_RANGE[1]); wm, wb = np.abs(yv-tm(u)) < SKYWIN_HW, inb & (np.abs(yv-tb(u)) < SKYWIN_HW)
+    Ey, lab, nb = ROWS[q]; E1 = np.linspace(-8, 32, nb); c1 = 0.5*(E1[1:]+E1[:-1]); cy = 0.5*(Ey[1:]+Ey[:-1])
+    on = sel & (wm | wb); H = np.histogram2d(u[on], S[q][on], (E1, Ey))[0]
+    Eb = np.arange(-14, 14.01, 1.); cb = 0.5*(Eb[1:]+Eb[:-1]); offb = np.abs(cb) >= 5
+    H3 = np.histogramdd(np.column_stack((u[sel], yv[sel], S[q][sel])), (E1, Eb, Ey))[0]; B = np.zeros_like(H)
+    for j in range(len(c1)):
+        ob = offb & (H3[j].sum(1) > 0)
+        if ob.sum() < 6:
+            continue
+        dg = 3 if ((ob & (cb < 0)).sum() >= 3 and (ob & (cb > 0)).sum() >= 3) else 1; coef = np.linalg.pinv(np.vander(cb[ob], dg))@H3[j, ob, :]
+        cc = np.array([c1[j]]); yy = np.linspace(-SKYWIN_HW, SKYWIN_HW, 21)+tm(cc)[0]
+        if BRANCH_RANGE[0] <= c1[j] < BRANCH_RANGE[1]:
+            yy = np.concatenate((yy, np.linspace(-SKYWIN_HW, SKYWIN_HW, 21)+tb(cc)[0]))
+        B[j] = np.clip(np.vander(yy, dg)@coef, 0, None).mean(0)*(2*SKYWIN_HW)*(2 if len(yy) > 21 else 1)
+    comps, ins = [], np.zeros_like(H, bool)
+    for w in ("main", "branch"):
+        key = f"{q}_{w}"; d = load(q, skywin=w); fit = F[key]["fit"]; M = Model(d, {k: v["knots"] for k, v in fit.items()})
+        th = np.concatenate([np.array(fit[k]["values"]) for k in M.sizes()]); P = M.unpack(torch.tensor(th))
+        m = (M.B["m"]@P["m"]).numpy(); s_ = M.width((M.B["s"]@P["s"]).numpy()); f = 1/(1+np.exp(-(M.B["f"]@P["f"]).numpy()))
+        sig = np.sqrt(s_**2+d["e"]**2); W = d["W"]; ctr = np.interp(d["u"], G, R["tracks"][q]["c"]); Z = ndtr((W-m)/sig)-ndtr((-W-m)/sig)
+        a_, b_ = np.clip(Ey[:-1][None, :]-ctr[:, None], -W, W), np.clip(Ey[1:][None, :]-ctr[:, None], -W, W)
+        mass = np.clip(ndtr((b_-m[:, None])/sig[:, None])-ndtr((a_-m[:, None])/sig[:, None]), 0, None)*(f/np.maximum(Z, 1e-9))[:, None]
+        Sc = np.zeros_like(H); np.add.at(Sc, np.clip(np.digitize(d["u"], E1)-1, 0, len(c1)-1), mass); comps.append(Sc)
+        Gf = np.array(F[key]["grid"]); comps[-1] = (Sc, Gf, np.interp(Gf, G, R["tracks"][q]["c"])+np.array(F[key]["m"]), fit["m"]["knots"])
+        for j, cc in enumerate(c1):
+            if d["lo"] <= cc < d["hi"]:
+                ins[j] |= np.abs(cy-np.interp(cc, G, R["tracks"][q]["c"])) < W
+    X = H-B; Sm = comps[0][0]+comps[1][0]; sb = np.sqrt(np.maximum(B, 1)); nz = lambda A_: np.where(ins, gaussian_filter(np.nan_to_num(np.where(ins, A_, 0.))/sb, 1.), np.nan)
+    imgs = (gaussian_filter(X/sb, 1.), nz(comps[0][0]), nz(comps[1][0]), nz(X-Sm))
+    titles = ("data excess (main + branch windows)", "model: main stream", "model: upper branch", "residual (data - background - both)")
+    ext = (E1[0], E1[-1], Ey[0], Ey[-1])
+    for a, im, tl in zip(axs, imgs, titles):
+        cm = plt.get_cmap("RdBu_r").copy(); cm.set_bad("0.92"); a.imshow(np.asarray(im).T, origin="lower", aspect="auto", cmap=cm, vmin=-4, vmax=4, extent=ext)
+        a.set(ylabel=lab, title=f"{q}: {tl}"); a.plot(comps[0][1], comps[0][2], "k-", lw=0.6, alpha=0.5); a.plot(comps[1][1], comps[1][2], "k--", lw=0.6, alpha=0.7)
+    chi = ((X-Sm)/np.sqrt(np.maximum(B+np.clip(Sm, 0, None), 1)))[ins]
+    print(f"{q} (main + branch): residual sd {chi.std():.3f}, mean {chi.mean():+.3f}; excess {X[ins].sum():.0f}, model main {comps[0][0][ins].sum():.0f} branch {comps[1][0][ins].sum():.0f}", flush=True)
+
+
 def main():
     keys = sys.argv[sys.argv.index("--keys")+1].split(",") if "--keys" in sys.argv else None
     qs = keys or ([sys.argv[sys.argv.index("--q")+1]] if "--q" in sys.argv else ["dphi2", "pmra", "pmdec"])
@@ -141,11 +187,13 @@ def main():
     nc = 4 if "--components" in sys.argv else 3
     fig, ax = plt.subplots(len(qs), nc, figsize=(6.7*nc, 4.6*len(qs)), squeeze=False, sharex=True, constrained_layout=True)
     for i, q in enumerate(qs):
+        if "--pmtwo" in sys.argv:
+            pm_two(q, S, R, F, ax[i]); continue
         panel(q.split("_")[0], S, R, F, ax[i], key=q)
     for a in ax[-1]:
         a.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Spline mixture model (track, width, stream fraction as splines in phi1; knots by AIC, dotted: track knots); black line: fitted track")
-    out = ROOT/f"plots/stream_spline_{(qs[0] if len(qs) == 1 else 'all') if not keys else '_'.join(keys)}{'_components' if nc == 4 else ''}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
+    out = ROOT/f"plots/stream_spline_{(qs[0] if len(qs) == 1 else 'all') if not keys else '_'.join(keys)}{'_components' if nc == 4 else ''}{'_pmtwo' if '--pmtwo' in sys.argv else ''}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":
