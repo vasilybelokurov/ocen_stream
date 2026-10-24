@@ -10,7 +10,7 @@ Per non-overlapping 3-deg phi1 window k (centre phi_k): extended Poisson likelih
 parameters c (track at phi_k), s (intrinsic width, bounded 0.1-4 deg), r (stream stars per deg); slope g FIXED to the gradient of
 the two-component main track at phi_k (a free slope is unconstrained in the weak windows: c ran to the window edge). Errors: inverse
 finite-difference Hessian. Poisson mocks drawn from the fitted model (+ fixed background) give the error calibration.
-Usage: PYTHONPATH=src python bin/streams/stream_sky_local.py [--strip 1.2 | --strip 0 (no branch cut, suffix _nostrip)] [--nmock 50]
+Usage: PYTHONPATH=src python bin/streams/stream_sky_local.py [--maps: data|model|residual from the saved fit] [--strip 1.2 | --strip 0 (no branch cut, suffix _nostrip)] [--nmock 50]
        -> results/plot_data/stream_sky_local.json, plots/stream_sky_local.png
 """
 import json, sys
@@ -119,7 +119,9 @@ def plot(d, out, m2):
     from scipy.ndimage import gaussian_filter
     a.imshow(gaussian_filter((H-B)/np.sqrt(np.maximum(B, 1)), 1.).T, origin="lower", aspect="auto", cmap="RdBu_r", vmin=-3, vmax=3, extent=(0, 25, -6, 6))
     g = np.linspace(0, 25, 251); g2 = np.linspace(*STRIP, 91)
-    a.plot(g, m1(g), "k--", lw=0.8, label="two-component main track"); a.plot(g2, m2(g2)+HW_STRIP, "y-", lw=0.8); a.plot(g2, m2(g2)-HW_STRIP, "y-", lw=0.8, label="branch strip (excluded)")
+    a.plot(g, m1(g), "k--", lw=0.8, label="two-component main track")
+    if HW_STRIP > 0:
+        a.plot(g2, m2(g2)+HW_STRIP, "y-", lw=0.8); a.plot(g2, m2(g2)-HW_STRIP, "y-", lw=0.8, label="branch strip (excluded)")
     W1 = F["dphi2_W6ext_nohole"]; a.plot(W1["grid"], W1["m"], "C2:", lw=1, label="global 1-comp spline (W6ext_nohole)")
     pk = np.array([0.5*sum(r["phi1"]) for r in out]); c = np.array([r["c"] for r in out]); ce = np.array([r["c_err"] for r in out]); s = np.array([r["s"] for r in out])
     for r in out:
@@ -144,5 +146,34 @@ def plot(d, out, m2):
     fig.savefig(ROOT/f"plots/stream_sky_local{SUF}.png", dpi=85); print(f"plots/stream_sky_local{SUF}.png")
 
 
+def maps():
+    """data | model | residual maps from the saved fit (no refit): (N - B)/sqrt(B), S/sqrt(B), (N - B - S)/sqrt(B + S) on
+    0.5 x 0.25 deg pixels; B = the fit's own fixed background x area, S = piecewise local-fit stream x area (strip removed)."""
+    from scipy.ndimage import gaussian_filter
+    R = json.loads((ROOT/f"results/plot_data/stream_sky_local{SUF}.json").read_text()); d = SF.load("dphi2"); m1, m2 = SF.sky_tracks()
+    E1, Ey = np.arange(0, 24.01, 0.5), np.arange(-6, 6.01, 0.25); keep = ~strip_mask(d["u"], d["v"], m2) if HW_STRIP > 0 else np.ones(d["u"].size, bool)
+    H = np.histogram2d(d["u"][keep], d["v"][keep], (E1, Ey))[0]
+    ug, vg = d["ug"], d["vg"]; Ag = d["Ag"]*(~strip_mask(ug[:, None], vg[None, :], m2) if HW_STRIP > 0 else 1.)
+    jg = np.clip(np.digitize(ug, d["area"]["Eu"])-1, 0, len(d["area"]["Eu"])-2); cell = (d["area"]["Eu"][1]-d["area"]["Eu"][0])*(d["area"]["Ey"][1]-d["area"]["Ey"][0])
+    lb = np.clip(d["bg_coef"][jg]@np.vander(vg, 3).T, 0, None)/cell*Ag; ls = np.zeros_like(lb)
+    for r in R["windows"]:
+        k = (ug >= r["phi1"][0]) & (ug < r["phi1"][1]); mg = r["c"]+r["g"]*(ug[k]-0.5*sum(r["phi1"]))
+        ls[k] = r["r"]*np.exp(-0.5*((vg[None, :]-mg[:, None])/r["s"])**2)/(r["s"]*np.sqrt(2*np.pi))*Ag[k]
+    dv = vg[1]-vg[0]; iu = np.clip(np.digitize(ug, E1)-1, 0, len(E1)-2); iv = np.clip(np.digitize(vg, Ey)-1, 0, len(Ey)-2)
+    def pix(L):                                                   # integrate a 0.1 x dv grid density into the display pixels
+        P = np.zeros((len(E1)-1, len(Ey)-1)); np.add.at(P, (iu[:, None].repeat(len(vg), 1), iv[None, :].repeat(len(ug), 0)), L*0.1*dv); return P
+    B, S = pix(lb), pix(ls); sb = np.sqrt(np.maximum(B, 1)); X = H-B
+    chi = (X-S)/np.sqrt(np.maximum(B+S, 1)); print(f"residual (N-B-S)/sqrt(B+S): mean {chi.mean():+.3f}, sd {chi.std():.3f}; data excess {X.sum():.0f}, model {S.sum():.0f}")
+    fig, ax = plt.subplots(1, 3, figsize=(20, 4.8), sharey=True, constrained_layout=True); g = np.linspace(0, 24, 241)
+    for a, im, t in zip(ax, (X/sb, S/sb, (X-S)/sb), ("data - background", "model (local fits)", "residual (data - background - model)")):
+        a.imshow(gaussian_filter(im, 1.).T, origin="lower", aspect="auto", cmap="RdBu_r", vmin=-3, vmax=3, extent=(0, 24, -6, 6))
+        for w in R["windows"]:
+            x = np.array(w["phi1"]); a.plot(x, w["c"]+w["g"]*(x-0.5*sum(x)), "k-", lw=1); a.axvline(x[0], color="0.6", lw=0.4)
+        a.plot(g, m1(g), "k--", lw=0.6, alpha=0.6); a.set(xlabel=r"$\phi_1$ [deg]", title=t+r", $\pm$ / $\sqrt{B}$")
+    ax[0].set_ylabel(r"v = $\Delta\phi_2$ - centre [deg]")
+    fig.suptitle(f"Single-component local sky fits{' (no branch cut)' if HW_STRIP == 0 else f' (branch strip +-{HW_STRIP} excluded)'}; solid: local tracks, dashed: two-component main track; residual sd {chi.std():.2f}")
+    out = ROOT/f"plots/stream_sky_local{SUF}_maps.png"; fig.savefig(out, dpi=90); print(out.relative_to(ROOT))
+
+
 if __name__ == "__main__":
-    main()
+    maps() if "--maps" in sys.argv else main()
