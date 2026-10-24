@@ -78,7 +78,16 @@ def panel(q, S, R, F, axs, key=None):
         vg = d["vg"]; gz = np.exp(-0.5*((vg[None, :]-m[:, None])/sig[:, None])**2)*d["Aw"]; gz /= np.maximum(np.trapezoid(gz, vg, axis=1), 1e-12)[:, None]
         cum = np.concatenate((np.zeros((len(m), 1)), np.cumsum(0.5*(gz[:, 1:]+gz[:, :-1])*np.diff(vg)[None, :], 1)), 1)
         mass = np.clip(np.array([np.interp(hi_e[i], vg, cum[i])-np.interp(lo_e[i], vg, cum[i]) for i in range(len(m))]), 0, None)*f[:, None]
-    np.add.at(Smod, ju, mass)
+    if getattr(M, "ext", False):                                      # extended model: rate(phi1) x N x A integrated on the phi1 grid
+        Smod = np.zeros_like(H); ug, Ag, vg = d["ug"], d["Ag"], d["vg"]; Pg = M.unpack(torch.tensor(th))
+        mg = (M.Bg["m"]@Pg["m"]).numpy(); sgg = M.width((M.Bg["s"]@Pg["s"]).numpy()); rg = np.exp((M.Bg["f"]@Pg["f"]).numpy())
+        ctg = np.interp(ug, G, R["sky_window"]["centre"]); jg = np.clip(np.digitize(ug, E1)-1, 0, len(c1)-1)
+        gz = np.exp(-0.5*((vg[None, :]-mg[:, None])/sgg[:, None])**2)/(sgg[:, None]*np.sqrt(2*np.pi))*Ag*rg[:, None]*0.1
+        cum = np.concatenate((np.zeros((len(ug), 1)), np.cumsum(0.5*(gz[:, 1:]+gz[:, :-1])*np.diff(vg)[None, :], 1)), 1)
+        for i in range(len(ug)):
+            Smod[jg[i]] += np.interp(Ey[1:]-ctg[i], vg, cum[i])-np.interp(Ey[:-1]-ctg[i], vg, cum[i])
+    else:
+        np.add.at(Smod, ju, mass)
     inside = np.zeros_like(H, bool)
     for j, cc in enumerate(c1):
         if d["lo"] <= cc < d["hi"]:

@@ -28,7 +28,8 @@ from scipy.ndimage import gaussian_filter
 
 W_SKY = float(sys.argv[sys.argv.index("--W")+1]) if "--W" in sys.argv else 7.0          # sky window half-width [deg]
 SMAX = float(sys.argv[sys.argv.index("--smax")+1]) if "--smax" in sys.argv else None     # optional cap on the intrinsic width
-BGFIXED = "--bgfixed" in sys.argv                                                       # sky: fixed empirical background
+EXTENDED = "--extended" in sys.argv                                                     # sky: extended likelihood, background level fixed
+BGFIXED = "--bgfixed" in sys.argv or EXTENDED                                                       # sky: fixed empirical background
 TAG = sys.argv[sys.argv.index("--tag")+1] if "--tag" in sys.argv else ""                  # result key suffix (variants)
 CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=W_SKY, lo=0., hi=28.))  # sky window (default +-7 deg; 6 and 10 tried)
 NG = 281                                                     # sky: integration grid in v over [-W, W]
@@ -92,6 +93,11 @@ def load(q, null_shift=0.):
             bq = np.clip(np.sum(cf[ju]*np.vander(v[on], 3), axis=1), 1e-3, None)
             bqg = np.clip(cf[ju]@np.vander(vg, 3).T, 1e-3, None)*Aw; Zb = np.trapezoid(bqg, vg, axis=1)
             out = dict(lb=np.log(bq)-np.log(Zb), bqg=bqg, bg_coef=cf)
+            if EXTENDED:
+                # extended likelihood: background LEVEL fixed too. lambda_b = area-corrected band density per deg^2 at the star;
+                # stream rate integrated over a 0.1-deg phi1 grid with the observed-area map
+                cell = (Eu[1]-Eu[0])*(Ey[1]-Ey[0]); ug = np.arange(c["lo"]+0.05, c["hi"], 0.1); jg = np.clip(np.digitize(ug, Eu)-1, 0, len(Eu)-2)
+                out.update(lam_b=bq/cell, ug=ug, Ag=A[jg][:, jy], n_bg_expected=float(np.sum(np.clip(cf[jg]@np.vander(vg, 3).T, 0, None)*A[jg][:, jy])*(vg[1]-vg[0])*0.1/cell))
         return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None, Aw=Aw, vg=vg, **out,
                     area=dict(A=A, Eu=Eu, Ey=Ey), all=dict(u=u[sel], x=x[sel]))
     other = "pmdec" if q == "pmra" else "pmra"
@@ -118,6 +124,10 @@ class Model:
             self.vg = torch.tensor(d["vg"]); self.mask = torch.tensor(d["Aw"])          # observed-area weight x upper-branch hole
             if "lb" in d:
                 self.lb = torch.tensor(d["lb"])
+            self.ext = "lam_b" in d
+            if self.ext:
+                self.lam_b = torch.tensor(d["lam_b"]); self.ug = torch.tensor(d["ug"]); self.Ag = torch.tensor(d["Ag"])
+                self.Bg = {k: torch.tensor(basis(kn, d["ug"])) for k, kn in self.knots.items()}
         else:
             self.lb = torch.log(torch.tensor(np.maximum(d["b"], 1e-12)))
 
@@ -148,6 +158,12 @@ class Model:
                 lb = self.lb
         else:
             lb = self.lb
+        if getattr(self, "ext", False):                              # extended: sum log(lambda_b + rate N) - integral of the stream rate
+            L = torch.log(self.lam_b+torch.exp(fl+lg))
+            mg, fg = self.Bg["m"]@P["m"], self.Bg["f"]@P["f"]; sg = self.width(self.Bg["s"]@P["s"])
+            gzg = torch.exp(-0.5*((self.vg[None, :]-mg[:, None])/sg[:, None])**2)/(sg[:, None]*np.sqrt(2*np.pi))
+            nint = torch.sum(torch.exp(fg)*torch.trapezoid(gzg*self.Ag, self.vg, dim=1))*0.1
+            return L if per_star else L.sum()-nint
         L = torch.logaddexp(torch.nn.functional.logsigmoid(fl)+lg-torch.log(torch.clamp(Z, 1e-12)), torch.nn.functional.logsigmoid(-fl)+lb)   # stable at f -> 0, 1
         return L if per_star else L.sum()
 
@@ -183,7 +199,7 @@ class Model:
     def curves(self, th, x):
         P = self.unpack(torch.tensor(th)); out = {}
         for k in ("m", "s", "f"):
-            b = basis(self.knots[k], x)@P[k].numpy(); out[k] = b if k == "m" else (self.width(b) if k == "s" else 1/(1+np.exp(-b)))
+            b = basis(self.knots[k], x)@P[k].numpy(); out[k] = b if k == "m" else (self.width(b) if k == "s" else (np.exp(b) if getattr(self, "ext", False) else 1/(1+np.exp(-b))))
         return out
 
 
@@ -198,7 +214,7 @@ def init_theta(M, prev=None):
         if prev is not None and k in prev[0].knots:
             pm, pth = prev; P = pm.unpack(torch.tensor(pth)); th.append(basis(pm.knots[k], kn)@P[k].numpy())
         else:
-            th.append({"m": np.zeros(len(kn)), "s": np.full(len(kn), np.log(0.1*M.W)), "f": np.full(len(kn), -3.),
+            th.append({"m": np.zeros(len(kn)), "s": np.full(len(kn), np.log(0.1*M.W)), "f": np.full(len(kn), np.log(20.) if getattr(M, "ext", False) else -3.),
                        "a1": np.zeros(len(kn)), "a2": np.zeros(len(kn))}[k])
     return np.concatenate(th)
 
