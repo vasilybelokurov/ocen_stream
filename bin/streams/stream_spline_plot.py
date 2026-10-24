@@ -119,6 +119,8 @@ def panel(q, S, R, F, axs, key=None):
         sb = np.sqrt(np.maximum(B, 1)); imgs = (gaussian_filter(X/sb, 1.), np.where(inside, gaussian_filter(np.nan_to_num(Sm)/sb, 1.), np.nan),
                                                   np.where(inside, gaussian_filter(np.nan_to_num(Rz)/sb, 1.), np.nan)); vm = 4
     ext = (E1[0], E1[-1], Ey[0], Ey[-1]); Gf = np.array(F[key]["grid"]); trk = (np.interp(Gf, G, R["sky_window"]["centre"] if q == "dphi2" else R["tracks"][q]["c"])+np.array(F[key]["m"]))
+    if len(axs) == 4 and len(imgs) == 3:                              # PM row in a --components figure: data | model | (empty) | residual
+        axs[2].axis("off"); axs = [axs[0], axs[1], axs[3]]
     for a, im, tl in zip(axs, imgs, titles):
         cm = plt.get_cmap("RdBu_r").copy(); cm.set_bad("0.92")
         a.imshow(np.asarray(im).T, origin="lower", aspect="auto", cmap=cm, vmin=-vm, vmax=vm, extent=ext)
