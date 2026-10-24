@@ -78,7 +78,14 @@ def panel(q, S, R, F, axs, key=None):
         vg = d["vg"]; gz = np.exp(-0.5*((vg[None, :]-m[:, None])/sig[:, None])**2)*d["Aw"]; gz /= np.maximum(np.trapezoid(gz, vg, axis=1), 1e-12)[:, None]
         cum = np.concatenate((np.zeros((len(m), 1)), np.cumsum(0.5*(gz[:, 1:]+gz[:, :-1])*np.diff(vg)[None, :], 1)), 1)
         mass = np.clip(np.array([np.interp(hi_e[i], vg, cum[i])-np.interp(lo_e[i], vg, cum[i]) for i in range(len(m))]), 0, None)*f[:, None]
-    if getattr(M, "ext", False):                                      # extended model: rate(phi1) x N x A integrated on the phi1 grid
+    if getattr(M, "ext", False) and q != "dphi2":                     # PM extended model: rate x truncated Gaussian on the phi1 grid
+        Smod = np.zeros_like(H); ug, eg = d["ug"], d["eg"]; Pg = M.unpack(torch.tensor(th))
+        mg = (M.Bg["m"]@Pg["m"]).numpy(); sgt = np.sqrt(M.width((M.Bg["s"]@Pg["s"]).numpy())**2+eg**2); rg = np.exp((M.Bg["f"]@Pg["f"]).numpy())
+        trg = np.interp(ug, G, R["tracks"][q]["c"]); jg = np.clip(np.digitize(ug, E1)-1, 0, len(c1)-1)
+        for i in range(len(ug)):
+            a_, b_ = np.clip(Ey[:-1]-trg[i], -W, W), np.clip(Ey[1:]-trg[i], -W, W)
+            Smod[jg[i]] += rg[i]*0.1*np.clip(ndtr((b_-mg[i])/sgt[i])-ndtr((a_-mg[i])/sgt[i]), 0, None)
+    elif getattr(M, "ext", False):                                      # extended model: rate(phi1) x N x A integrated on the phi1 grid
         Smod = np.zeros_like(H); ug, Ag, vg = d["ug"], d["Ag"], d["vg"]; Pg = M.unpack(torch.tensor(th))
         mg = (M.Bg["m"]@Pg["m"]).numpy(); sgg = M.width((M.Bg["s"]@Pg["s"]).numpy()); rg = np.exp((M.Bg["f"]@Pg["f"]).numpy())
         ctg = np.interp(ug, G, R["sky_window"]["centre"]); jg = np.clip(np.digitize(ug, E1)-1, 0, len(c1)-1)
@@ -118,7 +125,7 @@ def main():
     S = catalogue(); R = json.loads((ROOT/"results/plot_data/stream_masks.json").read_text()); F = json.loads((ROOT/"results/plot_data/stream_spline_fit.json").read_text())
     fig, ax = plt.subplots(len(qs), 3, figsize=(20, 4.6*len(qs)), squeeze=False, sharex=True, constrained_layout=True)
     for i, q in enumerate(qs):
-        panel(q.split("_")[0] if q.startswith("dphi2") else q, S, R, F, ax[i], key=q)
+        panel(q.split("_")[0], S, R, F, ax[i], key=q)
     for a in ax[-1]:
         a.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Spline mixture model (track, width, stream fraction as splines in phi1; knots by AIC, dotted: track knots); black line: fitted track")

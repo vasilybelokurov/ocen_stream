@@ -109,8 +109,25 @@ def load(q, null_shift=0.):
     cu, cv = 0.5*(Eu[1:]+Eu[:-1]), 0.5*(Ev[1:]+Ev[:-1])
     from scipy.interpolate import RegularGridInterpolator
     bfun = RegularGridInterpolator((cu, cv), H, bounds_error=False, fill_value=None)
+    out = {}
+    if EXTENDED:
+        # background LEVEL fixed: per 1-deg phi1 row and 0.1 mas/yr v cell, counts in 1-deg dphi2 bands at 5 <= |y| < 14 (same
+        # other-PM mask, smoothed by 2 cells in v), quadratic in y (constant if one-sided), integrated over the row's sky window
+        # (median half-width) -> expected background counts in the on-window; lambda_b per (deg phi1 x mas/yr)
+        yv = x-skc; Eb = np.arange(-14, 14.01, 1.); cb = 0.5*(Eb[1:]+Eb[:-1]); offb2 = np.abs(cb) >= 5; sel2 = rng & pmm[other] & (np.abs(v) < c["W"])
+        H3 = np.histogramdd(np.column_stack((u[sel2], yv[sel2], v[sel2])), (Eu, Eb, Ev))[0]; Bt = np.zeros((len(Eu)-1, len(Ev)-1))
+        for j in range(len(Eu)-1):
+            Hj = gaussian_filter(H3[j], (0, 2.)); ob = offb2 & (H3[j].sum(1) > 0)
+            dg = 3 if ((ob & (cb < 0)).sum() >= 3 and (ob & (cb > 0)).sum() >= 3) else 1
+            coef = np.linalg.pinv(np.vander(cb[ob], dg))@Hj[ob]; kj = on & (u >= Eu[j]) & (u < Eu[j+1]); h = float(np.median(skh[kj])) if kj.any() else 3.
+            yy = np.linspace(-h, h, 41); Bt[j] = np.clip(np.vander(yy, dg)@coef, 0, None).mean(0)*(2*h)
+        lamg = Bt/((Eu[1]-Eu[0])*(Ev[1]-Ev[0]))
+        lfun = RegularGridInterpolator((cu, cv), lamg, bounds_error=False, fill_value=None)
+        ug = np.arange(c["lo"]+0.05, c["hi"], 0.1); jg = np.clip(np.digitize(ug, Eu)-1, 0, len(Eu)-2)
+        eg = np.array([np.median(S[q+"_error"][on & (u >= Eu[j]) & (u < Eu[j+1])]) if np.any(on & (u >= Eu[j]) & (u < Eu[j+1])) else 0.3 for j in jg])
+        out = dict(lam_b=np.clip(lfun(np.column_stack((u[on], v[on]))), 1e-3, None), ug=ug, eg=eg, n_bg_expected=float(Bt.sum()))
     return dict(u=u[on], v=v[on], e=S[q+"_error"][on], b=bfun(np.column_stack((u[on], v[on]))), bfun=bfun, q=q, W=c["W"], lo=c["lo"], hi=c["hi"],
-                n_off=int(off.sum()))
+                n_off=int(off.sum()), **out)
 
 
 # ------------------------------------------------------------------ model
@@ -130,6 +147,10 @@ class Model:
                 self.Bg = {k: torch.tensor(basis(kn, d["ug"])) for k, kn in self.knots.items()}
         else:
             self.lb = torch.log(torch.tensor(np.maximum(d["b"], 1e-12)))
+            self.ext = "lam_b" in d
+            if self.ext:                                              # PM extended: per-grid-point median errors for the integral
+                self.lam_b = torch.tensor(d["lam_b"]); self.ug = torch.tensor(d["ug"]); self.eg = torch.tensor(d["eg"])
+                self.Bg = {k: torch.tensor(basis(kn, d["ug"])) for k, kn in self.knots.items()}
 
     def sizes(self):
         return {k: len(v) for k, v in self.knots.items()}
@@ -161,8 +182,11 @@ class Model:
         if getattr(self, "ext", False):                              # extended: sum log(lambda_b + rate N) - integral of the stream rate
             L = torch.log(self.lam_b+torch.exp(fl+lg))
             mg, fg = self.Bg["m"]@P["m"], self.Bg["f"]@P["f"]; sg = self.width(self.Bg["s"]@P["s"])
-            gzg = torch.exp(-0.5*((self.vg[None, :]-mg[:, None])/sg[:, None])**2)/(sg[:, None]*np.sqrt(2*np.pi))
-            nint = torch.sum(torch.exp(fg)*torch.trapezoid(gzg*self.Ag, self.vg, dim=1))*0.1
+            if self.d["q"] == "dphi2":
+                gzg = torch.exp(-0.5*((self.vg[None, :]-mg[:, None])/sg[:, None])**2)/(sg[:, None]*np.sqrt(2*np.pi))
+                nint = torch.sum(torch.exp(fg)*torch.trapezoid(gzg*self.Ag, self.vg, dim=1))*0.1
+            else:
+                sgt = torch.sqrt(sg**2+self.eg**2); nint = torch.sum(torch.exp(fg)*(Phi((W-mg)/sgt)-Phi((-W-mg)/sgt)))*0.1
             return L if per_star else L.sum()-nint
         L = torch.logaddexp(torch.nn.functional.logsigmoid(fl)+lg-torch.log(torch.clamp(Z, 1e-12)), torch.nn.functional.logsigmoid(-fl)+lb)   # stable at f -> 0, 1
         return L if per_star else L.sum()
