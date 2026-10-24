@@ -112,7 +112,10 @@ def load(q, null_shift=0., skywin=SKYWIN):
                 # extended likelihood: background LEVEL fixed too. lambda_b = area-corrected band density per deg^2 at the star;
                 # stream rate integrated over a 0.1-deg phi1 grid with the observed-area map
                 cell = (Eu[1]-Eu[0])*(Ey[1]-Ey[0]); ug = np.arange(c["lo"]+0.05, c["hi"], 0.1); jg = np.clip(np.digitize(ug, Eu)-1, 0, len(Eu)-2)
-                out.update(lam_b=bq/cell, ug=ug, Ag=A[jg][:, jy], n_bg_expected=float(np.sum(np.clip(cf[jg]@np.vander(vg, 3).T, 0, None)*A[jg][:, jy])*(vg[1]-vg[0])*0.1/cell))
+                # stream integrals over the observed area minus the upper-branch hole (same exclusion as the stars)
+                vug = np.interp(ug, up[:, 0], up[:, 1], left=np.nan, right=np.nan)-np.interp(ug, G, R["sky_window"]["centre"])
+                hg = np.isfinite(vug)[:, None] & (np.abs(vg[None, :]-np.nan_to_num(vug)[:, None]) < 1.25) & ("--nohole" not in sys.argv)
+                out.update(lam_b=bq/cell, ug=ug, Ag=A[jg][:, jy]*~hg, n_bg_expected=float(np.sum(np.clip(cf[jg]@np.vander(vg, 3).T, 0, None)*A[jg][:, jy])*(vg[1]-vg[0])*0.1/cell))
         k2 = np.linspace(TWO_LO, TWO_HI, 4); fitu = np.polyfit(up[:, 0], up[:, 1], 1)                         # marked upper branch, linear
         out["m2_init"] = (np.polyval(fitu, k2)-np.interp(k2, G, R["sky_window"]["centre"])).tolist()
         return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None, Aw=Aw, vg=vg, **out,
@@ -370,6 +373,8 @@ def main():
                   f"lnL gain vs no stream: {hist[-1]['lnL']-float(M.lnl(torch.tensor(th)) if False else hist[0]['lnL']):.1f}", flush=True)
             continue
         d = load(q); M, th, hist = aic_search(d); C = M.cov(th); out = report(M, th, C, q)
+        if "--test" in sys.argv and EXTENDED:                            # simulate() draws mixture mocks (f = probability); extended f is a rate
+            sys.exit("--test does not support --extended: use stream_spline_sky_test.py (Poisson mocks)")
         if "--test" in sys.argv:                                         # recovery: refit synthetic data drawn from the fitted model
             zs = []
             for seed in (1, 2, 3):
