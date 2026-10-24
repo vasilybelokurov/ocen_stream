@@ -10,7 +10,7 @@ Per non-overlapping 3-deg phi1 window k (centre phi_k): extended Poisson likelih
 parameters c (track at phi_k), s (intrinsic width, bounded 0.1-4 deg), r (stream stars per deg); slope g FIXED to the gradient of
 the two-component main track at phi_k (a free slope is unconstrained in the weak windows: c ran to the window edge). Errors: inverse
 finite-difference Hessian. Poisson mocks drawn from the fitted model (+ fixed background) give the error calibration.
-Usage: PYTHONPATH=src python bin/streams/stream_sky_local.py [--strip 1.2] [--nmock 50]
+Usage: PYTHONPATH=src python bin/streams/stream_sky_local.py [--strip 1.2 | --strip 0 (no branch cut, suffix _nostrip)] [--nmock 50]
        -> results/plot_data/stream_sky_local.json, plots/stream_sky_local.png
 """
 import json, sys
@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 HW_STRIP = float(sys.argv[sys.argv.index("--strip")+1]) if "--strip" in sys.argv else 1.2
+SUF = "" if HW_STRIP > 0 else "_nostrip"                                        # --strip 0: no branch cut
 NMOCK = int(sys.argv[sys.argv.index("--nmock")+1]) if "--nmock" in sys.argv else 50
 sys.argv += ["--extended", "--W", "6", "--hi", "25", "--nohole"]          # stream_spline_fit reads its set-up from argv at import
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
@@ -103,7 +104,7 @@ def main():
         out.append(res)
     json.dump(dict(strip_hw=HW_STRIP, strip_phi1=STRIP, edges=EDGES.tolist(), smin=SMIN, smax=SMAX, windows=out,
                    note="v = dphi2 - sky-window centre (stream_masks.json); main band, branch strip removed; extended likelihood, fixed band background"),
-              open(ROOT/"results/plot_data/stream_sky_local.json", "w"), indent=1)
+              open(ROOT/f"results/plot_data/stream_sky_local{SUF}.json", "w"), indent=1)
     plot(d, out, m2)
 
 
@@ -140,7 +141,7 @@ def plot(d, out, m2):
         if a0 >= STRIP[0]-3:
             mm = m2(np.array([0.5*(a0+a1)]))[0]; a.axvspan(mm-HW_STRIP, mm+HW_STRIP, color="y", alpha=0.2)
         a.axhline(0, color="k", lw=0.4); a.set(title=f"phi1 {a0:.0f}-{a1:.0f}: c {r['c']:+.2f}, s {r['s']:.2f}, N {r['n_stars']}", xlabel="v [deg]")
-    fig.savefig(ROOT/"plots/stream_sky_local.png", dpi=85); print("plots/stream_sky_local.png")
+    fig.savefig(ROOT/f"plots/stream_sky_local{SUF}.png", dpi=85); print(f"plots/stream_sky_local{SUF}.png")
 
 
 if __name__ == "__main__":
