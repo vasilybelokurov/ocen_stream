@@ -26,7 +26,8 @@ torch.set_default_dtype(torch.float64)
 from scipy.interpolate import CubicSpline
 from scipy.ndimage import gaussian_filter
 
-CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=6.0, lo=0., hi=28.))
+CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=10.0, lo=0., hi=28.))   # sky window widened 6 -> 10 deg
+NG = 401                                                     # sky: integration grid in v over [-W, W]
 SQ2 = np.sqrt(2.)
 
 
@@ -59,8 +60,22 @@ def load(q, null_shift=0.):
         up = np.array(GX.MARK["upper"]); vu = np.interp(u, up[:, 0], up[:, 1], left=np.nan, right=np.nan)-skc
         hlo, hhi = np.where(np.isfinite(vu), vu-1.25, 0.), np.where(np.isfinite(vu), vu+1.25, 0.)
         on = sel & (np.abs(v) < c["W"]) & ~((v > hlo) & (v < hhi))
-        return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None,
-                    all=dict(u=u[sel], x=x[sel]))
+        # observed-area map A(phi1, y), y = dphi2 - centre: all footprint stars (GC masks applied), 0.5 deg x 0.25 deg cells,
+        # fraction = counts / robust quadratic (in y) fit to log counts per phi1 row, clipped to [0, 1]; footprint edges
+        # (|dphi2| < 15, b > 8) and GC-mask holes -> A < 1 (the background and stream normalisations integrate over A)
+        ua, xa = raw["phi1"].astype(float), raw["dphi2"].astype(float); ka = ~gc_masked(lg, raw["b"].astype(float)) & (ua >= c["lo"]) & (ua < c["hi"])
+        ya = xa[ka]-np.interp(ua[ka], G, R["sky_window"]["centre"]); Eu = np.arange(c["lo"], c["hi"]+1e-9, 0.5); Ey = np.arange(-c["W"], c["W"]+1e-9, 0.25)
+        Na = np.histogram2d(ua[ka], ya, (Eu, Ey))[0]; cy = 0.5*(Ey[1:]+Ey[:-1]); A = np.zeros_like(Na)
+        for j in range(Na.shape[0]):
+            ok = Na[j] > 0.5*np.median(Na[j][Na[j] > 0])
+            for _ in range(3):
+                cf = np.polyfit(cy[ok], np.log(Na[j][ok]), 2); r_ = np.log(np.maximum(Na[j], 1e-3))-np.polyval(cf, cy)
+                ok = (Na[j] > 0) & (r_ > -0.3)
+            A[j] = np.clip(Na[j]/np.exp(np.polyval(cf, cy)), 0, 1)
+        vg = np.linspace(-c["W"], c["W"], NG); ju = np.clip(np.digitize(u[on], Eu)-1, 0, len(Eu)-2); jy = np.clip(np.digitize(vg, Ey)-1, 0, len(Ey)-2)
+        Aw = A[ju][:, jy]*~((vg[None, :] > hlo[on][:, None]) & (vg[None, :] < hhi[on][:, None]))
+        return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None, Aw=Aw, vg=vg,
+                    area=dict(A=A, Eu=Eu, Ey=Ey), all=dict(u=u[sel], x=x[sel]))
     other = "pmdec" if q == "pmra" else "pmra"
     v = S[q]-ev(q)+null_shift; win = np.abs(x-skc) < skh; offb = (np.abs(x-skc) > 5) & (np.abs(x-skc) < 14)
     on = rng & pmm[other] & win & (np.abs(v) < c["W"]); off = rng & pmm[other] & offb & (np.abs(v) < c["W"])
@@ -81,8 +96,7 @@ class Model:
         self.B = {k: torch.tensor(basis(kn, d["u"])) for k, kn in self.knots.items()}
         self.v, self.e, self.W = torch.tensor(d["v"]), torch.tensor(d["e"]), d["W"]; self.smin = 0.1 if d["q"] == "dphi2" else 0.05
         if d["q"] == "dphi2":
-            self.hlo, self.hhi = torch.tensor(d["hlo"]), torch.tensor(d["hhi"]); self.vg = torch.linspace(-self.W, self.W, 241)
-            self.mask = ~((self.vg[None, :] > self.hlo[:, None]) & (self.vg[None, :] < self.hhi[:, None]))
+            self.vg = torch.tensor(d["vg"]); self.mask = torch.tensor(d["Aw"])          # observed-area weight x upper-branch hole
         else:
             self.lb = torch.log(torch.tensor(np.maximum(d["b"], 1e-12)))
 
@@ -101,8 +115,9 @@ class Model:
         sig = torch.sqrt(s**2+self.e**2); W = self.W
         lg = -0.5*((self.v-m)/sig)**2-torch.log(sig)-0.5*np.log(2*np.pi)
         Z = Phi((W-m)/sig)-Phi((-W-m)/sig)
-        if self.d["q"] == "dphi2":
-            Z = Z-(Phi((self.hhi-m)/sig)-Phi((self.hlo-m)/sig))
+        if self.d["q"] == "dphi2":                                   # normalisations over the observed area (numerical)
+            gz = torch.exp(-0.5*((self.vg[None, :]-m[:, None])/sig[:, None])**2)/(sig[:, None]*np.sqrt(2*np.pi))
+            Z = torch.trapezoid(gz*self.mask, self.vg, dim=1)
             a1, a2 = self.B["a1"]@P["a1"], self.B["a2"]@P["a2"]
             lbu = a1*self.v+a2*self.v**2
             gg = torch.exp(a1[:, None]*self.vg[None, :]+a2[:, None]*self.vg[None, :]**2)*self.mask
@@ -201,10 +216,11 @@ def simulate(d, M, th, seed=1):
     vg = np.linspace(-W, W, 801)
     if d["q"] == "dphi2":                                         # exp-polynomial background with the upper-branch hole
         P = M.unpack(torch.tensor(th)); a1 = (M.B["a1"]@P["a1"]).numpy(); a2 = (M.B["a2"]@P["a2"]).numpy()
-        pb = np.exp(a1[:, None]*vg[None, :]+a2[:, None]*vg[None, :]**2)*~((vg[None, :] > d["hlo"][:, None]) & (vg[None, :] < d["hhi"][:, None]))
-        hole = (vs > d["hlo"]) & (vs < d["hhi"])
-        while np.any(st & hole):
-            vs[st & hole] = c["m"][st & hole]+sig[st & hole]*rng.standard_normal((st & hole).sum()); hole = (vs > d["hlo"]) & (vs < d["hhi"]) | (np.abs(vs) >= W)
+        vg = d["vg"]; pb = np.exp(a1[:, None]*vg[None, :]+a2[:, None]*vg[None, :]**2)*d["Aw"]
+        acc = lambda vv: np.array([np.interp(a_, vg, w_) for a_, w_ in zip(vv, d["Aw"])])        # area acceptance of a stream draw
+        rej = st & ((np.abs(vs) >= W) | (rng.random(n) > acc(vs)))
+        while np.any(rej):
+            vs[rej] = c["m"][rej]+sig[rej]*rng.standard_normal(rej.sum()); rej = rej & ((np.abs(vs) >= W) | (rng.random(n) > acc(vs)))
     else:
         pb = d["bfun"](np.column_stack((np.repeat(u, 1)[:, None].repeat(len(vg), 1).ravel(), np.tile(vg, n)))).reshape(n, len(vg))
     cdf = np.cumsum(pb, 1); cdf /= cdf[:, -1:]; r = rng.random(n); vb = vg[np.argmax(cdf >= r[:, None], 1)]

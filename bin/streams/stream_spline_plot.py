@@ -73,6 +73,10 @@ def panel(q, S, R, F, axs):
         ha, hb = np.clip(lo_e, d["hlo"][:, None], d["hhi"][:, None]), np.clip(hi_e, d["hlo"][:, None], d["hhi"][:, None])
         mass -= ndtr((hb-m[:, None])/sig[:, None])-ndtr((ha-m[:, None])/sig[:, None])
     mass = np.clip(mass, 0, None)*(f/np.maximum(Z, 1e-9))[:, None]
+    if q == "dphi2":                                                  # observed-area weighted density on the fit grid, binned to pixels
+        vg = d["vg"]; gz = np.exp(-0.5*((vg[None, :]-m[:, None])/sig[:, None])**2)*d["Aw"]; gz /= np.maximum(np.trapezoid(gz, vg, axis=1), 1e-12)[:, None]
+        cum = np.concatenate((np.zeros((len(m), 1)), np.cumsum(0.5*(gz[:, 1:]+gz[:, :-1])*np.diff(vg)[None, :], 1)), 1)
+        mass = np.clip(np.array([np.interp(hi_e[i], vg, cum[i])-np.interp(lo_e[i], vg, cum[i]) for i in range(len(m))]), 0, None)*f[:, None]
     np.add.at(Smod, ju, mass)
     inside = np.zeros_like(H, bool)
     for j, cc in enumerate(c1):
