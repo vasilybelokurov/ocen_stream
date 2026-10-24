@@ -16,7 +16,8 @@ Model, measured like the data:
   errors: sd over NBOOT particle bootstraps.
 Score: chi2 = sum over sky c, s (independent windows) + PM tracks ((d - m)^T (C_d + C_m)^-1 (d - m), per PM); no free nuisance.
 Usage: PYTHONPATH=src python bin/streams/stream_model_compare.py FILE.npz [FILE.npz ...] [--tag NAME]
-       -> results/plot_data/stream_model_compare{_tag}.json, plots/stream_model_compare{_tag}.png (+ _maps.png)
+       -> results/plot_data/stream_model_compare{_tag}.json, plots/stream_model_compare{_tag}.png,
+       plots/stream_model_compare_<model>.png (data | model | residual: sky, mu_ra*, mu_de)
 """
 import json, sys
 from pathlib import Path
@@ -65,7 +66,7 @@ class Obs:
         j = np.searchsorted(np.sort(s.err_u), u); o = np.argsort(s.err_u)                 # errors of a data star at a similar phi1
         j = np.clip(j+rng.integers(-50, 50, u.size), 0, len(o)-1); e = s.err[o[j]]
         for i, p in enumerate(("pmra", "pmdec")):
-            obs = P[p]+e[:, i]*rng.standard_normal(u.size)
+            obs = P[p]+e[:, i]*rng.standard_normal(u.size); P["o_"+p] = obs                       # observed PM (with Gaia errors)
             P["m_"+p] = np.abs(obs-s.ev(p, u)) < 2*np.sqrt(s.ev(p, u, "s")**2+e[:, i]**2)
         P["v"] = x-np.interp(u, s.G, s.R["sky_window"]["centre"]); P["inwin"] = np.abs(P["v"]) < np.interp(u, s.G, s.R["sky_window"]["half_width"])
         return P
@@ -153,24 +154,68 @@ def plot(D, O, Ms):
         a.set(xlabel=r"$\phi_1$ (sky: window centre; PM: spline knot) [deg]", ylabel=lab); a.legend(fontsize=7); a.axhline(0, color="k", lw=0.3)
     fig.suptitle("Data (local sky fits, PM splines) vs models measured the same way; chi2 per observable; sky 7 windows (phi1 6-9 dropped), PMs at the spline knots")
     fig.savefig(ROOT/f"plots/stream_model_compare{TAG}.png", dpi=85); print(f"plots/stream_model_compare{TAG}.png")
-    # sky maps: data - background | each model's observed density (scaled to the data's stream count per window) | residual
-    d = O.d; E1, Ey = np.arange(0, 24.01, 0.5), np.arange(-6, 6.01, 0.25); H = np.histogram2d(d["u"], d["v"], (E1, Ey))[0]
-    jr = np.clip(np.digitize(0.5*(E1[1:]+E1[:-1]), d["area"]["Eu"])-1, 0, len(d["area"]["Eu"])-2); cy = 0.5*(Ey[1:]+Ey[:-1])
+    for M in Ms:
+        model_maps(O, M)
+
+
+ROWS = dict(pmra=(np.arange(-28, 4.01, 0.25), r"$\mu_{\alpha*}$ [mas/yr]"), pmdec=(np.arange(-18, 2.01, 0.25), r"$\mu_\delta$ [mas/yr]"))
+
+
+def pm_data(O, S, q):
+    """data PM histogram in the frozen sky window (other PM mask) and the display background of stream_spline_plot.py
+    (per phi1 column: quadratic in dphi2 - centre through 1-deg bands at 5-14 deg, integrated over the column's window)."""
+    u, x = S["phi1"], S["dphi2"]; G, R = O.G, O.R; skc, skh = np.interp(u, G, R["sky_window"]["centre"]), np.interp(u, G, R["sky_window"]["half_width"])
+    other = "pmdec" if q == "pmra" else "pmra"; sel = np.abs(S[other]-O.ev(other, u)) < 2*np.sqrt(O.ev(other, u, "s")**2+S[other+"_error"]**2)
+    Ey = ROWS[q][0]; E1 = np.arange(-2, 28.01, 1.); yv = x-skc; on = sel & (np.abs(yv) < skh); H = np.histogram2d(u[on], S[q][on], (E1, Ey))[0]
+    Eb = np.arange(-14, 14.01, 1.); cb = 0.5*(Eb[1:]+Eb[:-1]); offb = np.abs(cb) >= 5; c1 = 0.5*(E1[1:]+E1[:-1])
+    H3 = np.histogramdd(np.column_stack((u[sel], yv[sel], S[q][sel])), (E1, Eb, Ey))[0]; B = np.zeros_like(H)
+    for j in range(len(c1)):
+        ob = offb & (H3[j].sum(1) > 0)
+        if ob.sum() < 6:
+            continue
+        dg = 3 if ((ob & (cb < 0)).sum() >= 3 and (ob & (cb > 0)).sum() >= 3) else 1; coef = np.linalg.pinv(np.vander(cb[ob], dg))@H3[j, ob, :]
+        kc = (u >= E1[j]) & (u < E1[j+1]); h = float(np.median(skh[kc])) if kc.any() else 3.
+        B[j] = np.clip(np.vander(np.linspace(-h, h, 41), dg)@coef, 0, None).mean(0)*(2*h)
+    return E1, Ey, H, B
+
+
+def model_maps(O, M):
+    """data - background | model | residual for sky, mu_ra*, mu_de; model = observed particles (Gaia errors, same masks), scaled per
+    phi1 column (PMs) or window (sky) to the data excess inside the fit window; all panels in units of sqrt(B)."""
+    if not hasattr(O, "S"):
+        from stream_spline_plot import catalogue
+        O.S = catalogue()
+    P = M["P"]; D = J("stream_spline_fit"); fig, ax = plt.subplots(3, 3, figsize=(19, 11), constrained_layout=True)
+    sm = lambda A_: gaussian_filter(A_, 1.)
+    # sky
+    d = O.d; E1, Ey = np.arange(0, 24.01, 0.5), np.arange(-6, 6.01, 0.25); H = np.histogram2d(d["u"], d["v"], (E1, Ey))[0]; c1 = 0.5*(E1[1:]+E1[:-1])
+    jr = np.clip(np.digitize(c1, d["area"]["Eu"])-1, 0, len(d["area"]["Eu"])-2); cy = 0.5*(Ey[1:]+Ey[:-1])
     cell = (d["area"]["Eu"][1]-d["area"]["Eu"][0])*(d["area"]["Ey"][1]-d["area"]["Ey"][0]); jy = np.clip(np.digitize(cy, d["area"]["Ey"])-1, 0, len(d["area"]["Ey"])-2)
-    A = d["area"]["A"][jr][:, jy]; B = np.clip(d["bg_coef"][jr]@np.vander(cy, 3).T, 0, None)/cell*A*0.5*0.25; sb = np.sqrt(np.maximum(B, 1)); X = H-B
-    fig, ax = plt.subplots(len(Ms), 3, figsize=(19, 3.6*len(Ms)), sharex=True, sharey=True, constrained_layout=True, squeeze=False)
-    for i, M in enumerate(Ms):
-        P = M["P"]; k = P["m_pmra"] & P["m_pmdec"]; Hm = np.histogram2d(P["u"][k], P["v"][k], (E1, Ey))[0]*A; Sm = np.zeros_like(Hm)
-        for wd in O.L["windows"]:
-            jj = (0.5*(E1[1:]+E1[:-1]) >= wd["phi1"][0]) & (0.5*(E1[1:]+E1[:-1]) < wd["phi1"][1]); tot = Hm[jj].sum()
-            Sm[jj] = Hm[jj]/tot*wd["r"]*(wd["phi1"][1]-wd["phi1"][0]) if tot > 0 else 0.
-        for a, im, t in zip(ax[i], (X/sb, Sm/sb, (X-Sm)/sb), ("data - background", f"model {Path(M['file']).stem} (scaled per window)", "residual")):
-            a.imshow(gaussian_filter(im, 1.).T, origin="lower", aspect="auto", cmap="RdBu_r", vmin=-3, vmax=3, extent=(0, 24, -6, 6))
-            a.plot(pk, D["sky_c"], "ko", ms=3); a.plot(pk, M["sky_c"], "s", color="C1", ms=3); a.set(title=t+f"  (total chi2 {M['chi2']['total']:.0f})" if t == "residual" else t)
-        ax[i, 0].set_ylabel("v [deg]")
-    for a in ax[-1]:
-        a.set_xlabel(r"$\phi_1$ [deg]")
-    fig.savefig(ROOT/f"plots/stream_model_compare{TAG}_maps.png", dpi=80); print(f"plots/stream_model_compare{TAG}_maps.png")
+    A = d["area"]["A"][jr][:, jy]; B = np.clip(d["bg_coef"][jr]@np.vander(cy, 3).T, 0, None)/cell*A*0.5*0.25; X = H-B
+    k = P["m_pmra"] & P["m_pmdec"]; Hm = np.histogram2d(P["u"][k], P["v"][k], (E1, Ey))[0]*A; Sm = np.zeros_like(Hm)
+    for wd in O.L["windows"]:
+        jj = (c1 >= wd["phi1"][0]) & (c1 < wd["phi1"][1]); tot = Hm[jj].sum(); Sm[jj] = Hm[jj]/tot*wd["r"]*(wd["phi1"][1]-wd["phi1"][0]) if tot > 0 else 0.
+    sb = np.sqrt(np.maximum(B, 1)); rows = [("sky", E1, Ey, X/sb, Sm/sb, (X-Sm)/sb, "v = $\\Delta\\phi_2$ - centre [deg]", (0, 24))]
+    # PMs
+    for q in ("pmra", "pmdec"):
+        E1, Ey, H, B = pm_data(O, O.S, q); c1 = 0.5*(E1[1:]+E1[:-1]); cy = 0.5*(Ey[1:]+Ey[:-1]); W = D[q]["window"]
+        ins = np.abs(cy[None, :]-O.ev(q, c1)[:, None]) < W; oth = "pmdec" if q == "pmra" else "pmra"; k = P["inwin"] & P["m_"+oth]
+        Hm = np.histogram2d(P["u"][k], P["o_"+q][k], (E1, Ey))[0]*ins; X = H-B; Sm = np.zeros_like(Hm)
+        for j in range(len(c1)):
+            tot = Hm[j].sum(); Sm[j] = Hm[j]/tot*max((X[j]*ins[j]).sum(), 0.) if tot > 0 else 0.
+        sb = np.sqrt(np.maximum(B, 1)); nan = lambda A_: np.where(ins, A_, np.nan)
+        rows.append((q, E1, Ey, X/sb, nan(Sm/sb), nan((X-Sm)/sb), ROWS[q][1], (-2, 28)))
+    for i, (q, E1, Ey, Xd, Sd, Rd, lab, xl) in enumerate(rows):
+        for jx, (im, t) in enumerate(((Xd, "data - background"), (Sd, "model (observed, scaled)"), (Rd, "residual"))):
+            cm = plt.get_cmap("RdBu_r").copy(); cm.set_bad("0.92"); a = ax[i, jx]
+            a.imshow(sm(np.nan_to_num(im)).T if jx == 0 else np.where(np.isnan(im), np.nan, sm(np.nan_to_num(im))).T, origin="lower", aspect="auto", cmap=cm,
+                     vmin=-3 if q == "sky" else -4, vmax=3 if q == "sky" else 4, extent=(E1[0], E1[-1], Ey[0], Ey[-1]))
+            a.set(xlim=xl, ylabel=lab, title=f"{q}: {t}", xlabel=r"$\phi_1$ [deg]")
+            if q != "sky":
+                g = np.linspace(-2, 28, 301); a.plot(g, O.ev(q, g), "k:", lw=0.6)
+    c = M["chi2"]; fig.suptitle(f"{Path(M['file']).stem}: data | model | residual (units of sqrt(B)); chi2 sky track {c['sky_c']:.0f}, width {c['sky_s']:.0f}, "
+                                f"pmra {c['pmra']:.0f}, pmdec {c['pmdec']:.0f}, total {c['total']:.0f}; dotted: frozen PM track")
+    out = ROOT/f"plots/stream_model_compare_{Path(M['file']).stem}.png"; fig.savefig(out, dpi=80); print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":
