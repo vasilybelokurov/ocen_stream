@@ -89,34 +89,44 @@ def panel(q, S, R, F, axs, key=None):
         Smod = np.zeros_like(H); ug, Ag, vg = d["ug"], d["Ag"], d["vg"]; Pg = M.unpack(torch.tensor(th))
         mg = (M.Bg["m"]@Pg["m"]).numpy(); sgg = M.width((M.Bg["s"]@Pg["s"]).numpy()); rg = np.exp((M.Bg["f"]@Pg["f"]).numpy())
         ctg = np.interp(ug, G, R["sky_window"]["centre"]); jg = np.clip(np.digitize(ug, E1)-1, 0, len(c1)-1)
-        gz = np.exp(-0.5*((vg[None, :]-mg[:, None])/sgg[:, None])**2)/(sgg[:, None]*np.sqrt(2*np.pi))*Ag*rg[:, None]*0.1
-        if "m2" in M.knots:                                               # + upper branch
+        gzs = [np.exp(-0.5*((vg[None, :]-mg[:, None])/sgg[:, None])**2)/(sgg[:, None]*np.sqrt(2*np.pi))*Ag*rg[:, None]*0.1]
+        if "m2" in M.knots:                                               # + upper branch (kept separately for --components)
             m2g, s2g, r2g = (M.Bg["m2"]@Pg["m2"]).numpy(), M.width((M.Bg["s2"]@Pg["s2"]).numpy()), np.exp((M.Bg["f2"]@Pg["f2"]).numpy())*M.tapg.numpy()
-            gz = gz+np.exp(-0.5*((vg[None, :]-m2g[:, None])/s2g[:, None])**2)/(s2g[:, None]*np.sqrt(2*np.pi))*Ag*r2g[:, None]*0.1
-        cum = np.concatenate((np.zeros((len(ug), 1)), np.cumsum(0.5*(gz[:, 1:]+gz[:, :-1])*np.diff(vg)[None, :], 1)), 1)
-        for i in range(len(ug)):
-            Smod[jg[i]] += np.interp(Ey[1:]-ctg[i], vg, cum[i])-np.interp(Ey[:-1]-ctg[i], vg, cum[i])
+            gzs.append(np.exp(-0.5*((vg[None, :]-m2g[:, None])/s2g[:, None])**2)/(s2g[:, None]*np.sqrt(2*np.pi))*Ag*r2g[:, None]*0.1)
+            tr2 = (ug, ctg+m2g, r2g > 1.)
+        comps = []
+        for gz in gzs:
+            Sc = np.zeros_like(H); cum = np.concatenate((np.zeros((len(ug), 1)), np.cumsum(0.5*(gz[:, 1:]+gz[:, :-1])*np.diff(vg)[None, :], 1)), 1)
+            for i in range(len(ug)):
+                Sc[jg[i]] += np.interp(Ey[1:]-ctg[i], vg, cum[i])-np.interp(Ey[:-1]-ctg[i], vg, cum[i])
+            comps.append(Sc)
+        Smod = sum(comps)
     else:
         np.add.at(Smod, ju, mass)
     inside = np.zeros_like(H, bool)
     for j, cc in enumerate(c1):
         if d["lo"] <= cc < d["hi"]:
             cj = np.interp(cc, G, R["sky_window"]["centre"] if q == "dphi2" else R["tracks"][q]["c"]); inside[j] = np.abs(cy-cj) < W
-    X = H-B; Rz = np.where(inside, X-Smod, np.nan); Sm = np.where(inside, Smod, np.nan)
+    X = H-B; Rz = np.where(inside, X-Smod, np.nan); Sm = np.where(inside, Smod, np.nan); titles = ("data excess", "model (stream component)", "residual (data - background - model)")
     if q == "dphi2":
         Xs = gaussian_filter(X, 1.); norm = np.clip(Xs, 0, None).sum(1, keepdims=True); norm[norm == 0] = 1
-        imgs = (Xs/norm, gaussian_filter(np.nan_to_num(Sm), 1.)/norm, gaussian_filter(np.nan_to_num(Rz), 1.)/norm); vm = 0.08
-        imgs = (imgs[0], np.where(inside, imgs[1], np.nan), np.where(inside, imgs[2], np.nan))
+        nz = lambda A_: np.where(inside, gaussian_filter(np.nan_to_num(np.where(inside, A_, np.nan)), 1.)/norm, np.nan)
+        imgs = (Xs/norm, nz(Smod), nz(X-Smod)); vm = 0.08
+        if len(axs) == 4 and len(comps) == 2:
+            imgs = (Xs/norm, nz(comps[0]), nz(comps[1]), nz(X-Smod))
+            titles = ("data excess", "model: main stream", "model: upper branch", "residual (data - background - both)")
     else:
         sb = np.sqrt(np.maximum(B, 1)); imgs = (gaussian_filter(X/sb, 1.), np.where(inside, gaussian_filter(np.nan_to_num(Sm)/sb, 1.), np.nan),
                                                   np.where(inside, gaussian_filter(np.nan_to_num(Rz)/sb, 1.), np.nan)); vm = 4
     ext = (E1[0], E1[-1], Ey[0], Ey[-1]); Gf = np.array(F[key]["grid"]); trk = (np.interp(Gf, G, R["sky_window"]["centre"] if q == "dphi2" else R["tracks"][q]["c"])+np.array(F[key]["m"]))
-    for a, im, tl in zip(axs, imgs, ("data excess", "model (stream component)", "residual (data - background - model)")):
+    for a, im, tl in zip(axs, imgs, titles):
         cm = plt.get_cmap("RdBu_r").copy(); cm.set_bad("0.92")
         a.imshow(np.asarray(im).T, origin="lower", aspect="auto", cmap=cm, vmin=-vm, vmax=vm, extent=ext)
         a.set(ylabel=lab, title=f"{key}: {tl}"); a.plot(Gf, trk, "k-", lw=0.6, alpha=0.5)
         for k_ in fit["m"]["knots"]:
             a.axvline(k_, color="k", lw=0.4, ls=":")
+        if "m2" in fit and q == "dphi2" and getattr(M, "ext", False):
+            a.plot(tr2[0][tr2[2]], tr2[1][tr2[2]], "k--", lw=0.6, alpha=0.6)
     inn = inside & np.isfinite(Rz); chi = (Rz/np.sqrt(np.maximum(B+np.clip(Smod, 0, None), 1)))[inn]
     print(f"{q}: residual (N - B - S)/sqrt(B + S) inside the fit region: mean {chi.mean():+.3f}, sd {chi.std():.3f}, n pixels {chi.size}; "
           f"total data excess {X[inside].sum():.0f}, model {Smod[inside].sum():.0f}", flush=True)
@@ -126,13 +136,14 @@ def main():
     keys = sys.argv[sys.argv.index("--keys")+1].split(",") if "--keys" in sys.argv else None
     qs = keys or ([sys.argv[sys.argv.index("--q")+1]] if "--q" in sys.argv else ["dphi2", "pmra", "pmdec"])
     S = catalogue(); R = json.loads((ROOT/"results/plot_data/stream_masks.json").read_text()); F = json.loads((ROOT/"results/plot_data/stream_spline_fit.json").read_text())
-    fig, ax = plt.subplots(len(qs), 3, figsize=(20, 4.6*len(qs)), squeeze=False, sharex=True, constrained_layout=True)
+    nc = 4 if "--components" in sys.argv else 3
+    fig, ax = plt.subplots(len(qs), nc, figsize=(6.7*nc, 4.6*len(qs)), squeeze=False, sharex=True, constrained_layout=True)
     for i, q in enumerate(qs):
         panel(q.split("_")[0], S, R, F, ax[i], key=q)
     for a in ax[-1]:
         a.set_xlabel(r"$\phi_1$ [deg]")
     fig.suptitle("Spline mixture model (track, width, stream fraction as splines in phi1; knots by AIC, dotted: track knots); black line: fitted track")
-    out = ROOT/f"plots/stream_spline_{(qs[0] if len(qs) == 1 else 'all') if not keys else '_'.join(keys)}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
+    out = ROOT/f"plots/stream_spline_{(qs[0] if len(qs) == 1 else 'all') if not keys else '_'.join(keys)}{'_components' if nc == 4 else ''}.png"; fig.savefig(out, dpi=95); print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":
