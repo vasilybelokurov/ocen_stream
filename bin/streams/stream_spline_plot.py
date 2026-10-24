@@ -90,6 +90,9 @@ def panel(q, S, R, F, axs, key=None):
         mg = (M.Bg["m"]@Pg["m"]).numpy(); sgg = M.width((M.Bg["s"]@Pg["s"]).numpy()); rg = np.exp((M.Bg["f"]@Pg["f"]).numpy())
         ctg = np.interp(ug, G, R["sky_window"]["centre"]); jg = np.clip(np.digitize(ug, E1)-1, 0, len(c1)-1)
         gz = np.exp(-0.5*((vg[None, :]-mg[:, None])/sgg[:, None])**2)/(sgg[:, None]*np.sqrt(2*np.pi))*Ag*rg[:, None]*0.1
+        if "m2" in M.knots:                                               # + upper branch
+            m2g, s2g, r2g = (M.Bg["m2"]@Pg["m2"]).numpy(), M.width((M.Bg["s2"]@Pg["s2"]).numpy()), np.exp((M.Bg["f2"]@Pg["f2"]).numpy())*M.tapg.numpy()
+            gz = gz+np.exp(-0.5*((vg[None, :]-m2g[:, None])/s2g[:, None])**2)/(s2g[:, None]*np.sqrt(2*np.pi))*Ag*r2g[:, None]*0.1
         cum = np.concatenate((np.zeros((len(ug), 1)), np.cumsum(0.5*(gz[:, 1:]+gz[:, :-1])*np.diff(vg)[None, :], 1)), 1)
         for i in range(len(ug)):
             Smod[jg[i]] += np.interp(Ey[1:]-ctg[i], vg, cum[i])-np.interp(Ey[:-1]-ctg[i], vg, cum[i])

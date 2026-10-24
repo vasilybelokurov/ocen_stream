@@ -30,8 +30,10 @@ W_SKY = float(sys.argv[sys.argv.index("--W")+1]) if "--W" in sys.argv else 7.0  
 SMAX = float(sys.argv[sys.argv.index("--smax")+1]) if "--smax" in sys.argv else None     # optional cap on the intrinsic width
 EXTENDED = "--extended" in sys.argv                                                     # sky: extended likelihood, background level fixed
 BGFIXED = "--bgfixed" in sys.argv or EXTENDED                                                       # sky: fixed empirical background
+TWO = "--two" in sys.argv                                  # sky: second stream component (upper branch), phi1 TWO_LO..TWO_HI
+TWO_LO, TWO_HI = 10., 23.
 TAG = sys.argv[sys.argv.index("--tag")+1] if "--tag" in sys.argv else ""                  # result key suffix (variants)
-CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=W_SKY, lo=0., hi=28.))  # sky window (default +-7 deg; 6 and 10 tried)
+CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=W_SKY, lo=0., hi=float(sys.argv[sys.argv.index("--hi")+1]) if "--hi" in sys.argv else 28.))  # sky window (default +-7 deg; 6 and 10 tried)
 NG = 281                                                     # sky: integration grid in v over [-W, W]
 SQ2 = np.sqrt(2.)
 
@@ -98,6 +100,8 @@ def load(q, null_shift=0.):
                 # stream rate integrated over a 0.1-deg phi1 grid with the observed-area map
                 cell = (Eu[1]-Eu[0])*(Ey[1]-Ey[0]); ug = np.arange(c["lo"]+0.05, c["hi"], 0.1); jg = np.clip(np.digitize(ug, Eu)-1, 0, len(Eu)-2)
                 out.update(lam_b=bq/cell, ug=ug, Ag=A[jg][:, jy], n_bg_expected=float(np.sum(np.clip(cf[jg]@np.vander(vg, 3).T, 0, None)*A[jg][:, jy])*(vg[1]-vg[0])*0.1/cell))
+        k2 = np.linspace(TWO_LO, TWO_HI, 4); fitu = np.polyfit(up[:, 0], up[:, 1], 1)                         # marked upper branch, linear
+        out["m2_init"] = (np.polyval(fitu, k2)-np.interp(k2, G, R["sky_window"]["centre"])).tolist()
         return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None, Aw=Aw, vg=vg, **out,
                     area=dict(A=A, Eu=Eu, Ey=Ey), all=dict(u=u[sel], x=x[sel]))
     other = "pmdec" if q == "pmra" else "pmra"
@@ -145,6 +149,8 @@ class Model:
             if self.ext:
                 self.lam_b = torch.tensor(d["lam_b"]); self.ug = torch.tensor(d["ug"]); self.Ag = torch.tensor(d["Ag"])
                 self.Bg = {k: torch.tensor(basis(kn, d["ug"])) for k, kn in self.knots.items()}
+                tp = lambda x_: 1/(1+np.exp(-(x_-TWO_LO)/0.3))/(1+np.exp((x_-TWO_HI)/0.3))
+                self.tap, self.tapg = torch.tensor(tp(d["u"])), torch.tensor(tp(d["ug"]))
         else:
             self.lb = torch.log(torch.tensor(np.maximum(d["b"], 1e-12)))
             self.ext = "lam_b" in d
@@ -180,14 +186,21 @@ class Model:
         else:
             lb = self.lb
         if getattr(self, "ext", False):                              # extended: sum log(lambda_b + rate N) - integral of the stream rate
-            L = torch.log(self.lam_b+torch.exp(fl+lg))
+            lam = self.lam_b+torch.exp(fl+lg); nint2 = 0.
+            if "m2" in self.knots:                                    # upper branch: rate x logistic taper to TWO_LO..TWO_HI
+                m2, s2, f2 = self.B["m2"]@P["m2"], self.width(self.B["s2"]@P["s2"]), self.B["f2"]@P["f2"]
+                lam = lam+torch.exp(f2-0.5*((self.v-m2)/s2)**2-torch.log(s2)-0.5*np.log(2*np.pi))*self.tap
+                m2g, s2g, f2g = self.Bg["m2"]@P["m2"], self.width(self.Bg["s2"]@P["s2"]), self.Bg["f2"]@P["f2"]
+                g2 = torch.exp(-0.5*((self.vg[None, :]-m2g[:, None])/s2g[:, None])**2)/(s2g[:, None]*np.sqrt(2*np.pi))
+                nint2 = torch.sum(torch.exp(f2g)*self.tapg*torch.trapezoid(g2*self.Ag, self.vg, dim=1))*0.1
+            L = torch.log(lam)
             mg, fg = self.Bg["m"]@P["m"], self.Bg["f"]@P["f"]; sg = self.width(self.Bg["s"]@P["s"])
             if self.d["q"] == "dphi2":
                 gzg = torch.exp(-0.5*((self.vg[None, :]-mg[:, None])/sg[:, None])**2)/(sg[:, None]*np.sqrt(2*np.pi))
                 nint = torch.sum(torch.exp(fg)*torch.trapezoid(gzg*self.Ag, self.vg, dim=1))*0.1
             else:
                 sgt = torch.sqrt(sg**2+self.eg**2); nint = torch.sum(torch.exp(fg)*(Phi((W-mg)/sgt)-Phi((-W-mg)/sgt)))*0.1
-            return L if per_star else L.sum()-nint
+            return L if per_star else L.sum()-nint-nint2
         L = torch.logaddexp(torch.nn.functional.logsigmoid(fl)+lg-torch.log(torch.clamp(Z, 1e-12)), torch.nn.functional.logsigmoid(-fl)+lb)   # stable at f -> 0, 1
         return L if per_star else L.sum()
 
@@ -239,13 +252,16 @@ def init_theta(M, prev=None):
             pm, pth = prev; P = pm.unpack(torch.tensor(pth)); th.append(basis(pm.knots[k], kn)@P[k].numpy())
         else:
             th.append({"m": np.zeros(len(kn)), "s": np.full(len(kn), np.log(0.1*M.W)), "f": np.full(len(kn), np.log(20.) if getattr(M, "ext", False) else -3.),
-                       "a1": np.zeros(len(kn)), "a2": np.zeros(len(kn))}[k])
+                       "a1": np.zeros(len(kn)), "a2": np.zeros(len(kn)), "m2": np.array(M.d.get("m2_init", np.zeros(len(kn)))),
+                       "s2": np.full(len(kn), np.log(0.6)), "f2": np.full(len(kn), np.log(8.))}[k])
     return np.concatenate(th)
 
 
 def aic_search(d, verbose=True, min_sep=1.0, max_steps=25):
     """Greedy AIC knot insertion (Erkal+2017 Sec. 3.3) for the splines m, s, f (background splines fixed)."""
     knots = {k: start_knots(d["lo"], d["hi"]) for k in ("m", "s", "f")}
+    if TWO and d["q"] == "dphi2":                                    # upper branch: 4 fixed knots over TWO_LO..TWO_HI (not searched)
+        k2 = list(np.linspace(TWO_LO, TWO_HI, 4)); knots |= dict(m2=k2, s2=k2, f2=k2)
     if d["q"] == "dphi2" and "lb" not in d:
         nb = int(sys.argv[sys.argv.index("--bgknots")+1]) if "--bgknots" in sys.argv else 3   # background spline knots (fixed, equally spaced)
         knots |= dict(a1=start_knots(d["lo"], d["hi"], nb), a2=start_knots(d["lo"], d["hi"], nb))
