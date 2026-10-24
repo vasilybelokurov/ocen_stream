@@ -257,8 +257,12 @@ def init_theta(M, prev=None):
     return np.concatenate(th)
 
 
-def aic_search(d, verbose=True, min_sep=1.0, max_steps=25):
+MINSEP = float(sys.argv[sys.argv.index("--minsep")+1]) if "--minsep" in sys.argv else 1.0   # minimum knot spacing [deg]
+
+
+def aic_search(d, verbose=True, min_sep=None, max_steps=25):
     """Greedy AIC knot insertion (Erkal+2017 Sec. 3.3) for the splines m, s, f (background splines fixed)."""
+    min_sep = MINSEP if min_sep is None else min_sep
     knots = {k: start_knots(d["lo"], d["hi"]) for k in ("m", "s", "f")}
     if TWO and d["q"] == "dphi2":                                    # upper branch: 4 fixed knots over TWO_LO..TWO_HI (not searched)
         k2 = list(np.linspace(TWO_LO, TWO_HI, 4)); knots |= dict(m2=k2, s2=k2, f2=k2)
