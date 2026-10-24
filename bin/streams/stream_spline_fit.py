@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+"""Spline mixture model of the omega Cen stream along phi1 (Erkal, Koposov & Belokurov 2017, MNRAS 470, 60, Sec. 3.3:
+https://ui.adsabs.harvard.edu/abs/2017MNRAS.470...60E -- knots placed greedily by AIC; Koposov et al. 2023, MNRAS 521, 4936:
+https://ui.adsabs.harvard.edu/abs/2023MNRAS.521.4936K -- measurements at spline knots for the dynamical fit). 2026-10-24.
+
+Per observable q in (dphi2, pmra, pmdec), unbinned, all stars at once:
+  data   : stars passing the CMD mask and the OTHER two frozen masks (results/plot_data/stream_masks.json, k = 2; PM fits: sky
+           window |dphi2 - centre| < half-width; sky fit: both PM masks); v = q - frozen track(phi1); window |v| < W.
+  model  : p(v | phi1) = f(phi1) N_D(v; m(phi1), s(phi1)^2 + e_i^2) + (1 - f(phi1)) b(v | phi1), both normalised over the
+           star's domain D (window, minus the upper-branch hole for the sky fit); m, log s, logit f = natural cubic splines.
+  b      : PMs -- empirical: off-sky stars (5 < |dphi2 - centre| < 14, same other mask), 2-D histogram in (phi1, v) smoothed,
+           normalised per phi1; sky -- exp(a1(phi1) v + a2(phi1) v^2) normalised numerically (a1, a2 splines, fixed knots).
+  knots  : start 4 per spline (ends and thirds); candidates at 25/50/75% of every interval of every spline, refitted (warm start);
+           the best is kept if AIC = 2k - 2 lnL decreases; stop otherwise (minimum spacing 1 deg).
+  errors : covariance = inverse Hessian of -lnL at the maximum (torch autograd).
+Outputs: results/plot_data/stream_spline_fit.json (knots, values, covariance, AIC history), plots/stream_spline_fit.png
+(data | model stream | residual, the cross-selection panels).
+Usage: PYTHONPATH=src python bin/streams/stream_spline_fit.py [--q pmdec] [--test] [--null]
+"""
+import json, sys, time
+from pathlib import Path
+import numpy as np
+import torch
+ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
+torch.set_default_dtype(torch.float64)
+from scipy.interpolate import CubicSpline
+from scipy.ndimage import gaussian_filter
+
+CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=6.0, lo=0., hi=28.))
+SQ2 = np.sqrt(2.)
+
+
+def basis(knots, x):
+    """natural cubic spline basis (len(x), len(knots)); x clipped to the knot range (constant extrapolation)."""
+    knots = np.asarray(knots, float); xc = np.clip(x, knots[0], knots[-1]); I = np.eye(len(knots))
+    if len(knots) == 2:
+        t = (xc-knots[0])/(knots[1]-knots[0]); return np.column_stack((1-t, t))
+    return np.column_stack([CubicSpline(knots, I[j], bc_type="natural")(xc) for j in range(len(knots))])
+
+
+def Phi(z):
+    return 0.5*(1+torch.erf(z/SQ2))
+
+
+# ------------------------------------------------------------------ data
+def load(q, null_shift=0.):
+    from gaia_cmd_mask import cmd_pass
+    from gaia_footprint_plots import gc_masked
+    import gaia_xsel_marked as GX
+    raw = dict(np.load(ROOT/"results/streams/gaia_footprint_dr3.npz")); lg = np.where(raw["l"] > 180, raw["l"]-360, raw["l"]).astype(float)
+    keep = cmd_pass(2.0) & ~gc_masked(lg, raw["b"].astype(float)); S = {k: v[keep].astype(float) for k, v in raw.items() if v.dtype.kind == "f"}
+    R = json.loads((ROOT/"results/plot_data/stream_masks.json").read_text()); G = np.array(R["grid"])
+    u, x = S["phi1"], S["dphi2"]; ev = lambda p, key="c": np.interp(u, G, R["tracks"][p][key])
+    skc, skh = np.interp(u, G, R["sky_window"]["centre"]), np.interp(u, G, R["sky_window"]["half_width"])
+    pmm = {p: np.abs(S[p]-ev(p)) < 2*np.sqrt(ev(p, "s")**2+S[p+"_error"]**2) for p in ("pmra", "pmdec")}
+    c = CFG[q]; rng = (u >= c["lo"]) & (u < c["hi"])
+    if q == "dphi2":
+        sel = rng & pmm["pmra"] & pmm["pmdec"]; v = x-skc+null_shift; e = np.zeros(u.size)
+        up = np.array(GX.MARK["upper"]); vu = np.interp(u, up[:, 0], up[:, 1], left=np.nan, right=np.nan)-skc
+        hlo, hhi = np.where(np.isfinite(vu), vu-1.25, 0.), np.where(np.isfinite(vu), vu+1.25, 0.)
+        on = sel & (np.abs(v) < c["W"]) & ~((v > hlo) & (v < hhi))
+        return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None,
+                    all=dict(u=u[sel], x=x[sel]))
+    other = "pmdec" if q == "pmra" else "pmra"
+    v = S[q]-ev(q)+null_shift; win = np.abs(x-skc) < skh; offb = (np.abs(x-skc) > 5) & (np.abs(x-skc) < 14)
+    on = rng & pmm[other] & win & (np.abs(v) < c["W"]); off = rng & pmm[other] & offb & (np.abs(v) < c["W"])
+    # empirical background b(v | phi1): 1-deg x 0.1 histogram of the off-sky stars, smoothed, normalised per phi1 row
+    Eu = np.arange(c["lo"], c["hi"]+1e-9, 1.); Ev = np.linspace(-c["W"], c["W"], int(20*c["W"])+1)
+    H = gaussian_filter(np.histogram2d(u[off], v[off], (Eu, Ev))[0]+0.5, (1., 2.)); H /= (H.sum(1, keepdims=True)*(Ev[1]-Ev[0]))
+    cu, cv = 0.5*(Eu[1:]+Eu[:-1]), 0.5*(Ev[1:]+Ev[:-1])
+    from scipy.interpolate import RegularGridInterpolator
+    bfun = RegularGridInterpolator((cu, cv), H, bounds_error=False, fill_value=None)
+    return dict(u=u[on], v=v[on], e=S[q+"_error"][on], b=bfun(np.column_stack((u[on], v[on]))), bfun=bfun, q=q, W=c["W"], lo=c["lo"], hi=c["hi"],
+                n_off=int(off.sum()))
+
+
+# ------------------------------------------------------------------ model
+class Model:
+    def __init__(self, d, knots):
+        self.d, self.knots = d, {k: np.array(sorted(v), float) for k, v in knots.items()}
+        self.B = {k: torch.tensor(basis(kn, d["u"])) for k, kn in self.knots.items()}
+        self.v, self.e, self.W = torch.tensor(d["v"]), torch.tensor(d["e"]), d["W"]; self.smin = 0.1 if d["q"] == "dphi2" else 0.05
+        if d["q"] == "dphi2":
+            self.hlo, self.hhi = torch.tensor(d["hlo"]), torch.tensor(d["hhi"]); self.vg = torch.linspace(-self.W, self.W, 241)
+            self.mask = ~((self.vg[None, :] > self.hlo[:, None]) & (self.vg[None, :] < self.hhi[:, None]))
+        else:
+            self.lb = torch.log(torch.tensor(np.maximum(d["b"], 1e-12)))
+
+    def sizes(self):
+        return {k: len(v) for k, v in self.knots.items()}
+
+    def unpack(self, th):
+        out, i = {}, 0
+        for k, n in self.sizes().items():
+            out[k] = th[i:i+n]; i += n
+        return out
+
+    def lnl(self, th, per_star=False):
+        P = self.unpack(th); m = self.B["m"]@P["m"]; fl = self.B["f"]@P["f"]   # logit f
+        s = torch.sqrt(torch.exp(2*(self.B["s"]@P["s"]))+self.smin**2)     # intrinsic width with a small floor (s -> 0 is a flat, degenerate direction)
+        sig = torch.sqrt(s**2+self.e**2); W = self.W
+        lg = -0.5*((self.v-m)/sig)**2-torch.log(sig)-0.5*np.log(2*np.pi)
+        Z = Phi((W-m)/sig)-Phi((-W-m)/sig)
+        if self.d["q"] == "dphi2":
+            Z = Z-(Phi((self.hhi-m)/sig)-Phi((self.hlo-m)/sig))
+            a1, a2 = self.B["a1"]@P["a1"], self.B["a2"]@P["a2"]
+            lbu = a1*self.v+a2*self.v**2
+            gg = torch.exp(a1[:, None]*self.vg[None, :]+a2[:, None]*self.vg[None, :]**2)*self.mask
+            lb = lbu-torch.log(torch.trapezoid(gg, self.vg, dim=1))
+        else:
+            lb = self.lb
+        L = torch.logaddexp(torch.nn.functional.logsigmoid(fl)+lg-torch.log(torch.clamp(Z, 1e-12)), torch.nn.functional.logsigmoid(-fl)+lb)   # stable at f -> 0, 1
+        return L if per_star else L.sum()
+
+    def fit(self, th0, maxiter=300):
+        th = torch.tensor(th0, requires_grad=True)
+        opt = torch.optim.LBFGS([th], lr=1, max_iter=maxiter, tolerance_grad=1e-7, tolerance_change=1e-10, line_search_fn="strong_wolfe")
+        def closure():
+            opt.zero_grad(); L = -self.lnl(th); L.backward(); return L
+        opt.step(closure)
+        return th.detach().numpy().copy(), float(self.lnl(th.detach()))
+
+    def grad(self, th):
+        t = torch.tensor(th, requires_grad=True); L = -self.lnl(t); return torch.autograd.grad(L, t)[0].numpy()
+
+    def cov(self, th, h=1e-4):
+        """inverse Hessian of -lnL by central differences of the autograd gradient (autograd's Hessian returned NaN)."""
+        n = len(th); H = np.zeros((n, n))
+        for i in range(n):
+            a, b = th.copy(), th.copy(); a[i] += h; b[i] -= h; H[i] = (self.grad(a)-self.grad(b))/(2*h)
+        H = 0.5*(H+H.T)
+        try:
+            return np.linalg.inv(H)
+        except np.linalg.LinAlgError:
+            return np.linalg.pinv(H)
+
+    def curves(self, th, x):
+        P = self.unpack(torch.tensor(th)); out = {}
+        for k in ("m", "s", "f"):
+            b = basis(self.knots[k], x)@P[k].numpy(); out[k] = b if k == "m" else (np.sqrt(np.exp(2*b)+self.smin**2) if k == "s" else 1/(1+np.exp(-b)))
+        return out
+
+
+def start_knots(lo, hi, n=4):
+    return list(np.linspace(lo, hi, n))
+
+
+def init_theta(M, prev=None):
+    """initial values: from a previous model's curves at the new knots (warm start), else m = 0, s = 0.1 W, f = 0.05."""
+    th = []
+    for k, kn in M.knots.items():
+        if prev is not None and k in prev[0].knots:
+            pm, pth = prev; P = pm.unpack(torch.tensor(pth)); th.append(basis(pm.knots[k], kn)@P[k].numpy())
+        else:
+            th.append({"m": np.zeros(len(kn)), "s": np.full(len(kn), np.log(0.1*M.W)), "f": np.full(len(kn), -3.),
+                       "a1": np.zeros(len(kn)), "a2": np.zeros(len(kn))}[k])
+    return np.concatenate(th)
+
+
+def aic_search(d, verbose=True, min_sep=1.0, max_steps=25):
+    """Greedy AIC knot insertion (Erkal+2017 Sec. 3.3) for the splines m, s, f (background splines fixed)."""
+    knots = {k: start_knots(d["lo"], d["hi"]) for k in ("m", "s", "f")}
+    if d["q"] == "dphi2":
+        knots |= dict(a1=start_knots(d["lo"], d["hi"], 3), a2=start_knots(d["lo"], d["hi"], 3))
+    M = Model(d, knots); th, L = M.fit(init_theta(M)); k = len(th); aic = 2*k-2*L; hist = [dict(knots={a: list(b) for a, b in M.knots.items()}, lnL=L, aic=aic)]
+    if verbose:
+        print(f"  {d['q']}: start lnL {L:.1f} AIC {aic:.1f} ({k} params, {len(d['u'])} stars)", flush=True)
+    for step in range(max_steps):
+        best = None
+        for comp in ("m", "s", "f"):
+            kn = M.knots[comp]
+            for a, b in zip(kn[:-1], kn[1:]):
+                for t in (0.25, 0.5, 0.75):
+                    x_ = a+t*(b-a)
+                    if min(x_-a, b-x_) < min_sep:
+                        continue
+                    nk = {c: list(v) for c, v in M.knots.items()}; nk[comp] = sorted(nk[comp]+[x_]); M2 = Model(d, nk)
+                    th2, L2 = M2.fit(init_theta(M2, (M, th)), maxiter=100)
+                    if best is None or L2 > best[2]:
+                        best = (M2, th2, L2, comp, x_)
+        if best is None:
+            break
+        aic2 = 2*len(best[1])-2*best[2]
+        if verbose:
+            print(f"  step {step}: best new knot {best[3]} at {best[4]:.2f}: lnL {best[2]:.1f} AIC {aic2:.1f} (was {aic:.1f})", flush=True)
+        if aic2 >= aic:
+            break
+        M, th = best[0], best[0].fit(best[1])[0]; L = float(M.lnl(torch.tensor(th))); aic = 2*len(th)-2*L
+        hist.append(dict(knots={a: list(b) for a, b in M.knots.items()}, lnL=L, aic=aic))
+    return M, th, hist
+
+
+# ------------------------------------------------------------------ tests
+def simulate(d, M, th, seed=1):
+    """synthetic data set with the same phi1, errors and background as d, drawn from the fitted model (M, th)."""
+    rng = np.random.default_rng(seed); u, e, W = d["u"], d["e"], d["W"]; c = M.curves(th, u); n = len(u)
+    st = rng.random(n) < c["f"]; v = np.empty(n)
+    sig = np.sqrt(c["s"]**2+e**2); vs = c["m"]+sig*rng.standard_normal(n)
+    while np.any(st & (np.abs(vs) >= W)):
+        bad = st & (np.abs(vs) >= W); vs[bad] = c["m"][bad]+sig[bad]*rng.standard_normal(bad.sum())
+    vg = np.linspace(-W, W, 801)
+    if d["q"] == "dphi2":                                         # exp-polynomial background with the upper-branch hole
+        P = M.unpack(torch.tensor(th)); a1 = (M.B["a1"]@P["a1"]).numpy(); a2 = (M.B["a2"]@P["a2"]).numpy()
+        pb = np.exp(a1[:, None]*vg[None, :]+a2[:, None]*vg[None, :]**2)*~((vg[None, :] > d["hlo"][:, None]) & (vg[None, :] < d["hhi"][:, None]))
+        hole = (vs > d["hlo"]) & (vs < d["hhi"])
+        while np.any(st & hole):
+            vs[st & hole] = c["m"][st & hole]+sig[st & hole]*rng.standard_normal((st & hole).sum()); hole = (vs > d["hlo"]) & (vs < d["hhi"]) | (np.abs(vs) >= W)
+    else:
+        pb = d["bfun"](np.column_stack((np.repeat(u, 1)[:, None].repeat(len(vg), 1).ravel(), np.tile(vg, n)))).reshape(n, len(vg))
+    cdf = np.cumsum(pb, 1); cdf /= cdf[:, -1:]; r = rng.random(n); vb = vg[np.argmax(cdf >= r[:, None], 1)]
+    vb = np.clip(vb+rng.uniform(-0.5, 0.5, n)*(vg[1]-vg[0]), -W+1e-6, W-1e-6)                 # de-grid, strictly inside the window
+    v[:] = np.where(st, vs, vb); d2 = dict(d); d2["v"] = v
+    if d["q"] != "dphi2":
+        d2["b"] = d["bfun"](np.column_stack((u, v)))
+    return d2
+
+
+def report(M, th, C, name):
+    P = M.unpack(torch.tensor(th)); i0 = 0; out = {}
+    for k, n in M.sizes().items():
+        vals, err = P[k].numpy(), np.sqrt(np.diag(C)[i0:i0+n]); out[k] = dict(knots=M.knots[k].tolist(), values=vals.tolist(), err=err.tolist()); i0 += n
+    print(f"  {name}: " + "; ".join(f"{k} knots {np.round(o['knots'], 1).tolist()}" for k, o in out.items() if k in ("m", "s", "f")), flush=True)
+    return out
+
+
+def main():
+    qs = [sys.argv[sys.argv.index("--q")+1]] if "--q" in sys.argv else ["pmdec", "pmra", "dphi2"]
+    res = {}
+    for q in qs:
+        t0 = time.time()
+        if "--null" in sys.argv:                                         # stream-free: PM window shifted by 6 mas/yr / sky by 8 deg
+            d = load(q, null_shift=(6. if q != "dphi2" else 8.)); M, th, hist = aic_search(d)
+            c = M.curves(th, np.linspace(d["lo"], d["hi"], 61))
+            print(f"NULL {q}: knots m {len(M.knots['m'])} s {len(M.knots['s'])} f {len(M.knots['f'])}; max f {c['f'].max():.4f}; "
+                  f"lnL gain vs no stream: {hist[-1]['lnL']-float(M.lnl(torch.tensor(th)) if False else hist[0]['lnL']):.1f}", flush=True)
+            continue
+        d = load(q); M, th, hist = aic_search(d); C = M.cov(th); out = report(M, th, C, q)
+        if "--test" in sys.argv:                                         # recovery: refit synthetic data drawn from the fitted model
+            zs = []
+            for seed in (1, 2, 3):
+                ds = simulate(d, M, th, seed); Ms = Model(ds, {k: list(v) for k, v in M.knots.items()}); ths, _ = Ms.fit(th.copy()); Cs = Ms.cov(ths)
+                n = len(M.knots["m"]); zs.append((ths[:n]-th[:n])/np.sqrt(np.diag(Cs)[:n]))
+                Ma, tha, ha = aic_search(ds, verbose=False)
+                print(f"  TEST seed {seed}: track z at knots {np.round(zs[-1], 2).tolist()}; AIC search on the mock -> knots "
+                      f"m {len(Ma.knots['m'])} s {len(Ma.knots['s'])} f {len(Ma.knots['f'])} (data: {len(M.knots['m'])}/{len(M.knots['s'])}/{len(M.knots['f'])})", flush=True)
+            z = np.concatenate(zs); print(f"  TEST {q}: track z mean {z.mean():+.2f}, sd {z.std():.2f} (expect 0, 1; n = {z.size})", flush=True)
+        G = np.linspace(d["lo"], d["hi"], 121); c = M.curves(th, G)
+        res[q] = dict(fit=out, cov=C.tolist(), lnL=hist[-1]["lnL"], aic_history=hist, n_stars=len(d["u"]), window=d["W"], phi1_range=[d["lo"], d["hi"]],
+                      grid=G.tolist(), m=c["m"].tolist(), s=c["s"].tolist(), f=c["f"].tolist(),
+                      note="v = q - frozen track (stream_masks.json); track = frozen track + m")
+        print(f"  {q} done in {time.time()-t0:.0f} s", flush=True)
+    if res:
+        f = ROOT/"results/plot_data/stream_spline_fit.json"; old = json.loads(f.read_text()) if f.exists() else {}
+        old.update(res); f.write_text(json.dumps(old, indent=1))
+
+
+if __name__ == "__main__":
+    main()
