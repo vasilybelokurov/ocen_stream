@@ -28,6 +28,7 @@ from scipy.ndimage import gaussian_filter
 
 W_SKY = float(sys.argv[sys.argv.index("--W")+1]) if "--W" in sys.argv else 7.0          # sky window half-width [deg]
 SMAX = float(sys.argv[sys.argv.index("--smax")+1]) if "--smax" in sys.argv else None     # optional cap on the intrinsic width
+BGFIXED = "--bgfixed" in sys.argv                                                       # sky: fixed empirical background
 TAG = sys.argv[sys.argv.index("--tag")+1] if "--tag" in sys.argv else ""                  # result key suffix (variants)
 CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=W_SKY, lo=0., hi=28.))  # sky window (default +-7 deg; 6 and 10 tried)
 NG = 281                                                     # sky: integration grid in v over [-W, W]
@@ -69,7 +70,7 @@ def load(q, null_shift=0.):
         # fraction = counts / robust quadratic (in y) fit to log counts per phi1 row, clipped to [0, 1]; footprint edges
         # (|dphi2| < 15, b > 8) and GC-mask holes -> A < 1 (the background and stream normalisations integrate over A)
         ua, xa = raw["phi1"].astype(float), raw["dphi2"].astype(float); ka = ~gc_masked(lg, raw["b"].astype(float)) & (ua >= c["lo"]) & (ua < c["hi"])
-        ya = xa[ka]-np.interp(ua[ka], G, R["sky_window"]["centre"]); Eu = np.arange(c["lo"], c["hi"]+1e-9, 0.5); Ey = np.arange(-c["W"], c["W"]+1e-9, 0.25)
+        ya = xa[ka]-np.interp(ua[ka], G, R["sky_window"]["centre"]); Eu = np.arange(c["lo"], c["hi"]+1e-9, 0.5); Ey = np.arange(-13., 13.+1e-9, 0.25)   # area map to +-13 (background bands)
         Na = np.histogram2d(ua[ka], ya, (Eu, Ey))[0]; cy = 0.5*(Ey[1:]+Ey[:-1]); A = np.zeros_like(Na)
         for j in range(Na.shape[0]):
             ok = Na[j] > 0.5*np.median(Na[j][Na[j] > 0])
@@ -79,7 +80,19 @@ def load(q, null_shift=0.):
             A[j] = np.clip(Na[j]/np.exp(np.polyval(cf, cy)), 0, 1)
         vg = np.linspace(-c["W"], c["W"], NG); ju = np.clip(np.digitize(u[on], Eu)-1, 0, len(Eu)-2); jy = np.clip(np.digitize(vg, Ey)-1, 0, len(Ey)-2)
         Aw = A[ju][:, jy]*~((vg[None, :] > hlo[on][:, None]) & (vg[None, :] < hhi[on][:, None]))
-        return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None, Aw=Aw, vg=vg,
+        out = {}
+        if BGFIXED:
+            # FIXED empirical background (as for the PMs): stars of the same selection (both PM masks) at 4 <= |y| <= 12 deg,
+            # per 0.5-deg phi1 row and 0.25-deg y cell, density = counts / A (cells with A > 0.5); quadratic in y per row,
+            # coefficients smoothed over 3 rows; b(v | phi1) = quadratic x A (observed density), normalised over the star's domain
+            ys = (x-skc)[sel]; Nb = np.histogram2d(u[sel], ys, (Eu, Ey))[0]; band = (np.abs(cy) >= 4) & (np.abs(cy) <= 12); cf = np.zeros((Nb.shape[0], 3))
+            for j in range(Nb.shape[0]):
+                ok = band & (A[j] > 0.5); cf[j] = np.polyfit(cy[ok], Nb[j][ok]/A[j][ok], 2) if ok.sum() >= 8 else np.nan
+            cf = np.array([np.nanmean(cf[max(j-1, 0):j+2], 0) for j in range(len(cf))])
+            bq = np.clip(np.sum(cf[ju]*np.vander(v[on], 3), axis=1), 1e-3, None)
+            bqg = np.clip(cf[ju]@np.vander(vg, 3).T, 1e-3, None)*Aw; Zb = np.trapezoid(bqg, vg, axis=1)
+            out = dict(lb=np.log(bq)-np.log(Zb), bqg=bqg, bg_coef=cf)
+        return dict(u=u[on], v=v[on], e=e[on], hlo=hlo[on], hhi=hhi[on], q=q, W=c["W"], lo=c["lo"], hi=c["hi"], track=None, Aw=Aw, vg=vg, **out,
                     area=dict(A=A, Eu=Eu, Ey=Ey), all=dict(u=u[sel], x=x[sel]))
     other = "pmdec" if q == "pmra" else "pmra"
     v = S[q]-ev(q)+null_shift; win = np.abs(x-skc) < skh; offb = (np.abs(x-skc) > 5) & (np.abs(x-skc) < 14)
@@ -103,6 +116,8 @@ class Model:
         self.smax = SMAX if d["q"] == "dphi2" else None
         if d["q"] == "dphi2":
             self.vg = torch.tensor(d["vg"]); self.mask = torch.tensor(d["Aw"])          # observed-area weight x upper-branch hole
+            if "lb" in d:
+                self.lb = torch.tensor(d["lb"])
         else:
             self.lb = torch.log(torch.tensor(np.maximum(d["b"], 1e-12)))
 
@@ -124,10 +139,13 @@ class Model:
         if self.d["q"] == "dphi2":                                   # normalisations over the observed area (numerical)
             gz = torch.exp(-0.5*((self.vg[None, :]-m[:, None])/sig[:, None])**2)/(sig[:, None]*np.sqrt(2*np.pi))
             Z = torch.trapezoid(gz*self.mask, self.vg, dim=1)
-            a1, a2 = self.B["a1"]@P["a1"], self.B["a2"]@P["a2"]
-            lbu = a1*self.v+a2*self.v**2
-            gg = torch.exp(a1[:, None]*self.vg[None, :]+a2[:, None]*self.vg[None, :]**2)*self.mask
-            lb = lbu-torch.log(torch.trapezoid(gg, self.vg, dim=1))
+            if "a1" in self.knots:
+                a1, a2 = self.B["a1"]@P["a1"], self.B["a2"]@P["a2"]
+                lbu = a1*self.v+a2*self.v**2
+                gg = torch.exp(a1[:, None]*self.vg[None, :]+a2[:, None]*self.vg[None, :]**2)*self.mask
+                lb = lbu-torch.log(torch.trapezoid(gg, self.vg, dim=1))
+            else:
+                lb = self.lb
         else:
             lb = self.lb
         L = torch.logaddexp(torch.nn.functional.logsigmoid(fl)+lg-torch.log(torch.clamp(Z, 1e-12)), torch.nn.functional.logsigmoid(-fl)+lb)   # stable at f -> 0, 1
@@ -188,7 +206,7 @@ def init_theta(M, prev=None):
 def aic_search(d, verbose=True, min_sep=1.0, max_steps=25):
     """Greedy AIC knot insertion (Erkal+2017 Sec. 3.3) for the splines m, s, f (background splines fixed)."""
     knots = {k: start_knots(d["lo"], d["hi"]) for k in ("m", "s", "f")}
-    if d["q"] == "dphi2":
+    if d["q"] == "dphi2" and "lb" not in d:
         nb = int(sys.argv[sys.argv.index("--bgknots")+1]) if "--bgknots" in sys.argv else 3   # background spline knots (fixed, equally spaced)
         knots |= dict(a1=start_knots(d["lo"], d["hi"], nb), a2=start_knots(d["lo"], d["hi"], nb))
     M = Model(d, knots); th, L = M.fit(init_theta(M)); k = len(th); aic = 2*k-2*L; hist = [dict(knots={a: list(b) for a, b in M.knots.items()}, lnL=L, aic=aic)]
@@ -229,8 +247,12 @@ def simulate(d, M, th, seed=1):
         bad = st & (np.abs(vs) >= W); vs[bad] = c["m"][bad]+sig[bad]*rng.standard_normal(bad.sum())
     vg = np.linspace(-W, W, 801)
     if d["q"] == "dphi2":                                         # exp-polynomial background with the upper-branch hole
-        P = M.unpack(torch.tensor(th)); a1 = (M.B["a1"]@P["a1"]).numpy(); a2 = (M.B["a2"]@P["a2"]).numpy()
-        vg = d["vg"]; pb = np.exp(a1[:, None]*vg[None, :]+a2[:, None]*vg[None, :]**2)*d["Aw"]
+        vg = d["vg"]
+        if "bqg" in d:
+            pb = d["bqg"]
+        else:
+            P = M.unpack(torch.tensor(th)); a1 = (M.B["a1"]@P["a1"]).numpy(); a2 = (M.B["a2"]@P["a2"]).numpy()
+            pb = np.exp(a1[:, None]*vg[None, :]+a2[:, None]*vg[None, :]**2)*d["Aw"]
         acc = lambda vv: np.array([np.interp(a_, vg, w_) for a_, w_ in zip(vv, d["Aw"])])        # area acceptance of a stream draw
         rej = st & ((np.abs(vs) >= W) | (rng.random(n) > acc(vs)))
         while np.any(rej):
@@ -242,6 +264,9 @@ def simulate(d, M, th, seed=1):
     v[:] = np.where(st, vs, vb); d2 = dict(d); d2["v"] = v
     if d["q"] != "dphi2":
         d2["b"] = d["bfun"](np.column_stack((u, v)))
+    elif "bqg" in d:                                              # fixed background: re-evaluate at the mock values
+        Zb = np.trapezoid(d["bqg"], d["vg"], axis=1); bv = np.array([np.interp(a_, d["vg"], w_) for a_, w_ in zip(v, d["bqg"])])
+        d2["lb"] = np.log(np.maximum(bv, 1e-12))-np.log(Zb)
     return d2
 
 
