@@ -62,6 +62,8 @@ def load(q, null_shift=0.):
         sel = rng & pmm["pmra"] & pmm["pmdec"]; v = x-skc+null_shift; e = np.zeros(u.size)
         up = np.array(GX.MARK["upper"]); vu = np.interp(u, up[:, 0], up[:, 1], left=np.nan, right=np.nan)-skc
         hlo, hhi = np.where(np.isfinite(vu), vu-1.25, 0.), np.where(np.isfinite(vu), vu+1.25, 0.)
+        if "--nohole" in sys.argv:                                   # no upper-branch cut (user: see the model without cuts)
+            hlo, hhi = np.zeros(u.size), np.zeros(u.size)
         on = sel & (np.abs(v) < c["W"]) & ~((v > hlo) & (v < hhi))
         # observed-area map A(phi1, y), y = dphi2 - centre: all footprint stars (GC masks applied), 0.5 deg x 0.25 deg cells,
         # fraction = counts / robust quadratic (in y) fit to log counts per phi1 row, clipped to [0, 1]; footprint edges
