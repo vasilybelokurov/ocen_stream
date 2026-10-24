@@ -26,8 +26,8 @@ torch.set_default_dtype(torch.float64)
 from scipy.interpolate import CubicSpline
 from scipy.ndimage import gaussian_filter
 
-CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=10.0, lo=0., hi=28.))   # sky window widened 6 -> 10 deg
-NG = 401                                                     # sky: integration grid in v over [-W, W]
+CFG = dict(pmdec=dict(W=3.0, lo=-2., hi=28.), pmra=dict(W=4.0, lo=-2., hi=28.), dphi2=dict(W=7.0, lo=0., hi=28.))    # sky window +-7 deg (user; 6 and 10 tried)
+NG = 281                                                     # sky: integration grid in v over [-W, W]
 SQ2 = np.sqrt(2.)
 
 
