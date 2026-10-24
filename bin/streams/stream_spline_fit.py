@@ -189,7 +189,8 @@ def aic_search(d, verbose=True, min_sep=1.0, max_steps=25):
     """Greedy AIC knot insertion (Erkal+2017 Sec. 3.3) for the splines m, s, f (background splines fixed)."""
     knots = {k: start_knots(d["lo"], d["hi"]) for k in ("m", "s", "f")}
     if d["q"] == "dphi2":
-        knots |= dict(a1=start_knots(d["lo"], d["hi"], 3), a2=start_knots(d["lo"], d["hi"], 3))
+        nb = int(sys.argv[sys.argv.index("--bgknots")+1]) if "--bgknots" in sys.argv else 3   # background spline knots (fixed, equally spaced)
+        knots |= dict(a1=start_knots(d["lo"], d["hi"], nb), a2=start_knots(d["lo"], d["hi"], nb))
     M = Model(d, knots); th, L = M.fit(init_theta(M)); k = len(th); aic = 2*k-2*L; hist = [dict(knots={a: list(b) for a, b in M.knots.items()}, lnL=L, aic=aic)]
     if verbose:
         print(f"  {d['q']}: start lnL {L:.1f} AIC {aic:.1f} ({k} params, {len(d['u'])} stars)", flush=True)
