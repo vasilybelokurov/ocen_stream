@@ -127,14 +127,20 @@ def schedule(inp, offset):
     return trel, np.nonzero((arm == 1) & ((T-t0) < float(inp["max_age"])))[0]
 
 
-def release(params, ht, inp, trel, keep, n_orbit=39112):
+def release(params, ht, inp, trel, keep):
     """centre orbit and the kept initial conditions at params = dict(angle, omega, amp, size, halo_q, vc, dist, pmra, pmdec);
-    returns tb (host + progenitor tables for jaxspray), ic, t0. The orbit at the release epochs is linearly interpolated from the
-    0.05-Myr samples, as spray.spray_unwrapped."""
+    returns tb (host + progenitor tables for jaxspray), ic, t0, r_J. The centre orbit is AGAMA's DOP853 at ORBIT_ACC (adaptive steps,
+    centre_orbit_dop853, run on the CPU device: a single orbit is latency-bound on a GPU; was 39112 fixed Yoshida steps: 7 s on an
+    A100); the state at the release epochs is cubic Hermite in its steps (spray.spray_unwrapped interpolates linearly between
+    0.05-Myr samples)."""
     T = inp["T"]; tb = J.host_for(ht, params["angle"], params["omega"], params["amp"], params["size"], params["halo_q"], params["vc"], T)
-    tc, orb = centre_orbit(today_xv(params["dist"], params["pmra"], params["pmdec"], inp), tb, T, n_orbit)
-    tb = dict(tb, sat=inp["sat"], lr0=inp["lr0"], dlr=inp["dlr"], nr=inp["nr"], mtot=inp["mtot"], G=inp["G"], tc0=tc[0], dtc=tc[1]-tc[0], orb=orb)
-    trel = jnp.asarray(trel); orbit_r = jax.vmap(lambda c: jnp.interp(trel, tc, c), 1, 1)(orb)
+    cpu = jax.devices("cpu")[0]; dev = jax.devices()[0]                  # one orbit = ~6k sequential steps: latency-bound on a GPU
+    a = jax.device_put((today_xv(params["dist"], params["pmra"], params["pmdec"], inp), {k: v for k, v in tb.items()}, T), cpu)
+    with jax.default_device(cpu):
+        tcs, orb, acc_c, _ = jax.device_put(_orbit_jit(*a, acc=ORBIT_ACC), dev)
+    tb = dict(tb, sat=inp["sat"], lr0=inp["lr0"], dlr=inp["dlr"], nr=inp["nr"], mtot=inp["mtot"], G=inp["G"], tcs=tcs, orb=orb)
+    trel = jnp.asarray(trel)
+    orbit_r = jnp.concatenate((J._hermite(trel, tcs, orb[:, :3], orb[:, 3:]), J._hermite(trel, tcs, orb[:, 3:], acc_c)), 1)
     rj, vj, Rm = rj_vj_R(orbit_r, trel, tb, inp)
     ic, _ = release_ic(orbit_r, rj, vj, Rm, inp["bank"])
     return tb, ic[keep], jnp.repeat(trel, 2)[keep], jnp.repeat(rj, 2)[keep]
@@ -267,3 +273,49 @@ def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None):
             idx = np.concatenate((idx[act], np.full(m-act.size, -1)))
         else:
             idx = np.where(done, -1, idx)
+
+
+def centre_orbit_dop853(xv0, tb, T, acc=1e-12, nmax=32768):
+    """host-only orbit from T back to 0 with AGAMA's DOP853 (accuracy acc, as spray.spray_unwrapped's 1e-12), integrated in
+    tau = T - t (dx/dtau = -v, dv/dtau = -a(x, T - tau)); every accepted step is stored. Returns (knots t ascending (nmax,),
+    states (nmax, 6), accelerations (nmax, 3), number of steps); unused buffer entries repeat the t = 0 state at t < 0."""
+    def f(tau, y, with_acc=False):
+        t = T-tau; x = y[None, :3]
+        if with_acc:
+            pot, vjp = jax.vjp(lambda z: J.phi_host(z, jnp.full(1, t), tb), x); a = -vjp(jnp.ones(1))[0][0]
+            ek = 0.5*jnp.sum(y[3:]**2); fac = jnp.minimum(1., jnp.abs(pot[0]+ek)/jnp.maximum(jnp.abs(pot[0]), ek))
+            return jnp.concatenate((-y[3:], -a)), fac
+        a = -jax.grad(lambda z: jnp.sum(J.phi_host(z, jnp.full(1, t), tb)))(x)[0]                  # host only
+        return jnp.concatenate((-y[3:], -a)), None
+    k1, fac = f(0., xv0, True)
+    h1 = jnp.clip(jnp.sqrt(jnp.sum(xv0**2)/jnp.sum(k1**2))*0.01, 1e-12, 1e12); k2 = f(h1, xv0+h1*k1)[0]
+    xt = xv0+0.5*h1*(k1+k2); k3 = f(h1, xt)[0]
+    d0 = jnp.maximum(jnp.abs(xv0), jnp.abs(xt)); d1 = jnp.maximum(jnp.abs(k1), jnp.abs(k3))
+    d2 = jnp.abs((3*k2-k1-2*k3)/h1); d3 = jnp.abs(6*(k3-k2)/h1**2); h0 = jnp.clip(acc**(1/8)*jnp.sqrt(jnp.min((d0*d2+d1*d1)/(d1*d3+d2*d2))), 1e-12, 1e12)*fac
+    buf_t = jnp.full(nmax, -1.); buf_y = jnp.zeros((nmax, 6)); buf_a = jnp.zeros((nmax, 3))
+    buf_t = buf_t.at[0].set(0.); buf_y = buf_y.at[0].set(xv0); buf_a = buf_a.at[0].set(-k1[3:])
+
+    def body(s):
+        tau, y, k1, h, nbad, prev, n, bt, by, ba = s
+        rem = T-tau; dt = jnp.minimum(h, rem); K = [k1]
+        for c, a in zip(_C, _A):
+            K.append(f(tau+c*dt, y+dt*sum(aj*K[j] for j, aj in enumerate(a) if aj))[0])
+        kb = sum(b*K[j] for j, b in _B.items()); ynew = y+dt*kb; k13, fac = f(tau+dt, ynew, True)
+        sk = acc*jnp.maximum(jnp.abs(y), jnp.abs(ynew))*fac
+        e3 = jnp.sum(((kb-sum(b*K[j] for j, b in _BHH.items()))/sk)**2); e5 = jnp.sum((sum(b*K[j] for j, b in _ER.items())/sk)**2)
+        den = jnp.sqrt(6*(e5+0.01*e3)); err = jnp.where(den == 0, 0., e5*dt/den); f8 = err**0.125
+        worse = err > 0.5*prev; nb = jnp.where(worse, nbad+1, 0); ok = (err <= 1) | ((nbad >= 3) & worse)
+        hn = jnp.where(ok, jnp.where(err <= 1, dt*jnp.minimum(6., 0.9/f8), dt), dt*jnp.maximum(0.333, 0.9/jnp.where(nb >= 2, 1/0.333, f8)))
+        tau2 = jnp.where(ok, jnp.where(dt == rem, T, tau+dt), tau); n2 = jnp.where(ok, n+1, n)
+        bt = jnp.where(ok, bt.at[n2].set(tau2), bt); by = jnp.where(ok, by.at[n2].set(ynew), by); ba = jnp.where(ok, ba.at[n2].set(-k13[3:]), ba)
+        return (tau2, jnp.where(ok, ynew, y), jnp.where(ok, k13, k1), hn, jnp.where(ok, 0, nb), jnp.where(ok, jnp.inf, err), n2, bt, by, ba)
+    s = jax.lax.while_loop(lambda s: (s[0] < T) & (s[6] < nmax-1), body, (0., xv0, k1, h0, 0, jnp.inf, 0, buf_t, buf_y, buf_a))
+    n, bt, by, ba = s[6], s[7], s[8], s[9]
+    t = jnp.where(jnp.arange(nmax) <= n, T-bt, -1.-jnp.arange(nmax)*1e-3)                 # unused entries: t < 0, strictly ordered
+    by = jnp.where((jnp.arange(nmax) <= n)[:, None], by, by[n]); ba = jnp.where((jnp.arange(nmax) <= n)[:, None], ba, ba[n])
+    o = jnp.argsort(t)
+    return t[o], by[o], ba[o], n
+
+
+_orbit_jit = jax.jit(centre_orbit_dop853, static_argnames=("acc", "nmax"))
+ORBIT_ACC = 1e-10            # same accuracy vs AGAMA as 1e-12 (0.06 pc over the last 700 Myr, = AGAMA's own closure); 5.7k steps

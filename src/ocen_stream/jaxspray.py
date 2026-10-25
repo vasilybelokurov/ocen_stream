@@ -75,8 +75,17 @@ def _spline1(c, x, n):
     return jnp.sum(c[(i.astype(jnp.int32)+1)[..., None]+k]*_w(x-i), -1)
 
 
+def _hermite(t, tk, f, df):
+    """cubic Hermite interpolation of f (n, d) with derivatives df at knots tk (n,) ascending, at times t (N,)."""
+    k = jnp.clip(jnp.searchsorted(tk, t)-1, 0, tk.shape[0]-2); dt = (tk[k+1]-tk[k])[:, None]; h = (t[:, None]-tk[k][:, None])/dt
+    return (2*h**3-3*h**2+1)*f[k]+(h**3-2*h**2+h)*df[k]*dt+(-2*h**3+3*h**2)*f[k+1]+(h**3-h**2)*df[k+1]*dt
+
+
 def centre(t, tb):
-    """progenitor centre position at times t (N,) by cubic Hermite interpolation of the sampled orbit."""
+    """progenitor centre position at times t (N,): cubic Hermite interpolation of the orbit, either on the adaptive DOP853 steps
+    (tb["tcs"], knots ascending) or on a uniform grid (tb["tc0"], tb["dtc"]; benchmark inputs)."""
+    if "tcs" in tb:
+        return _hermite(t, tb["tcs"], tb["orb"][:, :3], tb["orb"][:, 3:])
     s = (t-tb["tc0"])/tb["dtc"]; k = jnp.clip(jnp.floor(s), 0, tb["orb"].shape[0]-2); h = (s-k)[:, None]; k = k.astype(jnp.int32)
     p0, p1, v0, v1 = tb["orb"][k, :3], tb["orb"][k+1, :3], tb["orb"][k, 3:]*tb["dtc"], tb["orb"][k+1, 3:]*tb["dtc"]
     return (2*h**3-3*h**2+1)*p0+(h**3-2*h**2+h)*v0+(-2*h**3+3*h**2)*p1+(h**3-h**2)*v1
