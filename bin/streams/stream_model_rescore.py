@@ -4,8 +4,8 @@
 Sets: nullfits, obsbar, fixedbar, profile_* (89.6k-179k particles; profile_s1 with 8k particles excluded), search_real_wave3.
 Each model measured as in stream_model_compare.measure (same masks, Asimov sky fits, PM fits at the spline knots, NBOOT particle
 bootstraps for the model errors); parameters from the run's JSON. Workers fork from one parent that holds the data (copy-on-write).
-Usage: PYTHONPATH=src python bin/streams/stream_model_rescore.py [--workers 8] [--limit N]
-       -> results/plot_data/stream_model_rescore.csv
+Usage: PYTHONPATH=src python bin/streams/stream_model_rescore.py [--workers 8] [--limit N] [--tag NAME]
+       -> results/plot_data/stream_model_rescore{_tag}.csv (chi2 per observable + per-point model values/errors, v_* JSON columns)
 """
 import csv, glob, json, os, sys, time
 from pathlib import Path
@@ -13,6 +13,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 NW = int(sys.argv[sys.argv.index("--workers")+1]) if "--workers" in sys.argv else 8
 LIMIT = int(sys.argv[sys.argv.index("--limit")+1]) if "--limit" in sys.argv else None
+TAG = ("_"+sys.argv[sys.argv.index("--tag")+1]) if "--tag" in sys.argv else ""
+VEC = ("sky_c", "sky_s", "pmra", "pmdec", "sky_ce", "sky_se", "pmra_e", "pmdec_e")                    # per-point model values and errors
 sys.argv = [sys.argv[0]]
 import stream_model_compare as MC
 
@@ -30,7 +32,7 @@ def work(f):
         return dict(file=f, error=repr(e)[:200])
     j = Path(f).with_suffix(".json"); p = json.loads(j.read_text()).get("params", {}) if j.exists() else {}
     return dict(file=str(Path(f).relative_to(ROOT)), set=Path(f).parts[-3], n_particles=M["n_particles"], **{k: p.get(k, np.nan) for k in PAR},
-                **{"chi2_"+k: v for k, v in c.items()}, seconds=round(time.time()-t0, 1))
+                **{"chi2_"+k: v for k, v in c.items()}, **{"v_"+k: json.dumps(np.round(M[k], 5).tolist()) for k in VEC}, seconds=round(time.time()-t0, 1))
 
 
 def main():
@@ -38,7 +40,7 @@ def main():
     files = [f for s in SETS for f in sorted(glob.glob(str(ROOT/f"results/streams/{s}/runs/*.npz")))][:LIMIT]
     G["D"] = MC.data_vector(); G["O"] = MC.Obs()
     print(f"{len(files)} models, {NW} workers", flush=True)
-    out = ROOT/"results/plot_data/stream_model_rescore.csv"; rows = []; t0 = time.time()
+    out = ROOT/f"results/plot_data/stream_model_rescore{TAG}.csv"; rows = []; t0 = time.time()
     with mp.get_context("fork").Pool(NW) as pool:
         for i, r in enumerate(pool.imap_unordered(work, files, chunksize=2)):
             rows.append(r)
