@@ -60,13 +60,15 @@ class Obs:
     def ev(s, p, u, k="c"):
         return np.interp(u, s.G, s.R["tracks"][p][k])
 
-    def particles(s, f, rng):
+    def particles(s, f, rng, bank=None):
+        """bank (optional, 2026-10-25, GPU score reference): fixed draws per particle slot of the file, dict(off (Ns,) ints in
+        [-50, 50), nrm (2, Ns) normals, boot (NBOOT, Ns) bootstrap counts), replacing the rng draws."""
         z = np.load(f); ac = float(z["age_cut_myr"]) if "age_cut_myr" in z.files else 700.; k = (z["chi"] > 0) & (z["age"] < ac)
-        u, x = project_gc(z["l"][k], z["b"][k], s.GC); P = dict(u=u, x=x, pmra=z["pmra"][k], pmdec=z["pmdec"][k])
+        u, x = project_gc(z["l"][k], z["b"][k], s.GC); P = dict(u=u, x=x, pmra=z["pmra"][k], pmdec=z["pmdec"][k], k=k)
         j = np.searchsorted(np.sort(s.err_u), u); o = np.argsort(s.err_u)                 # errors of a data star at a similar phi1
-        j = np.clip(j+rng.integers(-50, 50, u.size), 0, len(o)-1); e = s.err[o[j]]
+        j = np.clip(j+(rng.integers(-50, 50, u.size) if bank is None else bank["off"][k]), 0, len(o)-1); e = s.err[o[j]]
         for i, p in enumerate(("pmra", "pmdec")):
-            obs = P[p]+e[:, i]*rng.standard_normal(u.size); P["o_"+p] = obs                       # observed PM (with Gaia errors)
+            obs = P[p]+e[:, i]*(rng.standard_normal(u.size) if bank is None else bank["nrm"][i][k]); P["o_"+p] = obs   # observed PM (with Gaia errors)
             P["m_"+p] = np.abs(obs-s.ev(p, u)) < 2*np.sqrt(s.ev(p, u, "s")**2+e[:, i]**2)
         P["v"] = x-np.interp(u, s.G, s.R["sky_window"]["centre"]); P["inwin"] = np.abs(P["v"]) < np.interp(u, s.G, s.R["sky_window"]["half_width"])
         return P
@@ -109,10 +111,10 @@ class Obs:
         return out
 
 
-def measure(O, D, f, rng):
-    P = O.particles(f, rng); n = P["u"].size; W = {q: D[q+"_W"] for q in ("pmra", "pmdec")}; res = []
+def measure(O, D, f, rng, bank=None):
+    P = O.particles(f, rng, bank); n = P["u"].size; W = {q: D[q+"_W"] for q in ("pmra", "pmdec")}; res = []
     for b in range(NBOOT+1):
-        idx = np.arange(n) if b == 0 else rng.integers(0, n, n)
+        idx = np.arange(n) if b == 0 else rng.integers(0, n, n) if bank is None else np.repeat(np.arange(n), bank["boot"][b-1][P["k"]])
         sk = O.sky(P, idx); keep = [i for i, w in enumerate(O.L["windows"]) if tuple(w["phi1"]) not in DROP]
         pm = O.pm(P, idx, D, W); res.append(np.r_[[sk[i]["c"] for i in keep], [sk[i]["s"] for i in keep], pm["pmra"], pm["pmdec"]])
         if b == 0:
