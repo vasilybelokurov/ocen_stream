@@ -1,3 +1,9 @@
+# Most important rules
+
+- Write the least code that works.
+- Always reproduce bugs with a failing test.
+- Show me a plot before claiming a result.
+
 # Project output conventions
 
 - Save all analysis plots as PNG files under the project `plots/` directory.
