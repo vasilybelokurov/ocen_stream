@@ -146,7 +146,7 @@ def release(params, ht, inp, trel, keep):
     return tb, ic[keep], jnp.repeat(trel, 2)[keep], jnp.repeat(rj, 2)[keep]
 
 
-def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512, method="yoshida", acc=1e-8, n_att=32):
+def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512, method="yoshida", acc=1e-8, n_att=32, handoff=None):
     """the model stream today: final phase space (kept particles), chi [kpc Myr], age [Myr] and the number of re-integrated
     particles (method 'yoshida') or the attempts of the slowest particle (method 'dop853': AGAMA's integrator at accuracy acc for
     every particle). Yoshida-4: particles that came within flag_rj tidal radii (at release) of the progenitor centre are
@@ -154,7 +154,7 @@ def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad
     (fewer recompilations)."""
     tb, ic, t0, rj = release(params, ht, inp, trel, keep)
     if method == "dop853":
-        y, chi, natt = dop853_chi(ic, t0, tb, acc, n_att)
+        y, chi, natt = dop853_chi(ic, t0, tb, acc, n_att, handoff=handoff)
         return jnp.asarray(y), jnp.asarray(chi), (inp["T"]-t0)*T_MYR, natt
     xv, chi, dmin = yoshida4_chi(ic, t0, tb, dt)
     f = np.nonzero(np.asarray(dmin < flag_rj*rj))[0]
@@ -248,12 +248,15 @@ _attempts_jit = jax.jit(_attempts, static_argnums=(4,))
 _init_jit = jax.jit(_init_step)
 
 
-def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=None):
+def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=None, handoff=None):
     """AGAMA's DOP853 for every particle from t0 to T, carrying chi [kpc Myr]. Work-efficient on a GPU: n_att attempts per call,
     then the unfinished particles are compacted into a power-of-two array (finished ones stop costing anything). Returns
     (final (N, 6), chi, number of accepted+rejected attempts of the slowest particle). trace (optional list): appended with
     (attempts so far, active particles, array size, seconds) per call, to see where the time goes. finish (optional (N,) array):
-    filled with the attempt count (to n_att resolution) at which each particle reached T."""
+    filled with the attempt count (to n_att resolution) at which each particle reached T. handoff (optional, attempts): once
+    reached, the unfinished particles and the tables move to the CPU device and the same loop continues there (no change to the
+    result: on a GPU the last ~0.1% of particles, which pass through the cluster core, otherwise take ~half the time, latency-
+    bound; docs/reviews/straggler_fable_20261025.md). A no-op when the default device is already the CPU."""
     T = tb["T"]; n = len(ic); t = jnp.asarray(t0); y = jnp.asarray(ic); h, k1 = _init_jit(y, t, tb, acc)
     out_y, out_chi = np.zeros((n, 6)), np.zeros(n); idx = np.arange(n); calls = 0
     s = (t, y, k1, h, jnp.zeros(n), jnp.zeros(n, jnp.int32), jnp.full(n, jnp.inf), jnp.zeros(n, bool))
@@ -269,6 +272,8 @@ def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=
         act = np.nonzero(~done & live)[0]
         if act.size == 0:
             return out_y, out_chi*T_MYR, calls*n_att
+        if handoff is not None and calls*n_att >= handoff and s[1].devices() != {cpu := jax.devices("cpu")[0]}:
+            s, tb, T = jax.device_put((s, tb, T), cpu); min_size = 8                       # small arrays are cheap on a CPU
         m = max(min_size, 1 << int(np.ceil(np.log2(act.size))))
         if m < len(idx):                                                                  # compact: keep the unfinished ones
             sel = np.concatenate((act, np.full(m-act.size, act[0])))
