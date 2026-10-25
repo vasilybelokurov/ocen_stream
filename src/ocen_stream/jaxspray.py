@@ -8,6 +8,9 @@ interpolated potential). Units as AGAMA here: kpc, km/s, time unit kpc/(km/s) = 
 Integrators (particles independent; each from its release time t0 to T):
   yoshida4(...): Yoshida (1990) 4th-order symplectic drift-kick composition, fixed step per particle (age / round(age / dt));
   dopri8(...):   diffrax Dopri8 (Dormand-Prince 8(5,3)) with a PID step-size controller, vmapped over particles.
+Host at any parameter point (pipeline stage 1): load_host() reads results/gpu/host_tables.npz (bin/streams/gpu_host_export.py)
+and host_for() assembles Phi = Phi_b + c(q, v_c) Phi_h(q) + A sum_m B_m(R/S, z/S) cos(m (phi - theta(t))) from fixed tables (the
+halo as a B-spline combination of a q stack), jittable and vmappable over parameters.
 Precision follows jax_enable_x64 and the dtype passed to load(); float64 is the default for validation.
 """
 from functools import partial
@@ -25,11 +28,31 @@ def load(path, dtype=jnp.float64):
     f = lambda a: jnp.asarray(a, dtype)
     host = np.pad(z["host_coef"], ((0, 0), (2, 2), (2, 2)), mode="reflect")                 # mirror about u = 0 and w = 0
     sat = np.pad(z["sat_coef"], (2, 2), mode="edge")
-    tb = dict(host=f(host), m=f(z["host_m"]), du=f(z["du"]), dw=f(z["dw"]), rs=f(z["rs"]), zs=f(z["zs"]), nu=z["host_coef"].shape[1],
-              nw=z["host_coef"].shape[2], theta_T=f(z["theta_T"]), omega=f(z["omega_b"]), T=f(z["T"]), sat=f(sat), lr0=f(z["lr0"]),
+    tb = dict(axi=f(host[0]), bar=f(host[1:]), m=f(z["host_m"][1:]), A=f(1.), S=f(1.), du=f(z["du"]), dw=f(z["dw"]), rs=f(z["rs"]),
+              zs=f(z["zs"]), nu=z["host_coef"].shape[1], nw=z["host_coef"].shape[2], theta_T=f(z["theta_T"]), omega=f(z["omega_b"]),
+              T=f(z["T"]), sat=f(sat), lr0=f(z["lr0"]),
               dlr=f(z["dlr"]), nr=z["sat_coef"].size, mtot=f(z["sat_mtot"]), G=f(z["G"]), tc0=f(z["tc"][0]),
               dtc=f(z["tc"][1]-z["tc"][0]), orb=f(z["orb"]))
     return tb
+
+
+def load_host(path, dtype=jnp.float64):
+    """parameter-independent host tables (gpu_host_export.py), padded for the stencils."""
+    z = np.load(path); f = lambda a: jnp.asarray(a, dtype)
+    p2 = lambda a: np.pad(a, [(0, 0)]*(a.ndim-2)+[(2, 2), (2, 2)], mode="reflect")
+    return dict(axi_b=f(p2(z["axi_b"])), bar=f(p2(z["bar"])), m=f(z["bar_m"]), halo=f(p2(z["halo"])),
+                q0=f(z["q"][0]), dq=f(z["q"][1]-z["q"][0]), nq=len(z["q"]), vh2=f(z["vh2"]), vb2=f(z["vb2"]), du=f(z["du"]), dw=f(z["dw"]),
+                rs=f(z["rs"]), zs=f(z["zs"]), nu=z["axi_b"].shape[0], nw=z["axi_b"].shape[1])
+
+
+def host_for(ht, angle_deg, omega, amp, size, halo_q, vc, T):
+    """host tables at one parameter point (angle today [deg], Omega_b [km/s/kpc], A, S, q, v_c(R0) [km/s], T): the dict used by
+    phi_host. The halo coefficients are the cubic B-spline (in q) combination of the stack: exact for the tensor spline."""
+    s = (halo_q-ht["q0"])/ht["dq"]; i = jnp.clip(jnp.floor(s), 0, ht["nq"]-2); wq = _w(s-i); k = i.astype(jnp.int32)+jnp.arange(4)   # coefficients c_{-1..nq} stored from 0
+    halo = jnp.tensordot(wq, ht["halo"][k], 1); vh2 = jnp.sum(wq*ht["vh2"][k])
+    c = (vc**2-ht["vb2"])/vh2
+    return dict(axi=ht["axi_b"]+c*halo, bar=ht["bar"], m=ht["m"], A=amp, S=size, theta_T=jnp.deg2rad(angle_deg), omega=omega, T=T,
+                du=ht["du"], dw=ht["dw"], rs=ht["rs"], zs=ht["zs"], nu=ht["nu"], nw=ht["nw"], halo_c=c)
 
 
 def _w(t):
@@ -61,10 +84,11 @@ def centre(t, tb):
 
 def phi_host(x, t, tb):
     """host potential at positions x (N, 3) and times t (N,)."""
-    R = jnp.hypot(x[:, 0], x[:, 1]); u = jnp.arcsinh(R/tb["rs"])/tb["du"]; w = jnp.arcsinh(jnp.abs(x[:, 2])/tb["zs"])/tb["dw"]
-    modes = _spline2(tb["host"], u, w, tb["nu"], tb["nw"])                                    # (n_modes, N)
+    R = jnp.hypot(x[:, 0], x[:, 1]); az = jnp.abs(x[:, 2]); g = lambda r, z: (jnp.arcsinh(r/tb["rs"])/tb["du"], jnp.arcsinh(z/tb["zs"])/tb["dw"])
+    axi = _spline2(tb["axi"], *g(R, az), tb["nu"], tb["nw"])
+    modes = _spline2(tb["bar"], *g(R/tb["S"], az/tb["S"]), tb["nu"], tb["nw"])                  # bar term at x / S, (n_modes, N)
     ang = jnp.arctan2(x[:, 1], x[:, 0])-(tb["theta_T"]+tb["omega"]*(t-tb["T"]))
-    return jnp.sum(modes*jnp.cos(tb["m"][:, None]*ang[None, :]), 0)
+    return axi+tb["A"]*jnp.sum(modes*jnp.cos(tb["m"][:, None]*ang[None, :]), 0)
 
 
 def phi_sat(x, t, tb):

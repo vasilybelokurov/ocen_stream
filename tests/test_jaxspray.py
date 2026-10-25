@@ -32,7 +32,7 @@ def test_spline_matches_scipy(setup):
     J, tb, z, *_ = setup
     rng = np.random.default_rng(2); x, y = rng.uniform(0, z["host_coef"].shape[1]-1, 500), rng.uniform(0, z["host_coef"].shape[2]-1, 500)
     ref = map_coordinates(z["host_coef"][1], [x, y], order=3, mode="mirror", prefilter=False)
-    got = np.asarray(J._spline2(tb["host"][1], jnp.asarray(x), jnp.asarray(y), tb["nu"], tb["nw"]))
+    got = np.asarray(J._spline2(tb["bar"][0], jnp.asarray(x), jnp.asarray(y), tb["nu"], tb["nw"]))
     assert np.max(np.abs(got-ref)) < 1e-9*np.max(np.abs(ref))
 
 
