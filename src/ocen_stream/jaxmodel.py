@@ -140,7 +140,7 @@ def release(params, ht, inp, trel, keep, n_orbit=39112):
     return tb, ic[keep], jnp.repeat(trel, 2)[keep], jnp.repeat(rj, 2)[keep]
 
 
-def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512, method="yoshida", acc=1e-8):
+def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512, method="yoshida", acc=1e-8, n_att=32):
     """the model stream today: final phase space (kept particles), chi [kpc Myr], age [Myr] and the number of re-integrated
     particles (method 'yoshida') or the attempts of the slowest particle (method 'dop853': AGAMA's integrator at accuracy acc for
     every particle). Yoshida-4: particles that came within flag_rj tidal radii (at release) of the progenitor centre are
@@ -148,7 +148,7 @@ def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad
     (fewer recompilations)."""
     tb, ic, t0, rj = release(params, ht, inp, trel, keep)
     if method == "dop853":
-        y, chi, natt = dop853_chi(ic, t0, tb, acc)
+        y, chi, natt = dop853_chi(ic, t0, tb, acc, n_att)
         return jnp.asarray(y), jnp.asarray(chi), (inp["T"]-t0)*T_MYR, natt
     xv, chi, dmin = yoshida4_chi(ic, t0, tb, dt)
     f = np.nonzero(np.asarray(dmin < flag_rj*rj))[0]
