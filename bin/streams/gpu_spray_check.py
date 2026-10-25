@@ -36,9 +36,9 @@ def sprays():
                            epoch_offset=OFFSET, frame="gravity21")
             np.savez(OUT/f"{name}_agama.npz", age_cut_myr=700., **{k: np.asarray(m[k], float) for k in KEYS}); print(f"{name}: AGAMA {time.time()-t1:.0f} s", flush=True)
         if not (OUT/f"{name}_jax.npz").exists():
-            t1 = time.time(); xv, chi, age = JM.spray(p, ht, inp, trel, keep); o = JM.observables(xv, inp)
+            t1 = time.time(); xv, chi, age, nf = JM.spray(p, ht, inp, trel, keep); o = JM.observables(xv, inp)
             np.savez(OUT/f"{name}_jax.npz", age_cut_myr=700., chi=np.asarray(chi), age=np.asarray(age), d=np.asarray(o["dist"]),
-                     **{k: np.asarray(o[k]) for k in ("l", "b", "pmra", "pmdec", "vlos")}); print(f"{name}: JAX {time.time()-t1:.0f} s", flush=True)
+                     **{k: np.asarray(o[k]) for k in ("l", "b", "pmra", "pmdec", "vlos")}); print(f"{name}: JAX {time.time()-t1:.0f} s ({nf} particles re-integrated)", flush=True)
 
 
 def main():

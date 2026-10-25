@@ -89,15 +89,34 @@ def yoshida4_chi(ic, t0, tb, dt):
     rp = lambda x, t: jnp.linalg.norm(x, axis=1)-jnp.linalg.norm(J.centre(t, tb), axis=1)
 
     def step(k, s):
-        x, v, chi = s; on = k < n; h = jnp.where(on, h0, 0.)[:, None]; frac = 0.; f0 = rp(x, t0+k*h0)
+        x, v, chi, dmin = s; on = k < n; h = jnp.where(on, h0, 0.)[:, None]; frac = 0.; f0 = rp(x, t0+k*h0)
         for i in range(4):
             x = x+cd[i]*h*v; frac += cd[i]
             if i < 3:
-                v = v+ck[i]*h*J.accel(x, t0+(k+frac)*h0, tb)
+                tk = t0+(k+frac)*h0; v = v+ck[i]*h*J.accel(x, tk, tb)
+                dmin = jnp.where(on, jnp.minimum(dmin, jnp.linalg.norm(x-J.centre(tk, tb), axis=1)), dmin)
         chi = chi+jnp.where(on, 0.5*(f0+rp(x, t0+(k+1)*h0))*h0, 0.)
-        return x, v, chi
-    x, v, chi = jax.lax.fori_loop(0, jnp.max(n).astype(jnp.int32), step, (ic[:, :3], ic[:, 3:], jnp.zeros(len(ic))))
-    return jnp.concatenate((x, v), 1), chi*T_MYR
+        return x, v, chi, dmin
+    x, v, chi, dmin = jax.lax.fori_loop(0, jnp.max(n).astype(jnp.int32), step, (ic[:, :3], ic[:, 3:], jnp.zeros(len(ic)), jnp.full(len(ic), jnp.inf)))
+    return jnp.concatenate((x, v), 1), chi*T_MYR, dmin
+
+
+def dopri8_chi(ic, t0, tb, rtol=1e-6, atol=1e-6, max_steps=200000):
+    """adaptive Dopri8 per particle (diffrax, vmapped) for (x, v, chi): the re-integration of particles that pass close to the
+    progenitor centre, where the fixed step is inaccurate. Returns (final (N, 6), chi [kpc Myr])."""
+    import diffrax as dfx
+
+    def rhs(t, y, a):
+        tt = t[None]; x = y[None, :3]
+        dchi = jnp.linalg.norm(y[:3])-jnp.linalg.norm(J.centre(tt, tb)[0])
+        return jnp.concatenate((y[3:6], J.accel(x, tt, tb)[0], dchi[None]))
+
+    def one(y0, ts):
+        s = dfx.diffeqsolve(dfx.ODETerm(rhs), dfx.Dopri8(), t0=ts, t1=tb["T"], dt0=None, y0=jnp.concatenate((y0, jnp.zeros(1))),
+                            saveat=dfx.SaveAt(t1=True), stepsize_controller=dfx.PIDController(rtol=rtol, atol=atol), max_steps=max_steps)
+        return s.ys[-1]
+    y = jax.vmap(one)(ic, t0)
+    return y[:, :6], y[:, 6]*T_MYR
 
 
 def schedule(inp, offset):
@@ -118,11 +137,18 @@ def release(params, ht, inp, trel, keep, n_orbit=39112):
     trel = jnp.asarray(trel); orbit_r = jax.vmap(lambda c: jnp.interp(trel, tc, c), 1, 1)(orb)
     rj, vj, Rm = rj_vj_R(orbit_r, trel, tb, inp)
     ic, _ = release_ic(orbit_r, rj, vj, Rm, inp["bank"])
-    return tb, ic[keep], jnp.repeat(trel, 2)[keep]
+    return tb, ic[keep], jnp.repeat(trel, 2)[keep], jnp.repeat(rj, 2)[keep]
 
 
-def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR):
-    """the model stream today: final phase space (kept particles), chi [kpc Myr] and age [Myr]."""
-    tb, ic, t0 = release(params, ht, inp, trel, keep)
-    xv, chi = yoshida4_chi(ic, t0, tb, dt)
-    return xv, chi, (inp["T"]-t0)*T_MYR
+def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512):
+    """the model stream today: final phase space (kept particles), chi [kpc Myr], age [Myr] and the number of re-integrated
+    particles. Yoshida-4 for all; particles that came within flag_rj tidal radii (at release) of the progenitor centre are
+    re-integrated with adaptive Dopri8 (rtol = atol); flag_rj = 0 disables. The flagged set is padded to a multiple of pad
+    (fewer recompilations)."""
+    tb, ic, t0, rj = release(params, ht, inp, trel, keep)
+    xv, chi, dmin = yoshida4_chi(ic, t0, tb, dt)
+    f = np.nonzero(np.asarray(dmin < flag_rj*rj))[0]
+    if f.size:
+        fp = np.resize(f, -(-f.size//pad)*pad); y, c = dopri8_chi(ic[fp], t0[fp], tb, rtol, rtol)
+        xv, chi = xv.at[f].set(y[:f.size]), chi.at[f].set(c[:f.size])
+    return xv, chi, (inp["T"]-t0)*T_MYR, f.size

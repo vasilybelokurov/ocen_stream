@@ -17,7 +17,7 @@ def released():
     from ocen_stream import jaxspray as J, jaxmodel as JM
     run = json.loads((ROOT/"results/streams/fitknot_20261025/runs/final_c0_2.json").read_text()); p = run["params"]
     ht, inp = J.load_host(G/"host_tables.npz"), JM.load_inputs(G/"spray_inputs.npz"); trel, keep = JM.schedule(inp, run["epoch_offset"])
-    t1 = time.time(); tb, ic, t0 = JM.release(p, ht, inp, trel, keep); ic.block_until_ready(); print(f"release {time.time()-t1:.1f} s")
+    t1 = time.time(); tb, ic, t0, _ = JM.release(p, ht, inp, trel, keep); ic.block_until_ready(); print(f"release {time.time()-t1:.1f} s")
     return J, JM, p, ht, inp, tb, np.asarray(ic), np.asarray(t0), np.load(G/"bench_inputs.npz")
 
 
