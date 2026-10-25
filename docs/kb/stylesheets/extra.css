@@ -1,0 +1,5 @@
+/* Narrower right-hand table of contents (Material default 12.1rem) */
+@media screen and (min-width: 76.25em) {
+  .md-sidebar--secondary { width: 9rem; }
+  .md-sidebar--secondary .md-nav { font-size: 0.62rem; }
+}

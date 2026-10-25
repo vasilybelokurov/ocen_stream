@@ -1,0 +1,86 @@
+site_name: "oCen_stream: the Omega Centauri stream and the Milky Way bar"
+site_description: Knowledge base of the oCen_stream project (stream data, spray models, bar fits, reviews, literature)
+site_url: https://vasilybelokurov.github.io/ocen_stream/
+repo_url: https://github.com/vasilybelokurov/ocen_stream
+repo_name: vasilybelokurov/ocen_stream
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/brightness-7, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/brightness-4, name: Light mode}
+
+hooks:
+  - docs/hooks/kb.py
+
+exclude_docs: |
+  hooks/
+  *.aux
+  *.log
+  *.fls
+  *.fdb_latexmk
+  *.out
+  *.toc
+  *.bbl
+  *.blg
+  *.synctex.gz
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+
+extra_css:
+  - kb/stylesheets/extra.css
+
+extra_javascript:
+  - kb/javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+
+validation:
+  omitted_files: info
+  absolute_links: info
+  unrecognized_links: warn
+  anchors: info
+
+nav:
+  - Home: index.md
+  - Data:
+      - Stream sample and caches: kb/data/tails_streams.md
+      - Potentials and frames: kb/data/potentials.md
+  - Models:
+      - Likelihood versions: kb/models/stream_likelihood_versions.md
+      - Results index: kb/models/stream_results_index.md
+  - History:
+      - Status (2026-10-18): kb/stream_status.md
+      - PM refinement (2026-10-13): STREAM_PM_REFINEMENT_2026-10-13.md
+      - Knee investigation: STREAM_KNEE_INVESTIGATION.md
+      - Diagnostic plan: STREAM_DIAGNOSTIC_PLAN.md
+      - Fit campaign plan: STREAM_FIT_CAMPAIGN_PLAN.md
+      - Experiments plan: STREAM_EXPERIMENTS_PLAN.md
+      - Stream-fitting methods review: STREAM_FIT_METHODS_REVIEW.md
+      - Requirements: STREAM_REQUIREMENTS.md
+      - Stream distances literature: literature/omega_cen_stream_distances_2026-10-10.md
+  - Literature: kb/literature.md
+  - Reviews: reviews/index.md
