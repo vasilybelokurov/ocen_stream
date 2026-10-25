@@ -62,8 +62,9 @@ def _w(t):
 
 
 def _spline2(c, x, y, nx, ny):
-    """tensor cubic B-spline at grid coordinates (x, y) (in node units) of padded coefficients c (..., nx+4, ny+4); points beyond
-    the grid are clamped to its last cell."""
+    """tensor cubic B-spline at grid coordinates (x, y) (in node units) of padded coefficients c (..., nx+4, ny+4). Beyond the grid
+    the cell index is clamped but the weights are not: the last cell's cubic is extrapolated (the grid, R <= 30, |z| <= 10 kpc,
+    covers all orbits here)."""
     i = jnp.clip(jnp.floor(x), 0, nx-2); j = jnp.clip(jnp.floor(y), 0, ny-2)
     wx, wy = _w(x-i), _w(y-j); k = jnp.arange(4)
     I = (i.astype(jnp.int32)+1)[..., None]+k; J = (j.astype(jnp.int32)+1)[..., None]+k

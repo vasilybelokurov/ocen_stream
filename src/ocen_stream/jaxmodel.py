@@ -147,7 +147,8 @@ def release(params, ht, inp, trel, keep):
 
 def _orbit_resample(xv0, tb, T, trel, n_grid=39112):
     """adaptive centre orbit, resampled on a uniform grid (Hermite in the DOP853 steps), and its state at the release epochs."""
-    tcs, orb, acc_c, _ = centre_orbit_dop853(xv0, tb, T, acc=ORBIT_ACC)
+    tcs, orb, acc_c, n = centre_orbit_dop853(xv0, tb, T, acc=ORBIT_ACC)
+    orb = jnp.where(n < 32767, orb, jnp.nan)                         # buffer exhausted before t = 0: poison the orbit, never silent
     tcu = jnp.linspace(0., T, n_grid+1); H = lambda t: jnp.concatenate((J._hermite(t, tcs, orb[:, :3], orb[:, 3:]), J._hermite(t, tcs, orb[:, 3:], acc_c)), 1)
     return tcu, H(tcu), H(trel)
 
@@ -259,7 +260,7 @@ _attempts_jit = jax.jit(_attempts, static_argnums=(4,))
 _init_jit = jax.jit(_init_step)
 
 
-def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=None, handoff=None):
+def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=None, handoff=None, max_att=200000):
     """AGAMA's DOP853 for every particle from t0 to T, carrying chi [kpc Myr]. Work-efficient on a GPU: n_att attempts per call,
     then the unfinished particles are compacted into a power-of-two array (finished ones stop costing anything). Returns
     (final (N, 6), chi, number of accepted+rejected attempts of the slowest particle). trace (optional list): appended with
@@ -283,6 +284,8 @@ def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=
         act = np.nonzero(~done & live)[0]
         if act.size == 0:
             return out_y, out_chi*T_MYR, calls*n_att
+        if calls*n_att > max_att:
+            raise RuntimeError(f"dop853_chi: {act.size} particles unfinished after {max_att} attempts (non-finite state or stalled step?)")
         if handoff is not None and calls*n_att >= handoff and s[1].devices() != {cpu := jax.devices("cpu")[0]}:
             s, tb, T = jax.device_put((s, tb, T), cpu); min_size = 64                      # small arrays are cheap on a CPU
         m = max(min_size, 1 << (2*int(np.ceil(np.log2(act.size)/2))))                     # powers of 4: fewer compiled shapes

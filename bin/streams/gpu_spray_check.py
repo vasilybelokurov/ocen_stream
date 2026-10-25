@@ -36,9 +36,9 @@ def sprays():
                            host_kw=dict(bar_size=p["size"], axi_variant=dict(halo_q=p["halo_q"], vc_target=p["vc"], r0_kpc=frame_r0("gravity21"))),
                            epoch_offset=OFFSET, frame="gravity21")
             np.savez(OUT/f"{name}_agama.npz", age_cut_myr=700., **{k: np.asarray(m[k], float) for k in KEYS}); print(f"{name}: AGAMA {time.time()-t1:.0f} s", flush=True)
-        if not (OUT/f"{name}_jax.npz").exists():
+        if not (OUT/f"{name}_jax_{METHOD}.npz").exists():
             t1 = time.time(); xv, chi, age, nf = JM.spray(p, ht, inp, trel, keep, method=METHOD); o = JM.observables(xv, inp)
-            np.savez(OUT/f"{name}_jax.npz", age_cut_myr=700., chi=np.asarray(chi), age=np.asarray(age), d=np.asarray(o["dist"]),
+            np.savez(OUT/f"{name}_jax_{METHOD}.npz", age_cut_myr=700., chi=np.asarray(chi), age=np.asarray(age), d=np.asarray(o["dist"]),
                      **{k: np.asarray(o[k]) for k in ("l", "b", "pmra", "pmdec", "vlos")}); print(f"{name}: JAX {METHOD} {time.time()-t1:.0f} s ({nf}: re-integrated / attempts)", flush=True)
 
 
@@ -51,10 +51,10 @@ def main():
     from ocen_stream.jaxscore import make_bank
     D = MC.data_vector(); O = MC.Obs(); res = {}
     for name in POINTS:
-        a, j = dict(np.load(OUT/f"{name}_agama.npz")), dict(np.load(OUT/f"{name}_jax.npz")); r = res[name] = dict(dchi2=[], chi2_agama=[])
+        a, j = dict(np.load(OUT/f"{name}_agama.npz")), dict(np.load(OUT/f"{name}_jax_{METHOD}.npz")); r = res[name] = dict(dchi2=[], chi2_agama=[])
         for seed in (7, 8, 9):                                     # fixed per-slot draws (as the GPU score): each spray its own chi
             b = make_bank(len(a["chi"]), MC.NBOOT, seed); ca = MC.chi2(D, MC.measure(O, D, str(OUT/f"{name}_agama.npz"), None, bank=b))["total"]
-            cj = MC.chi2(D, MC.measure(O, D, str(OUT/f"{name}_jax.npz"), None, bank=b))["total"]; r["chi2_agama"].append(ca); r["dchi2"].append(cj-ca)
+            cj = MC.chi2(D, MC.measure(O, D, str(OUT/f"{name}_jax_{METHOD}.npz"), None, bank=b))["total"]; r["chi2_agama"].append(ca); r["dchi2"].append(cj-ca)
         dmu = np.hypot(j["pmra"]-a["pmra"], j["pmdec"]-a["pmdec"]); r["chi_sign_agree"] = float(np.mean(np.sign(j["chi"]) == np.sign(a["chi"])))
         r["dmu_pct"] = {p: float(np.percentile(dmu, p)) for p in (50, 90, 99, 99.9)}
         print(f"{name} ({METHOD}): chi2 AGAMA {' / '.join(f'{c:.1f}' for c in r['chi2_agama'])}; dchi2 JAX {' / '.join(f'{d:+.2f}' for d in r['dchi2'])} "
