@@ -242,15 +242,19 @@ _attempts_jit = jax.jit(_attempts, static_argnums=(4,))
 _init_jit = jax.jit(_init_step)
 
 
-def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256):
+def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None):
     """AGAMA's DOP853 for every particle from t0 to T, carrying chi [kpc Myr]. Work-efficient on a GPU: n_att attempts per call,
     then the unfinished particles are compacted into a power-of-two array (finished ones stop costing anything). Returns
-    (final (N, 6), chi, number of accepted+rejected attempts of the slowest particle)."""
+    (final (N, 6), chi, number of accepted+rejected attempts of the slowest particle). trace (optional list): appended with
+    (attempts so far, active particles, array size, seconds) per call, to see where the time goes."""
     T = tb["T"]; n = len(ic); t = jnp.asarray(t0); y = jnp.asarray(ic); h, k1 = _init_jit(y, t, tb, acc)
     out_y, out_chi = np.zeros((n, 6)), np.zeros(n); idx = np.arange(n); calls = 0
     s = (t, y, k1, h, jnp.zeros(n), jnp.zeros(n, jnp.int32), jnp.full(n, jnp.inf), jnp.zeros(n, bool))
     while True:
+        t_c = __import__("time").perf_counter(); n_live = int(np.sum(idx >= 0)) if trace is not None else 0
         s = _attempts_jit(s, T, tb, acc, n_att); calls += 1
+        if trace is not None:
+            s[7].block_until_ready(); trace.append((calls*n_att, n_live, len(idx), __import__("time").perf_counter()-t_c))
         done = np.asarray(s[7]); live = idx >= 0
         fin = done & live; out_y[idx[fin]] = np.asarray(s[1])[fin]; out_chi[idx[fin]] = np.asarray(s[4])[fin]
         act = np.nonzero(~done & live)[0]
