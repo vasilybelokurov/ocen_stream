@@ -126,7 +126,7 @@ def measure(obs, chi, age, si, bank):
         c, s = sky(P, w, si); q = pm(P, w, si)
         return jnp.concatenate((c[kw], s[kw], q["pmra"], q["pmdec"]))
     sel = P["sel"].astype(float)
-    V = jax.lax.map(vec, jnp.concatenate((sel[None], sel[None]*bank["boot"]), 0))
+    V = jax.vmap(vec)(jnp.concatenate((sel[None], sel[None]*bank["boot"]), 0))       # all bootstraps in one batch (was lax.map)
     return V[0], jnp.nanstd(V[1:], 0)
 
 
