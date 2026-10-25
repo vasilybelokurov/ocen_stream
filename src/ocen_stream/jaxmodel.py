@@ -16,6 +16,8 @@ import jax.numpy as jnp
 from . import jaxspray as J
 
 T_MYR = 977.79222168; KMS_MASYR = 4.740470463533348
+SPRAY_ACC = 1e-6   # DOP853 tolerance for the particles: 2.2x less work than 1e-8; chi2 equal within the 1e-8-vs-AGAMA noise near the best
+                   # fit (gpu_tolerance_scan.py, 2026-10-25; at poor-fit points chi2 moves by 5-15 under any small numerical change)
 
 
 def load_inputs(path, dtype=jnp.float64):
@@ -158,7 +160,7 @@ def _release_ic(orbit_r, trel, tb, inp):
     return release_ic(orbit_r, rj, vj, Rm, inp["bank"])[0], rj
 
 
-def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512, method="yoshida", acc=1e-8, n_att=32, handoff=None):
+def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512, method="dop853", acc=SPRAY_ACC, n_att=32, handoff=None):
     """the model stream today: final phase space (kept particles), chi [kpc Myr], age [Myr] and the number of re-integrated
     particles (method 'yoshida') or the attempts of the slowest particle (method 'dop853': AGAMA's integrator at accuracy acc for
     every particle). Yoshida-4: particles that came within flag_rj tidal radii (at release) of the progenitor centre are
@@ -258,7 +260,7 @@ _attempts_jit = jax.jit(_attempts, static_argnums=(4,))
 _init_jit = jax.jit(_init_step)
 
 
-def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=None, handoff=None, max_att=200000, mi=None):
+def dop853_chi(ic, t0, tb, acc=SPRAY_ACC, n_att=32, min_size=256, trace=None, finish=None, handoff=None, max_att=200000, mi=None):
     """AGAMA's DOP853 for every particle from t0 to T, carrying chi [kpc Myr]. Work-efficient on a GPU: n_att attempts per call,
     then the unfinished particles are compacted into a power-of-two array (finished ones stop costing anything). Returns
     (final (N, 6), chi, number of accepted+rejected attempts of the slowest particle). trace (optional list): appended with
@@ -359,7 +361,7 @@ def release_batch(params_list, ht, inp, trel, keep):
     return tb, jnp.concatenate([o[1] for o in out]), jnp.concatenate([o[2] for o in out]), jnp.repeat(jnp.arange(K), np.array(n)), n
 
 
-def spray_batch(params_list, ht, inp, trel, keep, acc=1e-8, n_att=32):
+def spray_batch(params_list, ht, inp, trel, keep, acc=SPRAY_ACC, n_att=32):
     """K model streams in one DOP853 integration (the latency-bound tails of the models overlap). Returns a list of
     (final (N_k, 6), chi, age) per model."""
     tb, ic, t0, mi, n = release_batch(params_list, ht, inp, trel, keep)
