@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from ocen_dm.streams.score import score_conditional
-from ocen_dm.streams.score_bias import jackknife_total
+from ocen_stream.score import score_conditional
+from ocen_stream.score_bias import jackknife_total
 
 ROOT = Path(__file__).resolve().parents[1]
 E = np.arange(0., 205., 5.)

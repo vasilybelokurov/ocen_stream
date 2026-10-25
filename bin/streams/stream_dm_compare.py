@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/stream
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 sys.argv = sys.argv[:1]
 from stream_masks import cluster_orbit
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
 
 L = lambda f: json.loads((ROOT/"results/plot_data"/f).read_text())
 P, new, nob = L("gaia_cmd_mask.json"), L("stream_dm_fit.json"), L("stream_dm_fit_orbitstart.json")

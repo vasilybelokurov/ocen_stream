@@ -7,7 +7,7 @@ Usage: python bin/streams/plot_profile_stage1.py"""
 import json
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from grid4_common import ROOT, project_gc, GC, du, dx, d
-from ocen_dm.cluster import MU_SYS, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC
+from ocen_stream.cluster import MU_SYS, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC
 
 R = json.loads((ROOT/"results/plot_data/profile_stage1.json").read_text())
 P = {a: [r for r in R if r["an"] == a] for a in (28., 16.)}

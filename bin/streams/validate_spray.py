@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Stage 1: particle spray (src/ocen_dm/streams/spray.py) vs the prescribed-potential tracer runs and vs the data, through
-the same track estimator (src/ocen_dm/streams/track.py). Model A mass profile; hosts as in the runs (Hunter+24 axi, bars).
+"""Stage 1: particle spray (src/ocen_stream/spray.py) vs the prescribed-potential tracer runs and vs the data, through
+the same track estimator (src/ocen_stream/track.py). Model A mass profile; hosts as in the runs (Hunter+24 axi, bars).
 Spray: trailing-arm particles only; tracer runs: unbound tracers. Northern-arm selection as for the data (b > 15, -75<l<-20).
 Usage: python bin/streams/validate_spray.py --nrel 4000 hunter_axi hunter_bar33 hunter_bar37.5 hunter_bar41
        -> plots/streams_spray_validation.png, results/plot_data/streams_spray_validation.json
@@ -9,11 +9,11 @@ import argparse, json, sys, time
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
-from ocen_dm.streams.analysis import load, run_core, run_particles
-from ocen_dm.streams.restricted import AGAMA_T_MYR, bound_set, host_potential
-from ocen_dm.streams.frames import observables
-from ocen_dm.streams.spray import spray
-from ocen_dm.streams.track import measure
+from ocen_stream.analysis import load, run_core, run_particles
+from ocen_stream.restricted import AGAMA_T_MYR, bound_set, host_potential
+from ocen_stream.frames import observables
+from ocen_stream.spray import spray
+from ocen_stream.track import measure
 
 w = lambda x: np.where(x > 180, x-360, x)
 

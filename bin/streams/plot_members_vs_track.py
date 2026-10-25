@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/str
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
 sys.path.insert(0, str(ROOT/'src'))
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
-from ocen_dm.streams.score import chi_kde_track
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.score import chi_kde_track
 
 d = load_data()
 tr = json.loads((ROOT/"results/plot_data/stream54_track.json").read_text())["all"]

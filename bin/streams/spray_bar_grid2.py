@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 2a re-run with the per-star sky-conditional score (src/ocen_dm/streams/score.py) and Gibbons-chi unwrapping
+"""Stage 2a re-run with the per-star sky-conditional score (src/ocen_stream/score.py) and Gibbons-chi unwrapping
 (spray_unwrapped). Same 45 bar models (Omega_b 30-36 x angle 24/28/32 x amplitude 0.8/1.0/1.2), model A, 1.96 Gyr, omega Cen at
 OCEN_TODAY; release over the last 1000 Myr at fixed common epochs (common random numbers: same seed for all models).
 Data: Ibata+2024 stream 54 members with b > 15, -75 < l < -20 (Gaia DR3 PM errors and correlations; 29 v_los).
@@ -12,10 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, astropy.coordinates as coord
 from astropy.table import Table
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
-from ocen_dm.streams.frames import observables
-from ocen_dm.streams.spray import spray_unwrapped
-from ocen_dm.streams.score import score, overshoot_fraction, chi_track, score_chi_kde
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
+from ocen_stream.frames import observables
+from ocen_stream.spray import spray_unwrapped
+from ocen_stream.score import score, overshoot_fraction, chi_track, score_chi_kde
 
 w = lambda x: np.where(x > 180, x-360, x)
 OMEGA = [30., 31.5, 33., 34.5, 36.]; ANGLE = [24., 28., 32.]; AMP = [0.8, 1.0, 1.2]

@@ -9,8 +9,8 @@ import json
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
 from plot_debris_vs_ibata import observables, MODELS
-from ocen_dm.streams.analysis import load, run_core, run_particles
-from ocen_dm.streams.restricted import OCEN_TODAY, bound_set
+from ocen_stream.analysis import load, run_core, run_particles
+from ocen_stream.restricted import OCEN_TODAY, bound_set
 w = lambda x: np.where(x > 180, x-360, x)
 t = Table.read(os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")); t = t[np.asarray(t["Stream"]) == 54]
 g = coord.SkyCoord(np.asarray(t["RAdeg"], float), np.asarray(t["DEdeg"], float), unit="deg").galactic

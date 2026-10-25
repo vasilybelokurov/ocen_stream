@@ -3,7 +3,7 @@ import numpy as np
 
 
 def test_excess_corotating_equals_inflated_bar():
-    from ocen_dm.streams.restricted import host_potential
+    from ocen_stream.restricted import host_potential
     T, om, ang, A, S = 2.0, 33.14, 12.5, 1.37, 1.33
     infl = host_potential("x", bar_omega=om, bar_angle_deg=ang, t_today=T, bar_amp=A, bar_size=S)
     pub = host_potential("x", bar_omega=om, bar_angle_deg=ang, t_today=T, bar_amp=1.0, bar_size=1.0,
@@ -14,7 +14,7 @@ def test_excess_corotating_equals_inflated_bar():
 
 
 def test_excess_has_no_axisymmetric_part():
-    from ocen_dm.streams.restricted import host_potential
+    from ocen_stream.restricted import host_potential
     T = 2.0
     a = host_potential("x", bar_omega=33., bar_angle_deg=25., t_today=T, bar_amp=1.0, bar_size=1.0)
     b = host_potential("x", bar_omega=33., bar_angle_deg=25., t_today=T, bar_amp=1.0, bar_size=1.0,

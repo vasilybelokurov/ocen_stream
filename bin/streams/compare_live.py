@@ -2,7 +2,7 @@
 """Validation of the restricted N-body runs against the live (pyfalcon) runs of the same ICs.
 
 For each (live, restricted) pair the same centre finder and bound criterion
-(src/ocen_dm/streams/analysis.py) are applied to snapshots at a common set of times. Measured:
+(src/ocen_stream/analysis.py) are applied to snapshots at a common set of times. Measured:
 bound mass per species versus time; unbound stellar fraction; rms of host energy and Lz of the
 stellar debris relative to the cluster; width and velocity dispersion of unbound stars 0.3-2 kpc
 from the cluster in the local (along / in-plane / normal) frame; sky distribution today.
@@ -33,8 +33,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ocen_dm.streams.analysis import frozen_star_mass, load, run_core, run_particles, snapshot_times, state, tail_metrics
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, centre_orbit, host_potential
+from ocen_stream.analysis import frozen_star_mass, load, run_core, run_particles, snapshot_times, state, tail_metrics
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, centre_orbit, host_potential
 
 R_SUN_KPC, V_SUN = 8.178, (11.1, 12.24+240.0, 7.25)     # as bin/nbody/analyse_tails.py
 

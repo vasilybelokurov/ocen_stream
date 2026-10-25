@@ -5,11 +5,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 from spray_bar_grid2 import load_data, w
-from ocen_dm.streams.restricted import AGAMA_T_MYR, host_potential
-from ocen_dm.streams.frames import observables, to_model, OCEN_OBS
-from ocen_dm.streams.spray import spray_unwrapped
-from ocen_dm.streams.score import score_conditional
-from ocen_dm.streams.path import project_gc
+from ocen_stream.restricted import AGAMA_T_MYR, host_potential
+from ocen_stream.frames import observables, to_model, OCEN_OBS
+from ocen_stream.spray import spray_unwrapped
+from ocen_stream.score import score_conditional
+from ocen_stream.path import project_gc
 
 PMRA, PMDEC = -3.2223, -6.7517
 d = load_data(); nd = len(d["l"])
@@ -26,7 +26,7 @@ def peri_release_times(host, today, nrel, window_myr=1000., sigma_myr=50.):
     """Release epochs [AGAMA units] concentrated at pericentres (Erkal+2019-style; width sigma_myr is our choice): deterministic
     quantiles of an equal-weight mixture of Gaussians (sigma_myr) centred on the centre orbit's pericentres within the last
     window_myr (+ 2 sigma margin), truncated to the window. Returns (t_release, pericentre ages [Myr])."""
-    from ocen_dm.streams.restricted import agama_kpc
+    from ocen_stream.restricted import agama_kpc
     agama = agama_kpc()
     _, back = agama.orbit(potential=host, ic=today, timestart=T, time=-T, trajsize=2, accuracy=1e-12)
     tc, orb = agama.orbit(potential=host, ic=back[-1], timestart=0., time=T, trajsize=int(T*AGAMA_T_MYR/0.5)+1, accuracy=1e-12)
@@ -129,7 +129,7 @@ def _commit():
     import subprocess
     try:
         c = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=5).stdout.strip()
-        dirty = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src/ocen_dm/streams", "bin/streams/grid4_common.py"],
+        dirty = subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src/ocen_stream", "bin/streams/grid4_common.py"],
                                capture_output=True, text=True, timeout=5).stdout.strip()
         return c+("-dirty" if dirty else "")
     except Exception:

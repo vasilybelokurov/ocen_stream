@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
-from ocen_dm.streams.path import fit_gc_frame, chord_gc_frame, project_gc, gc_rotation, to_stream
+from ocen_stream.path import fit_gc_frame, chord_gc_frame, project_gc, gc_rotation, to_stream
 
 d = load_data(); l, b = d["l"], d["b"]
 P = json.loads((ROOT/"results/plot_data/stream54_path.json").read_text()); ridge = np.array(P["ridge"])

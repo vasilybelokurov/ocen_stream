@@ -12,7 +12,7 @@ Usage: OMP_NUM_THREADS=8 python bin/streams/frame_decomp_edges.py
 import itertools, json, os, time
 import numpy as np
 from grid4_common import ROOT, make_spray, score, project_gc, GC, du, OCEN_OBS
-from ocen_dm.streams.frames import FRAMES
+from ocen_stream.frames import FRAMES
 
 B = FRAMES["baumgardt"]
 FRAMES["b_vy232"] = dict(B, v_sun=(11.1, 232.24, 7.25)); FRAMES["b_r08122"] = dict(B, r0_kpc=8.122); FRAMES["b_zsun17"] = dict(B, z_sun_pc=17.)

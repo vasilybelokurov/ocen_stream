@@ -16,8 +16,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
-from ocen_dm.streams.path import project_gc
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.path import project_gc
 
 H_U, EPS, DCHI, NMIN, AGE_MAX = 0.5, 0.05, 5., 20, 700.
 H = dict(b=0.5, pmra=0.2, pmdec=0.2, vlos=5., d=0.1)            # sigma_l per particle = 0.5/cos b

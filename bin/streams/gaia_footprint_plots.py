@@ -28,7 +28,7 @@ def gc_masked(l, b):
     """True for positions within a globular-cluster mask: omega Cen 2 deg, other clusters max(0.25 deg, 10 r_h)
     (catalogue $OCEN_CATALOGUES/gc_catalog_full.fits; RH in pc, DIST in kpc)."""
     import os
-    import ocen_dm  # noqa: F401  (loads .env: OCEN_CATALOGUES)
+    import ocen_stream  # noqa: F401  (loads .env: OCEN_CATALOGUES)
     import astropy.coordinates as coord
     from astropy.table import Table
     t = Table.read(os.path.expanduser(os.path.expandvars("$OCEN_CATALOGUES/gc_catalog_full.fits")))
@@ -48,7 +48,7 @@ def gc_masked(l, b):
 
 def area_fraction():
     """Fraction of each (phi1, dphi2) pixel inside the footprint (b > 8), from a fine uniform grid on the sphere."""
-    from ocen_dm.streams.path import project_gc
+    from ocen_stream.path import project_gc
     from branch_search_gaia import GC
     n = 4_000_000; rng = np.random.default_rng(1)
     l = rng.uniform(-110, 10, n); sb = rng.uniform(np.sin(np.radians(-20)), np.sin(np.radians(75)), n); b = np.degrees(np.arcsin(sb))

@@ -25,8 +25,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ocen_dm.streams.analysis import frozen_star_mass, load, run_core, run_particles, snapshot_times, state, tail_metrics
-from ocen_dm.streams.restricted import host_potential
+from ocen_stream.analysis import frozen_star_mass, load, run_core, run_particles, snapshot_times, state, tail_metrics
+from ocen_stream.restricted import host_potential
 from compare_live import sky
 
 MODELS = [("A_nodm", "A: no DM", "#2a78d6"), ("B_dm_phot", "B: moderate DM", "#eb6834"),

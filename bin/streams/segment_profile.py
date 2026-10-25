@@ -23,7 +23,7 @@ def score_one(args):
     npz, spec = args
     import rescore_batch as RB
     from grid4_common import win, project_gc, GC
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.score import score_conditional
     c, _, ob = RB.catalogue("real" if spec["catalogue"] == "real" else str(ROOT/spec["catalogue"]))
     BG, VB = RB.bounds(spec["box"]); ob = "raise" if spec["box"] == "wide" else ob
     m = dict(np.load(npz)); mu, mx = project_gc(m["l"], m["b"], GC)

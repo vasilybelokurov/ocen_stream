@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/str
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
 from plot_debris_vs_ibata import observables
-from ocen_dm.streams.analysis import load, run_core, run_particles
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, bound_set, host_potential
+from ocen_stream.analysis import load, run_core, run_particles
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, bound_set, host_potential
 
 run, key = sys.argv[1], sys.argv[2]
 KNEE = dict(l=(-45, -28), b=(31, 41)); ARM = dict(l=(-62, -50), b=(20, 30))

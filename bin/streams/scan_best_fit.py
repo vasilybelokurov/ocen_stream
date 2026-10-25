@@ -11,11 +11,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data, w
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
-from ocen_dm.streams.restricted import AGAMA_T_MYR, host_potential
-from ocen_dm.streams.frames import observables, to_model, OCEN_OBS
-from ocen_dm.streams.spray import spray_unwrapped
-from ocen_dm.streams.score import score_chi_kde
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.restricted import AGAMA_T_MYR, host_potential
+from ocen_stream.frames import observables, to_model, OCEN_OBS
+from ocen_stream.spray import spray_unwrapped
+from ocen_stream.score import score_chi_kde
 
 PRIOR = dict(amp=(1.0, 0.1), d=(OCEN_DISTANCE_KPC, 0.15), pmra=(OCEN_OBS["pmra"], 0.027), pmdec=(OCEN_OBS["pmdec"], 0.027), angle=(27., 2.))
 d = load_data()

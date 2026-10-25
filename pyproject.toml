@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocen-stream"
+version = "0.1.0"
+description = "Omega Centauri tidal stream and the Milky Way bar: data extraction, particle-spray models, fits"
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "astropy", "matplotlib", "pyyaml", "torch", "pillow"]
+
+[project.optional-dependencies]
+dynamics = ["agama"]
+# bin/streams/scope_jacobi.py also imports the cluster DF code of ocen_dm (https://github.com/vasilybelokurov/ocen_dm)
+cluster = ["ocen-dm"]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "bin/streams"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

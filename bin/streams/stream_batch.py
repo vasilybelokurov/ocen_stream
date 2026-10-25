@@ -61,7 +61,7 @@ def replicate_jobs(npts=64, nrep=2):
 
 def manifest(jobs):
     from grid4_common import du, dW, d, cov, win, BG_BOUNDS, V_BOUNDS
-    from ocen_dm.provenance import environment_record
+    from ocen_stream.provenance import environment_record
     h = hashlib.sha256()
     for a in (du, dW, d["v"], d["e_v"], cov, np.asarray(win)):
         h.update(np.ascontiguousarray(np.asarray(a, np.float64)).tobytes())
@@ -94,7 +94,7 @@ def catalogue_spec(outdir):
 def task_catalogue(job, mid, sources, outdir, spec):
     import rescore_batch as RB
     from grid4_common import make_spray, win, project_gc, GC
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.score import score_conditional
     rd = Path(outdir)/"runs"; rid = job["run_id"]; p = job["params"]; t0 = time.time()
     m = make_spray(p["omega"], p["angle"], p["amp"], p["dist"], nrel=job["nrel"], seed=job["seed"], pm=(p["pmra"], p["pmdec"]),
                    host_kw=dict(bar_size=p["size"], axi_variant=dict(halo_q=p["halo_q"], vc_target=p["vc"])),

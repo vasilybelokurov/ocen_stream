@@ -12,7 +12,7 @@ import json, os, time
 import numpy as np
 from scipy.stats import qmc
 from grid4_common import ROOT, make_spray, score, du, OCEN_OBS
-from ocen_dm.streams.restricted import agama_kpc, HUNTER24_DIR
+from ocen_stream.restricted import agama_kpc, HUNTER24_DIR
 
 SIG = 0.027; RBAR0 = 5.0; ANGLES = (28., 16.); SEEDS = (1, 2, 3); NPT = 40
 LO = np.array([30., 0.8, 0.9, 5.3, OCEN_OBS["pmra"]-3*SIG, OCEN_OBS["pmdec"]-3*SIG])

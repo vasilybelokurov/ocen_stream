@@ -12,9 +12,9 @@ import itertools, json, os, time
 import numpy as np
 from grid4_common import ROOT, make_spray, score, project_gc, GC, du, OCEN_OBS, T
 from obs_split import single_scores
-from ocen_dm.streams.restricted import host_potential, agama_kpc, HUNTER24_DIR
-from ocen_dm.streams.mw_variants import axisymmetric_variant, _vc2
-from ocen_dm.streams.frames import to_model
+from ocen_stream.restricted import host_potential, agama_kpc, HUNTER24_DIR
+from ocen_stream.mw_variants import axisymmetric_variant, _vc2
+from ocen_stream.frames import to_model
 
 agama = agama_kpc()
 VC0 = float(np.sqrt(_vc2(agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini")))))

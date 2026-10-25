@@ -25,7 +25,7 @@ def gaussian_kde(data, bw_method):
     return lambda x: f(np.asarray(x).T)
 
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
-from ocen_dm.cluster import OCEN_DISTANCE_KPC  # noqa: E402
+from ocen_stream.cluster import OCEN_DISTANCE_KPC  # noqa: E402
 GLIM, CW, GW = 20.0, (0.55, 1.3), (15.5, 20.0)
 BINS = [(20, 25), (25, 30), (30, 33), (33, 36), (36, 39), (39, 42)]
 DM = np.arange(-1.5, 1.01, 0.02)

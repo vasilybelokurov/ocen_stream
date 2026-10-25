@@ -9,9 +9,9 @@ import json, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
-from ocen_dm.streams.restricted import FrozenCore, satellite_potential, rmax_of_energy
-from ocen_dm.streams.rotation import spin_up, spin_axis_icrs, icrs_to_model_matrix
-from ocen_dm.streams.frames import ocen_today
+from ocen_stream.restricted import FrozenCore, satellite_potential, rmax_of_energy
+from ocen_stream.rotation import spin_up, spin_axis_icrs, icrs_to_model_matrix
+from ocen_stream.frames import ocen_today
 
 spin = json.loads((ROOT/"results/streams/spin/A_nodm.json").read_text())
 prof = json.loads((ROOT/"results/nbody/A_nodm/model_profiles.json").read_text())

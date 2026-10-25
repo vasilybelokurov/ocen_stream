@@ -41,7 +41,7 @@ def score(args):
     cat, spray = args
     import rescore_batch as RB
     from grid4_common import win, project_gc, GC
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.score import score_conditional
     c, _, _ = RB.catalogue(cat); BG, VB = RB.bounds("wide")
     m = dict(np.load(spray)); mu, mx = project_gc(m["l"], m["b"], GC)
     s = score_conditional(c["du"], c["dw"], c["dv"], c["dev"], c["cov"], mu, np.column_stack((mx, m["pmra"], m["pmdec"])), m["vlos"],

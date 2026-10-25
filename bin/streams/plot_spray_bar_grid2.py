@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/str
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
 sys.path.insert(0, str(ROOT/'src'))
-from ocen_dm.streams.score import age_ridge
+from ocen_stream.score import age_ridge
 
 G = json.loads((ROOT/"results/plot_data/spray_bar_grid2.json").read_text())["grid"]
 om = sorted({x["omega"] for x in G}); an = sorted({x["angle"] for x in G}); am = sorted({x["amp"] for x in G})

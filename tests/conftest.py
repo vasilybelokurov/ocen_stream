@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-import ocen_dm  # noqa: F401  (loads the local .env, as scripts do)
+import ocen_stream  # noqa: F401  (loads the local .env, as scripts do)
 import pytest
 from astropy import units as u
 from astropy.table import Table
@@ -83,7 +83,7 @@ def synthetic_vizier_fimbulthul(rng) -> Table:
 @pytest.fixture
 def isolated_root(tmp_path, monkeypatch):
     """Point the package's path helpers at a temporary project root."""
-    monkeypatch.setenv("OCEN_DM_ROOT", str(tmp_path))
+    monkeypatch.setenv("OCEN_STREAM_ROOT", str(tmp_path))
     for sub in ("data/raw", "data/interim", "data/processed", "provenance", "configs"):
         (tmp_path / sub).mkdir(parents=True, exist_ok=True)
     return tmp_path
@@ -95,9 +95,9 @@ def registry_copy(isolated_root):
     import shutil
     from pathlib import Path
 
-    import ocen_dm
+    import ocen_stream
 
-    repo_root = Path(ocen_dm.__file__).resolve().parents[2]
+    repo_root = Path(ocen_stream.__file__).resolve().parents[2]
     shutil.copy(repo_root / "provenance" / "datasets.yaml",
                 isolated_root / "provenance" / "datasets.yaml")
     return isolated_root

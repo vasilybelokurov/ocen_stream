@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the smooth stream-54 path (src/ocen_dm/streams/path.py), project the members, and check single-valuedness: in
+"""Build the smooth stream-54 path (src/ocen_stream/path.py), project the members, and check single-valuedness: in
 equal-number bins of the along-stream coordinate s, the across-stream distribution x should have one peak (1D KDE, h = 0.4 deg;
 secondary peaks >= 15% of the main one reported).
 Usage: python bin/streams/build_stream_path.py -> results/plot_data/stream54_path.json, plots/stream54_path.png
@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
-from ocen_dm.streams.path import build_path, project, save, gnomonic
+from ocen_stream.path import build_path, project, save, gnomonic
 
 d = load_data(); l, b = d["l"], d["b"]
 track = json.loads((ROOT/"results/plot_data/stream54_track.json").read_text())["all"]

@@ -1,6 +1,6 @@
-"""Round trip ICRS -> model frame -> ICRS for each solar frame (src/ocen_dm/streams/frames.py)."""
+"""Round trip ICRS -> model frame -> ICRS for each solar frame (src/ocen_stream/frames.py)."""
 import numpy as np, pytest
-from ocen_dm.streams.frames import FRAMES, OCEN_OBS, to_model, observables
+from ocen_stream.frames import FRAMES, OCEN_OBS, to_model, observables
 
 
 @pytest.mark.parametrize("frame", list(FRAMES))

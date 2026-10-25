@@ -12,9 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 from astropy.table import Table
-from ocen_dm.streams.restricted import AGAMA_T_MYR, agama_kpc, host_potential
-from ocen_dm.streams.frames import to_model
-from ocen_dm.streams.analysis import load
+from ocen_stream.restricted import AGAMA_T_MYR, agama_kpc, host_potential
+from ocen_stream.frames import to_model
+from ocen_stream.analysis import load
 
 
 def catalogue(name):

@@ -10,11 +10,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 from spray_bar_grid2 import load_data, w
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
-from ocen_dm.streams.restricted import AGAMA_T_MYR, host_potential
-from ocen_dm.streams.frames import observables, to_model, OCEN_OBS
-from ocen_dm.streams.spray import spray_unwrapped
-from ocen_dm.streams.score import score_chi_kde
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.restricted import AGAMA_T_MYR, host_potential
+from ocen_stream.frames import observables, to_model, OCEN_OBS
+from ocen_stream.spray import spray_unwrapped
+from ocen_stream.score import score_chi_kde
 
 OM, AN, AM = 34.5, 28., 1.2
 d = load_data()

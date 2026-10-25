@@ -3,8 +3,8 @@ Usage: PYTHONPATH=src python bin/streams/lmc_tidal_estimate.py   (1 core, ~10 s)
 LMC orbit: AGAMA example_lmc_mw_interaction.py recipe (rigid MW + rigid LMC, Chandrasekhar DF on LMC), MW = Hunter24 axi.
 omega Cen orbit: Hunter24 axi only (no bar, no LMC) -- estimate only."""
 import os, numpy as np, scipy.integrate, scipy.special
-from ocen_dm.streams.restricted import agama_kpc, HUNTER24_DIR, AGAMA_T_MYR
-from ocen_dm.streams.frames import to_model, ocen_today
+from ocen_stream.restricted import agama_kpc, HUNTER24_DIR, AGAMA_T_MYR
+from ocen_stream.frames import to_model, ocen_today
 ag = agama_kpc()
 mw = ag.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini"))
 for r in (8, 50, 100, 200):

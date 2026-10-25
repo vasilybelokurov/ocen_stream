@@ -42,8 +42,8 @@ def run(job):
     if jf.exists():
         return json.loads(jf.read_text())
     from grid4_common import make_spray, win, project_gc, GC
-    from ocen_dm.streams.frames import frame_r0
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.frames import frame_r0
+    from ocen_stream.score import score_conditional
     import rescore_batch as RB
     from profile_nm import ln_prior
     p = json.loads((ROOT/BEST[lab]).read_text())["params"]

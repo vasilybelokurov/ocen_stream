@@ -1,8 +1,8 @@
 import sys, os, numpy as np
 ROOT = os.environ["OCEN_ROOT"]; sys.path[:0] = [ROOT+"/src", ROOT+"/bin/streams"]
-from ocen_dm.streams.restricted import host_potential, agama_kpc, AGAMA_T_MYR, HUNTER24_DIR
-from ocen_dm.streams.frames import to_model, OCEN_OBS, frame_r0
-from ocen_dm.streams.mw_variants import axisymmetric_variant
+from ocen_stream.restricted import host_potential, agama_kpc, AGAMA_T_MYR, HUNTER24_DIR
+from ocen_stream.frames import to_model, OCEN_OBS, frame_r0
+from ocen_stream.mw_variants import axisymmetric_variant
 agama = agama_kpc(); T = 1955.58/AGAMA_T_MYR; r0 = frame_r0("gravity21")
 p = dict(angle=12.5, omega=33.1405, amp=1.3652, size=1.3285, dist=5.5264, pmra=-3.26125, pmdec=-6.7595, vc=225.03, q=0.8961)
 for lab, A, S in (("fitted", 1.3652, 1.3285), ("published", 1.0, 1.0)):

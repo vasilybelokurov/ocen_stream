@@ -3,7 +3,7 @@
 
 Step 0 (mechanism): the 25-deg step-2 best at its Omega_b and at Omega_b -+1.5 km/s/kpc (moves the ~330-Myr release pericentre
   off the bar major axis): does the off-track branch fraction respond?
-Step 1a (force budget): max over azimuth of the spiral's force (Hunter 2-arm pattern, amplitude 1, src/ocen_dm/streams/spiral.py)
+Step 1a (force budget): max over azimuth of the spiral's force (Hunter 2-arm pattern, amplitude 1, src/ocen_stream/spiral.py)
   relative to the axisymmetric force at R 4-8 kpc, z 0 and 1.5, against the excess non-axisymmetric force of the fitted bars
   over the published one (bin/streams/diagnostics/bar_diag2.py: ~0.1-0.12 of F_axi at R 5-7, z 0).
 Step 1b (sprays): the 12.5- and 25-deg best parameters with the bar at its published strength and size (A = S = 1): no spiral;
@@ -43,8 +43,8 @@ def run(job):
     if jf.exists():
         return json.loads(jf.read_text())
     from grid4_common import make_spray, win, project_gc, GC
-    from ocen_dm.streams.frames import frame_r0
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.frames import frame_r0
+    from ocen_stream.score import score_conditional
     import rescore_batch as RB
     from profile_nm import ln_prior
     p = dict(json.loads((ROOT/BEST[lab]).read_text())["params"])
@@ -96,15 +96,15 @@ def metrics(npz):
 
 
 def force_budget():
-    from ocen_dm.streams.restricted import host_potential, agama_kpc
-    from ocen_dm.streams.frames import frame_r0
+    from ocen_stream.restricted import host_potential, agama_kpc
+    from ocen_stream.frames import frame_r0
     from grid4_common import T
     agama_kpc(); p = json.loads((ROOT/BEST["25"]).read_text())["params"]
     kw = dict(bar_omega=p["omega"], bar_angle_deg=p["angle"], t_today=T, bar_amp=1.0, bar_size=1.0,
               axi_variant=dict(halo_q=p["halo_q"], vc_target=p["vc"], r0_kpc=frame_r0("gravity21")))
     h0 = host_potential("x", **kw); h1 = host_potential("x", spiral=dict(amplitude=1.0, phase_deg=25.), **kw)
-    from ocen_dm.streams.mw_variants import axisymmetric_variant
-    from ocen_dm.streams.restricted import HUNTER24_DIR
+    from ocen_stream.mw_variants import axisymmetric_variant
+    from ocen_stream.restricted import HUNTER24_DIR
     axi = axisymmetric_variant(HUNTER24_DIR, halo_q=p["halo_q"], vc_target=p["vc"], r0_kpc=frame_r0("gravity21"))[0]
     phi = np.linspace(0, 2*np.pi, 73)[:-1]; out = {}
     for z in (0., 1.5):

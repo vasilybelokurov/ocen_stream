@@ -134,7 +134,7 @@ def analyse(args):
     nb = len(EDGES)-1
     centre = np.tile(0.5*(EDGES[:-1]+EDGES[1:]), 3)
     comp = np.repeat(["dphi2", "pmra", "pmdec"], nb)
-    from ocen_dm.cluster import MU_SYS, MU_SYS_ERR, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC
+    from ocen_stream.cluster import MU_SYS, MU_SYS_ERR, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC
     meas = dict(dist=(OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC), pmra=(MU_SYS[0], MU_SYS_ERR), pmdec=(MU_SYS[1], MU_SYS_ERR))
     result = {}
     for name in dict.fromkeys(r["point"] for r in sprays):

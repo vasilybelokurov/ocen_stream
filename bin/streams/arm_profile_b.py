@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/str
 import numpy as np, astropy.coordinates as coord
 from astropy.table import Table
 from plot_debris_vs_ibata import observables, MODELS
-from ocen_dm.streams.analysis import load, run_core, run_particles
-from ocen_dm.streams.restricted import OCEN_TODAY, bound_set
+from ocen_stream.analysis import load, run_core, run_particles
+from ocen_stream.restricted import OCEN_TODAY, bound_set
 w = lambda x: np.where(x > 180, x-360, x)
 E = np.arange(15, 46, 2.5)
 def rows(name, l, b, pm):

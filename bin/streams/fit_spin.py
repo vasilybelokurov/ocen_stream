@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fit the Lynden-Bell flip probability q(r_max) = q0 x^2/(1+x^2)/(1+(r_max/r_q)^2), x = r_max/r_1, of src/ocen_dm/streams/rotation.py to the Gaia DR3
+"""Fit the Lynden-Bell flip probability q(r_max) = q0 x^2/(1+x^2)/(1+(r_max/r_q)^2), x = r_max/r_1, of src/ocen_stream/rotation.py to the Gaia DR3
 plane-of-sky rotation profile (results/plot_data/gaia_dr3_ocen_rotation.json), per model, for the same 200k star tracers
 as bin/streams/run_prescribed.py (same ICs, seed, satellite potential). The model is projected at omega Cen's present
 position; pole sky PA 192 deg (Ibata+2019 axis, sense from our data); the tilt towards us (Ibata+2019: 45 deg) is fitted
@@ -16,8 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 
-from ocen_dm.streams.restricted import OCEN_TODAY, FrozenCore, agama_kpc, rmax_of_energy, satellite_potential
-from ocen_dm.streams.rotation import flip_probability, projected_kinematics, rotation_profile, spin_up
+from ocen_stream.restricted import OCEN_TODAY, FrozenCore, agama_kpc, rmax_of_energy, satellite_potential
+from ocen_stream.rotation import flip_probability, projected_kinematics, rotation_profile, spin_up
 
 
 def tracers(model, ics_path, nstars=200000, seed=1):

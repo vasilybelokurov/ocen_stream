@@ -27,7 +27,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 import astropy.coordinates as coord, astropy.units as u
 from astropy.table import Table
-from ocen_dm.streams.path import project_gc
+from ocen_stream.path import project_gc
 
 w = lambda x: np.where(x > 180, x-360, x)
 GC = json.loads((ROOT/"results/plot_data/stream54_gc_frame_chord.json").read_text())

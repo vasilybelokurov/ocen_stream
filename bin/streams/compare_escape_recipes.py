@@ -23,16 +23,16 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import numpy as np
 from grid4_common import make_spray, score, r_kpc, M, du, d
-from ocen_dm.streams.escape import MEAN, SIGMA, chen_parameters
-from ocen_dm.streams.spray import release_ic
-from ocen_dm.streams.restricted import FrozenCore, satellite_potential
+from ocen_stream.escape import MEAN, SIGMA, chen_parameters
+from ocen_stream.spray import release_ic
+from ocen_stream.restricted import FrozenCore, satellite_potential
 from diagnose_pm_profiles import pm_basis, summarize
 from refine_bar_profiles import atomic_json, NAMES
 
 
 def checks(args):
     # The committed pre-change Fardal function is the local numerical reference.
-    source = subprocess.run(["git", "show", "6444082:src/ocen_dm/streams/spray.py"], capture_output=True, text=True, check=True).stdout
+    source = subprocess.run(["git", "show", "6444082:src/ocen_stream/spray.py"], capture_output=True, text=True, check=True).stdout
     tree = ast.parse(source)
     function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "release_ic")
     scope = {"np": np}
@@ -82,7 +82,7 @@ def pilot(args):
         p = {k: fit["best"][k] for k in NAMES}
         payload = dict(args=vars(args), parameters=p, cases=[], source_files_sha256={
             str(f): hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in
-            ("src/ocen_dm/streams/escape.py", "src/ocen_dm/streams/spray.py", "src/ocen_dm/streams/score.py", "bin/streams/grid4_common.py")})
+            ("src/ocen_stream/escape.py", "src/ocen_stream/spray.py", "src/ocen_stream/score.py", "bin/streams/grid4_common.py")})
         atomic_json(output, payload)
     done = {r["name"] for r in payload["cases"]}
     basis = pm_basis(d["l"], d["b"])

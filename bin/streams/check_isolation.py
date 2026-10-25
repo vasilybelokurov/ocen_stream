@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 
-from ocen_dm.streams.analysis import load, run_particles, snapshot_times
+from ocen_stream.analysis import load, run_particles, snapshot_times
 
 
 def main():

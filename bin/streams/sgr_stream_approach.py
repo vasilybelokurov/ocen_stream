@@ -13,9 +13,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src")); sys.path.insert(0, str(ROOT/"bin/streams"))
 import numpy as np, astropy.coordinates as coord
 from astropy.table import Table
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, bound_set, host_potential
-from ocen_dm.streams.frames import to_model, observables
-from ocen_dm.streams.analysis import load, run_core, run_particles
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, bound_set, host_potential
+from ocen_stream.frames import to_model, observables
+from ocen_stream.analysis import load, run_core, run_particles
 from sgr_recent_passages import catalogue, draw
 
 TB = 600.; NS = int(TB*4)+1

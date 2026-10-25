@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from spray_bar_grid2 import load_data
-from ocen_dm.streams.path import project_gc
+from ocen_stream.path import project_gc
 
 H_U, EPS, DCHI, NMIN, AGE_MAX = 0.5, 0.05, 5., 20, 700.
 Q = (("x", r"$\Delta\phi_2$ [deg]", 0.5, 12., (-6, 6)), ("pmra", "pmra [mas/yr]", 0.2, 30., (-22, 0)),

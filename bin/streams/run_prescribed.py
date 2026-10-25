@@ -9,7 +9,7 @@ Because the potential is fixed, a star whose radial apocentre r_max(E) in the sa
 can never escape; such stars are counted but not integrated (exact in this mode). All others are integrated in ONE
 agama.orbit call over the whole time span, with output every ~--snap Myr.
 
-Outputs (same format as bin/streams/run_restricted.py, read by src/ocen_dm/streams/analysis.py): snap_XXXX.npz
+Outputs (same format as bin/streams/run_restricted.py, read by src/ocen_stream/analysis.py): snap_XXXX.npz
 (t_myr, pos [pc], vel [km/s], Galactocentric, integrated tracers), snap_today.npz, particles.npz (mass = 1e-6 Msun
 per tracer: massless, equal weights; species = 0; index into the ICs), frozen_core.npz (the satellite model as a
 FrozenCore; its 'stars' entry = the weight of the non-integrated tracers, so fractions are per tracer), run.json.
@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT/"src"))
 
 import numpy as np
 
-from ocen_dm.streams.restricted import (AGAMA_T_MYR, OCEN_TODAY, FrozenCore, agama_kpc, host_potential,
+from ocen_stream.restricted import (AGAMA_T_MYR, OCEN_TODAY, FrozenCore, agama_kpc, host_potential,
                                         rmax_of_energy, satellite_potential)
 
 M_TRACER = 1e-6
@@ -56,9 +56,9 @@ def main():
     p.add_argument("--dist", type=float, default=None, help="today's omega Cen distance [kpc] (with --pm; catalogue RA/Dec/v_los, baumgardt frame)")
     p.add_argument("--pm", type=float, nargs=2, default=None, help="today's omega Cen pmra pmdec [mas/yr] (with --dist)")
     p.add_argument("--frame", default=None, choices=("baumgardt", "ibata19"), help="solar frame + omega Cen distance "
-                   "(src/ocen_dm/streams/frames.py) for today's centre; default: legacy OCEN_TODAY (= baumgardt within 0.6 km/s)")
+                   "(src/ocen_stream/frames.py) for today's centre; default: legacy OCEN_TODAY (= baumgardt within 0.6 km/s)")
     p.add_argument("--spin", type=Path, default=None, help="results/streams/spin/<model>.json from bin/streams/fit_spin.py: "
-                   "Lynden-Bell rotation (src/ocen_dm/streams/rotation.py), axis fixed in the Galactic frame at today's orientation")
+                   "Lynden-Bell rotation (src/ocen_stream/rotation.py), axis fixed in the Galactic frame at today's orientation")
     args = p.parse_args()
     t_wall = time.time()
     args.out.mkdir(parents=True, exist_ok=True)
@@ -78,14 +78,14 @@ def main():
     xv_rel = np.hstack((ics["pos"][pick]/1e3, ics["vel"][pick])).astype(float)
     E = sat.potential(xv_rel[:, :3]) + 0.5*np.sum(xv_rel[:, 3:]**2, axis=1)
     rmax_pc = rmax_of_energy(sat, E)*1e3
-    from ocen_dm.streams.frames import ocen_today
+    from ocen_stream.frames import ocen_today
     today = OCEN_TODAY.copy() if args.frame is None else ocen_today(args.frame)
     if args.dist is not None:
-        from ocen_dm.streams.frames import to_model, OCEN_OBS
+        from ocen_stream.frames import to_model, OCEN_OBS
         today = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], args.dist, args.pm[0], args.pm[1], OCEN_OBS["vlos"])[0]
     spin = None
     if args.spin is not None:
-        from ocen_dm.streams.rotation import spin_up
+        from ocen_stream.rotation import spin_up
         spin = json.loads(args.spin.read_text())
         xv_rel, flipped = spin_up(xv_rel, rmax_pc, today, spin["q0"], spin["rq_pc"], pa_deg=spin["pa_deg"],
                                   incl_towards_deg=spin["incl_towards_deg"], r1_pc=spin["r1_pc"], frame=args.frame or "baumgardt")

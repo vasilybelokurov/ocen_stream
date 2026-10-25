@@ -1,4 +1,4 @@
-"""Tests of the MW-LMC set-up (src/ocen_dm/streams/lmc.py): present-day state, frame consistency (zero net LMC force at the
+"""Tests of the MW-LMC set-up (src/ocen_stream/lmc.py): present-day state, frame consistency (zero net LMC force at the
 MW centre), the moving-LMC field, the zero-mass limit, and the LMC pericentre against Vasiliev+2021 (Tango, 47.1-47.4 kpc,
 53-61 Myr ago in their N-body runs, Zenodo 4300977 trajlmc.txt)."""
 import os
@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 agama = pytest.importorskip("agama")
-from ocen_dm.streams.restricted import agama_kpc, HUNTER24_DIR, AGAMA_T_MYR, host_potential
-from ocen_dm.streams.frames import to_model
-from ocen_dm.streams.lmc import mw_lmc_orbit, with_lmc, lmc_potential, LMC_OBS
+from ocen_stream.restricted import agama_kpc, HUNTER24_DIR, AGAMA_T_MYR, host_potential
+from ocen_stream.frames import to_model
+from ocen_stream.lmc import mw_lmc_orbit, with_lmc, lmc_potential, LMC_OBS
 
 T = 1955.58/AGAMA_T_MYR
 M = 1.5e11

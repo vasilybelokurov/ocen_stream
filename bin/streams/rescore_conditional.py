@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/str
 import numpy as np
 from scipy.stats import spearmanr
 from spray_bar_grid2 import load_data
-from ocen_dm.streams.path import project, project_gc
-from ocen_dm.streams.score import score_conditional
+from ocen_stream.path import project, project_gc
+from ocen_stream.score import score_conditional
 
 d = load_data(); n = len(d["l"])
 cov = np.zeros((n, 2, 2)); cov[:, 0, 0] = d["e_pmra"]**2; cov[:, 1, 1] = d["e_pmdec"]**2; cov[:, 0, 1] = cov[:, 1, 0] = d["rho"]*d["e_pmra"]*d["e_pmdec"]

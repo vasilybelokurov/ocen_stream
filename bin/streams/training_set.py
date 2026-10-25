@@ -71,8 +71,8 @@ def sha256_file(p):
 def r_cr(omega, vc, halo_q, r0_kpc=None):
     """Corotation radius [kpc] of the point's axisymmetric host: root of v_c(R)/R = omega [km/s/kpc] (bracketed, bisection).
     r0_kpc: radius where v_c = vc (default mw_variants.R0_KPC = 8.178)."""
-    from ocen_dm.streams.mw_variants import axisymmetric_variant, R0_KPC
-    from ocen_dm.streams.restricted import HUNTER24_DIR
+    from ocen_stream.mw_variants import axisymmetric_variant, R0_KPC
+    from ocen_stream.restricted import HUNTER24_DIR
     pot = axisymmetric_variant(HUNTER24_DIR, halo_q=halo_q, vc_target=vc, r0_kpc=R0_KPC if r0_kpc is None else r0_kpc)[0]
     om = lambda R: np.sqrt(-R*pot.force(np.array([[R, 0., 0.]]))[0, 0])/R - omega
     lo, hi = 1.0, 20.0
@@ -86,7 +86,7 @@ def r_cr(omega, vc, halo_q, r0_kpc=None):
 
 def design():
     from scipy.stats import qmc
-    from ocen_dm.cluster import MU_SYS
+    from ocen_stream.cluster import MU_SYS
     U = qmc.Sobol(d=9, scramble=True, seed=SOBOL_SEED).random_base2(m=int(np.log2(NPTS)))
     pts = []
     for i, u in enumerate(U):
@@ -137,7 +137,7 @@ def project_sources():
 
 
 def input_files():
-    from ocen_dm.streams.restricted import HUNTER24_DIR
+    from ocen_stream.restricted import HUNTER24_DIR
     files = {f"$OCEN_BAR_DIR/agama_potentials/{f}": os.path.join(HUNTER24_DIR, f) for f in HUNTER_FILES}
     files["$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits"] = os.path.expandvars("$OCEN_CATALOGUES/streamfinder_ibata2024_dr3.fits")
     for f in ("results/plot_data/stream5455_gaia_errors.npz", "results/plot_data/stream54_gc_frame_chord.json",
@@ -148,7 +148,7 @@ def input_files():
 
 def manifest(pts):
     from grid4_common import du, dW, d, cov, win, BG_BOUNDS, V_BOUNDS
-    from ocen_dm.provenance import environment_record
+    from ocen_stream.provenance import environment_record
     h = hashlib.sha256()
     for a in (du, dW, d["v"], d["e_v"], cov, np.asarray(win)):
         h.update(np.ascontiguousarray(np.asarray(a, np.float64)).tobytes())

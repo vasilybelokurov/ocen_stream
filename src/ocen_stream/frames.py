@@ -13,7 +13,7 @@ Frames:
              derived. omega Cen d = 5.43 kpc. The baumgardt frame (V/R0 -> mu_SgrA* = 6.507 mas/yr) is kept for old runs.
 VC_PRIOR_KMS: v_c(R0) = 233 +- 7 km/s (Poder+2023, arXiv:2309.02895, Gaia DR3; R0 and tracer uncertainties propagated),
 agreed with the user 2026-10-20 as a Gaussian prior for gravity21 fits.
-omega Cen observables (both frames): position, systemic PM and v_los from ocen_dm.cluster (the single reference;
+omega Cen observables (both frames): position, systemic PM and v_los from ocen_stream.cluster (the single reference;
 Vasiliev & Baumgardt 2021 PM, Baumgardt & Hilker 2018 v_los). Until 2026-10-16 they were typed in here as the
 Baumgardt orbit-table values (201.69683, -47.47958), PM (-3.2499, -6.7461), v_los 232.78: the same within
 0.04 arcsec, 0.0001 mas/yr and 0.08 km/s, so runs before that date start from a state differing at that level.
@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..cluster import MU_SYS, OCEN_DEC, OCEN_DISTANCE_KPC, OCEN_RA, OCEN_VSYS_KMS
+from .cluster import MU_SYS, OCEN_DEC, OCEN_DISTANCE_KPC, OCEN_RA, OCEN_VSYS_KMS
 
 FRAMES = {
     "baumgardt": dict(r0_kpc=8.178, z_sun_pc=0.0, v_sun=(11.1, 252.24, 7.25), d_ocen_kpc=OCEN_DISTANCE_KPC),

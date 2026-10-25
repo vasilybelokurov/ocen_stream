@@ -4,7 +4,7 @@
 import json
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from grid4_common import ROOT, d, du
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
 
 R = [r for r in json.loads((ROOT/"results/plot_data/sun_dist_bar_grids.json").read_text()) if r["test"] == "T1"]
 cen = np.array(R[0]["phi1"]); edges = np.append(cen-1, cen[-1]+1); ib = np.digitize(du, edges)-1; rng = np.random.default_rng(0)

@@ -42,7 +42,7 @@ def ratio(force, axi, z):
 
 
 def main():
-    from ocen_dm.streams.restricted import agama_kpc, HUNTER24_DIR
+    from ocen_stream.restricted import agama_kpc, HUNTER24_DIR
     agama = agama_kpc()
     axi = agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_axi.ini"))
     full = agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_baryon_full.ini"))

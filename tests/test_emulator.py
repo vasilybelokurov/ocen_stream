@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.stats import qmc
 
-from ocen_dm.streams.emulator import group_replicates, NoiseModel, MeanEmulator, kfold_validate
+from ocen_stream.emulator import group_replicates, NoiseModel, MeanEmulator, kfold_validate
 
 
 def _toy(seed=1):

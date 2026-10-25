@@ -8,9 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
-from ocen_dm.streams.analysis import load, run_core, run_particles
-from ocen_dm.streams.restricted import OCEN_TODAY, bound_set
-from ocen_dm.streams.frames import observables
+from ocen_stream.analysis import load, run_core, run_particles
+from ocen_stream.restricted import OCEN_TODAY, bound_set
+from ocen_stream.frames import observables
 
 runs = sys.argv[1:]
 w = lambda x: np.where(x > 180, x-360, x)

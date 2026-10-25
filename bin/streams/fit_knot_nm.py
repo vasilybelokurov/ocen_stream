@@ -32,7 +32,7 @@ G = {}
 
 def _smax(p):
     from training_set import r_cr
-    from ocen_dm.streams.frames import frame_r0
+    from ocen_stream.frames import frame_r0
     return min(1.5, r_cr(p["omega"], p["vc"], p["halo_q"], frame_r0(FRAME))/RBAR)
 
 
@@ -59,7 +59,7 @@ def spray_job(args):
     if f.exists() or (Path(outdir)/"runs"/f"{rid}.json").exists():
         return rec
     from grid4_common import make_spray
-    from ocen_dm.streams.frames import frame_r0
+    from ocen_stream.frames import frame_r0
     p = unit_to_params(np.asarray(u)); t0 = time.time()
     m = make_spray(p["omega"], p["angle"], p["amp"], p["dist"], nrel=nrel, seed=seed, pm=(p["pmra"], p["pmdec"]),
                    host_kw=dict(bar_size=p["size"], axi_variant=dict(halo_q=p["halo_q"], vc_target=p["vc"], r0_kpc=frame_r0(FRAME))),

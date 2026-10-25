@@ -1,8 +1,8 @@
 """score_bias.chi_bin_bias: reproduces the fixed-chi-bin score and removes most of its small-N bias (toy, i.i.d. particles)."""
 import numpy as np
 
-from ocen_dm.streams.score import score_conditional
-from ocen_dm.streams.score_bias import chi_bin_bias, jackknife_total
+from ocen_stream.score import score_conditional
+from ocen_stream.score_bias import chi_bin_bias, jackknife_total
 
 E = np.arange(0., 205., 5.)
 

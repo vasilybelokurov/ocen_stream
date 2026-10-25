@@ -21,7 +21,7 @@ COLS = "source_id, ra, dec, l, b, parallax, parallax_error, pmra, pmdec, pmra_er
 def main():
     import astropy.coordinates as coord, astropy.units as u
     import sqlutilpy as sq
-    from ocen_dm.streams.path import project_gc
+    from ocen_stream.path import project_gc
     from branch_search_gaia import hull_polygon, GC
     TILES.mkdir(parents=True, exist_ok=True)
     L, B = np.meshgrid(np.arange(-110., 10.01, 0.2), np.arange(-20., 75.01, 0.2)); L, B = L.ravel(), B.ravel()

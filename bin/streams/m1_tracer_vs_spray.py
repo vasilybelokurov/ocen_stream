@@ -9,7 +9,7 @@ Output plots/m1_tracer_vs_spray.png. Usage: python bin/streams/m1_tracer_vs_spra
 import json
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from grid4_common import ROOT, project_gc, GC, du, dx, d, w
-from ocen_dm.streams.frames import observables
+from ocen_stream.frames import observables
 
 edges = np.arange(np.floor(du.min()), np.ceil(du.max())+2, 2.); cen = 0.5*(edges[1:]+edges[:-1]); Q = ("pmra", "pmdec", "vlos")
 

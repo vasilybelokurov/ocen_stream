@@ -21,7 +21,7 @@ sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 RUNS = ROOT/"results/streams/training_9d_20261017/runs"
 E = np.arange(0., 205., 5.)
 G = 10
-SOURCES = ["src/ocen_dm/streams/score.py", "src/ocen_dm/streams/score_bias.py", "bin/streams/grid4_common.py",
+SOURCES = ["src/ocen_stream/score.py", "src/ocen_stream/score_bias.py", "bin/streams/grid4_common.py",
            "bin/streams/training_jackknife.py"]
 
 

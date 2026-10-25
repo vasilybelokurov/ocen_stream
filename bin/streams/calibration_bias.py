@@ -22,7 +22,7 @@ E = np.arange(0., 205., 5.)
 
 def task(f):
     from grid4_common import score, du, dW, d, cov, win, BG_BOUNDS, V_BOUNDS, project_gc, GC
-    from ocen_dm.streams.score_bias import jackknife_total, chi_bin_bias
+    from ocen_stream.score_bias import jackknife_total, chi_bin_bias
     rec = json.loads(Path(f).read_text()); m = dict(np.load(str(f).replace(".json", ".npz")))
     j = jackknife_total(lambda x: score(x, chi_edges=E, chunk=50), m)
     mu, mx = project_gc(m["l"], m["b"], GC)

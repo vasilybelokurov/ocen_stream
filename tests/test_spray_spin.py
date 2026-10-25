@@ -1,6 +1,6 @@
-"""Tests for the optional cluster-rotation term in the spray release (src/ocen_dm/streams/spray.py release_ic)."""
+"""Tests for the optional cluster-rotation term in the spray release (src/ocen_stream/spray.py release_ic)."""
 import numpy as np
-from ocen_dm.streams.spray import release_ic
+from ocen_stream.spray import release_ic
 
 
 def _setup(n=50):

@@ -22,7 +22,7 @@ K_PMV = 4.740470446                    # km/s per (mas/yr kpc)
 
 
 def _galcen(frame="baumgardt"):
-    from ocen_dm.streams.frames import galcen
+    from ocen_stream.frames import galcen
     return galcen(frame)
 
 

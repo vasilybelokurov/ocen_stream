@@ -1,6 +1,6 @@
 """Tests for the barred host options in host_potential (constant and slowing bar, static size factor)."""
 import numpy as np
-from ocen_dm.streams.restricted import host_potential
+from ocen_stream.restricted import host_potential
 
 T = 2.0
 
@@ -52,7 +52,7 @@ def test_bar_size_lengthens_bar():
 
 
 def test_mass_scale_scales_whole_host():
-    from ocen_dm.streams.restricted import host_potential
+    from ocen_stream.restricted import host_potential
     import numpy as np
     x = np.array([[1., 0.5, 0.2], [3., -1., 0.5], [6.3, -4.2, 1.4]])
     p1 = host_potential("x", bar_omega=36., bar_angle_deg=28., t_today=2., bar_amp=1.2, bar_size=1.15)

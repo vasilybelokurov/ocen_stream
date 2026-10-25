@@ -11,8 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 from spray_bar_grid2 import load_data
-from ocen_dm.streams.score import score_conditional
-from ocen_dm.streams.path import project_gc
+from ocen_stream.score import score_conditional
+from ocen_stream.path import project_gc
 
 H0, HV0 = np.array([0.5, 0.5, 0.2, 0.2]), 5.
 d = load_data(); nd = len(d["l"])

@@ -1,8 +1,8 @@
-"""Tests for the axisymmetric MW variants (src/ocen_dm/streams/mw_variants.py)."""
+"""Tests for the axisymmetric MW variants (src/ocen_stream/mw_variants.py)."""
 import os
 import numpy as np
-from ocen_dm.streams.mw_variants import axisymmetric_variant, R0_KPC
-from ocen_dm.streams.restricted import HUNTER24_DIR, agama_kpc
+from ocen_stream.mw_variants import axisymmetric_variant, R0_KPC
+from ocen_stream.restricted import HUNTER24_DIR, agama_kpc
 
 PTS = np.array([[1., 0, 0.2], [3., 1., 0.5], [5., 0, 2.], [8.178, 0, 0], [6., 2., 3.], [15., 0, 5.]])
 

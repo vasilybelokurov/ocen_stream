@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 0: observed track of Ibata+2024 stream 54 (northern arm) with src/ocen_dm/streams/track.py.
+"""Stage 0: observed track of Ibata+2024 stream 54 (northern arm) with src/ocen_stream/track.py.
 Selection: stream 54, b > 15, -75 < l < -20 (excludes the cluster region b < 15). Gaia DR3 PM errors from
 results/plot_data/stream5455_gaia_errors.npz. Variants: all members; G < 19 (catalogue dereddened G). Distance-modulus track:
 results/plot_data/stream54_cmd_distance.json (relative). v_los: per star (29).
@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
-from ocen_dm.streams.track import measure
+from ocen_stream.track import measure
 
 w = lambda x: np.where(x > 180, x-360, x)
 

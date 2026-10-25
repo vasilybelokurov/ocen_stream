@@ -2,7 +2,7 @@
 """Likelihood surface of the 9-D stream emulator as corner plots of profiles (2026-10-18).
 
 Target: emulator mean mu(theta) of the jackknife-corrected ln L (fixed chi bins 0-200), plus the measurement priors on omega
-Cen's distance N(OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC) and PMs N(MU_SYS, MU_SYS_ERR) (src/ocen_dm/cluster.py). The
+Cen's distance N(OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC) and PMs N(MU_SYS, MU_SYS_ERR) (src/ocen_stream/cluster.py). The
 stream ln L is untempered (no calibration chosen yet), so it outweighs the priors by orders of magnitude; the distance prior
 costs only 0.5 ((d - 5.43)/0.05)^2, e.g. 27 at 5.8 kpc.
 Views: A) distance over the design range (5.25-5.95 kpc); B) distance restricted to the measured value +-1 sigma.
@@ -21,7 +21,7 @@ sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 warnings.filterwarnings("ignore")
 import emulator_design as ED      # noqa: E402
 import emulator_report as ER      # noqa: E402
-from ocen_dm.cluster import OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC, MU_SYS, MU_SYS_ERR   # noqa: E402
+from ocen_stream.cluster import OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC, MU_SYS, MU_SYS_ERR   # noqa: E402
 
 SHORT = dict(angle="angle [deg]", omega=r"$\Omega_b$", amp="amplitude", size="size", dist="d [kpc]", pmra=r"$\mu_{\alpha*}$",
              pmdec=r"$\mu_\delta$", vc=r"$v_c$ [km/s]", halo_q="halo q")

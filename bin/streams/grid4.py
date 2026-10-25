@@ -11,11 +11,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 from spray_bar_grid2 import load_data, w
-from ocen_dm.streams.restricted import AGAMA_T_MYR, host_potential
-from ocen_dm.streams.frames import observables, to_model, OCEN_OBS
-from ocen_dm.streams.spray import spray_unwrapped
-from ocen_dm.streams.score import score_conditional
-from ocen_dm.streams.path import project_gc
+from ocen_stream.restricted import AGAMA_T_MYR, host_potential
+from ocen_stream.frames import observables, to_model, OCEN_OBS
+from ocen_stream.spray import spray_unwrapped
+from ocen_stream.score import score_conditional
+from ocen_stream.path import project_gc
 
 OMEGA = [33., 34., 34.5, 35., 35.5, 36., 37.]; ANGLE = [16., 20., 24., 28.]; AMP = [1.0, 1.2, 1.4, 1.6]; DIST = [5.45, 5.50, 5.55, 5.60]
 PMRA, PMDEC = -3.2223, -6.7517

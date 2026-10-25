@@ -19,8 +19,8 @@ sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"bin/st
 import numpy as np
 
 from grid4_common import GC, d, du, dx
-from ocen_dm.cluster import galactic
-from ocen_dm.streams.path import gc_rotation, to_stream
+from ocen_stream.cluster import galactic
+from ocen_stream.path import gc_rotation, to_stream
 from paper_style import COLOURS, PAGE, setup
 
 plt = setup()

@@ -5,10 +5,10 @@ import os, sys, time, numpy as np
 ROOT = os.getcwd()
 sys.path[:0] = [ROOT+"/bin/streams", ROOT+"/src"]
 import grid4_common as g
-from ocen_dm.streams.restricted import host_potential, agama_kpc, AGAMA_T_MYR, HUNTER24_DIR
-from ocen_dm.streams.mw_variants import axisymmetric_variant
-from ocen_dm.streams.frames import to_model, OCEN_OBS, frame_r0
-from ocen_dm.streams.path import project_gc
+from ocen_stream.restricted import host_potential, agama_kpc, AGAMA_T_MYR, HUNTER24_DIR
+from ocen_stream.mw_variants import axisymmetric_variant
+from ocen_stream.frames import to_model, OCEN_OBS, frame_r0
+from ocen_stream.path import project_gc
 import astropy.coordinates as coord, astropy.units as u
 agama = agama_kpc()
 T = g.T; R0 = frame_r0("gravity21")

@@ -20,7 +20,7 @@ import numpy as np, astropy.coordinates as coord, astropy.units as u
 from astropy.table import Table
 from scipy.ndimage import gaussian_filter, convolve
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
-from ocen_dm.streams.path import project_gc
+from ocen_stream.path import project_gc
 
 w = lambda x: np.where(x > 180, x-360, x)
 GC = json.loads((ROOT/"results/plot_data/stream54_gc_frame_chord.json").read_text())

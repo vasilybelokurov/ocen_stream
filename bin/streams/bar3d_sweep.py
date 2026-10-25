@@ -13,7 +13,7 @@ Usage: bin/streams/run_bar3d_sweep.sh   (7 workers x OMP_NUM_THREADS=2)
 import argparse, itertools, json, os, time
 import numpy as np
 from grid4_common import ROOT, make_spray, score, project_gc, GC, du, OCEN_OBS
-from ocen_dm.streams.restricted import agama_kpc, HUNTER24_DIR
+from ocen_stream.restricted import agama_kpc, HUNTER24_DIR
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--worker", type=int, default=0); ap.add_argument("--nworkers", type=int, default=1)

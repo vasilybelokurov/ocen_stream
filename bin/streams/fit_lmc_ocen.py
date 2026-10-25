@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Cheapest LMC refit: bar fixed (default 16 deg, Omega_b 34, size 1.0, amp 1.2 = bar3d_sweep best), free omega Cen distance and
-PMs, with or without the LMC (host_potential(..., lmc=dict(mass=M)), src/ocen_dm/streams/lmc.py). Question: can omega Cen's
+PMs, with or without the LMC (host_potential(..., lmc=dict(mass=M)), src/ocen_stream/lmc.py). Question: can omega Cen's
 present-day d / PMs absorb the LMC-induced shift of the far stream?
 Objective: score() of grid4_common (score_conditional, chord frame, debris < 700 Myr) + priors of fit_bar_ocen.py:
   d ~ N(5.43, 0.15) kpc, pmra/pmdec ~ N(catalogue, 0.027) mas/yr; bounds d 5.0-5.9, PMs catalogue +- 0.15.
@@ -10,7 +10,7 @@ Usage: OMP_NUM_THREADS=1 PYTHONPATH=src python bin/streams/fit_lmc_ocen.py --mas
 import argparse, json, time, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
 import numpy as np
 from scipy.optimize import minimize
 from grid4_common import ROOT, make_spray, score, OCEN_OBS

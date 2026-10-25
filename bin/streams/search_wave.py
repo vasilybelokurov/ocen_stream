@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 warnings.filterwarnings("ignore")
 import emulator_design as ED      # noqa: E402
-from ocen_dm.streams.emulator import group_replicates, MeanEmulator   # noqa: E402
+from ocen_stream.emulator import group_replicates, MeanEmulator   # noqa: E402
 
 HELD = "validation (held out)"
 NB, NTR, NLOC, NGLOB, NVAL, NCHK = 5, 2, 6, 20, 10, 2

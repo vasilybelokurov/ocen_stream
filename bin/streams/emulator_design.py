@@ -21,7 +21,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
-from ocen_dm.streams.emulator import group_replicates, NoiseModel, MeanEmulator, kfold_validate   # noqa: E402
+from ocen_stream.emulator import group_replicates, NoiseModel, MeanEmulator, kfold_validate   # noqa: E402
 
 warnings.filterwarnings("ignore", module="sklearn")
 TRAIN = ROOT/"results/streams/training_9d_20261017"
@@ -38,7 +38,7 @@ DESIGNS = {"v1": dict(dist=(5.25, 5.95), vc=(220., 240.), frame="baumgardt"),
 
 
 def _r0(design):
-    from ocen_dm.streams.frames import frame_r0
+    from ocen_stream.frames import frame_r0
     return None if DESIGNS[design]["frame"] == "baumgardt" else frame_r0(DESIGNS[design]["frame"])
 
 

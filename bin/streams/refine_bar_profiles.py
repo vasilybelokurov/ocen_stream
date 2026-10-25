@@ -27,8 +27,8 @@ import numpy as np
 from scipy.optimize import minimize
 
 from grid4_common import OCEN_OBS, make_spray, score
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
-from ocen_dm.streams.restricted import HUNTER24_DIR, agama_kpc
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.restricted import HUNTER24_DIR, agama_kpc
 
 NAMES = ("omega", "amp", "size", "dist", "pmra", "pmdec")
 OFFSET = np.array([34., 1.2, 1.1, 5.6, OCEN_OBS["pmra"], OCEN_OBS["pmdec"]])

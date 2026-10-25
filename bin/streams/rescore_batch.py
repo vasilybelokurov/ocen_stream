@@ -23,7 +23,7 @@ CUTOFF, G = 7., 10
 TRAIN = ROOT/"results/streams/training_9d_20261017"
 BATCHES = ["results/streams/training_9d_reps_20261018", "results/streams/emulator_round1_20261018",
            "results/streams/emulator_round2_20261018", "results/streams/emulator_check_20261018"]
-SOURCES = ["src/ocen_dm/streams/score.py", "bin/streams/grid4_common.py", "bin/streams/rescore_batch.py"]
+SOURCES = ["src/ocen_stream/score.py", "bin/streams/grid4_common.py", "bin/streams/rescore_batch.py"]
 
 
 def sha(p):
@@ -69,7 +69,7 @@ def task(args):
     r, spec, box = args
     from grid4_common import win, project_gc, GC
     BG_BOUNDS, V_BOUNDS = bounds(box)
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.score import score_conditional
     c, _, ob = catalogue(spec)
     ob = "raise" if box == "wide" else ob
     m = dict(np.load(ROOT/r["spray"])); mu, mx = project_gc(m["l"], m["b"], GC)

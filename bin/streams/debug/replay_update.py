@@ -4,8 +4,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
-from ocen_dm.streams.restricted import agama_kpc, bound_set, AGAMA_T_MYR
-from ocen_dm.streams.analysis import load, run_particles
+from ocen_stream.restricted import agama_kpc, bound_set, AGAMA_T_MYR
+from ocen_stream.analysis import load, run_particles
 
 run, t0, dt = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
 agama = agama_kpc()

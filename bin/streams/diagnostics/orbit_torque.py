@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[3]; sys.path[:0] = [str(ROOT/"bin/stream
 
 
 def main():
-    from ocen_dm.streams.restricted import host_potential, agama_kpc, AGAMA_T_MYR
-    from ocen_dm.streams.frames import to_model, OCEN_OBS, frame_r0
+    from ocen_stream.restricted import host_potential, agama_kpc, AGAMA_T_MYR
+    from ocen_stream.frames import to_model, OCEN_OBS, frame_r0
     agama = agama_kpc(); T = 1955.58/AGAMA_T_MYR; r0 = frame_r0("gravity21")
     p = json.loads((ROOT/"results/streams/profile_step2_20261020/runs/final_a12.5_3.json").read_text())["params"]
     host = lambda A, S: host_potential("x", bar_omega=p["omega"], bar_angle_deg=p["angle"], t_today=T, bar_amp=A, bar_size=S,

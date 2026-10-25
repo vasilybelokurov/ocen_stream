@@ -3,7 +3,7 @@ import numpy as np
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/"src"))
-from ocen_dm.streams.score import score_conditional
+from ocen_stream.score import score_conditional
 
 
 def _data(rng, n=300):
@@ -68,7 +68,7 @@ def test_wrong_kinematics_scores_worse():
 def test_explicit_background_bounds_normalise_and_reject_outside_members():
     """With explicit w_bounds the background is a normalised uniform density over that box; members outside it raise."""
     import pytest
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.score import score_conditional
     rng = np.random.default_rng(3)
     n = 50
     du = rng.uniform(0, 10, n); dw = np.column_stack((rng.uniform(-2, 2, n), rng.uniform(-5, -3, n), rng.uniform(-8, -6, n)))

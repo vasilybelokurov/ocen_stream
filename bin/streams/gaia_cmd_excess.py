@@ -71,7 +71,7 @@ def template(D, g0, c0):
 def isochrone(age_gyr=12.5, feh=-1.7, d_kpc=5.43):
     """MIST (minimint, $OCEN_ISOCHRONES/minimint) Gaia EDR3 isochrone up to the RGB tip: (BP-RP, G) at distance d_kpc."""
     import minimint
-    import ocen_dm  # noqa: F401  (loads .env)
+    import ocen_stream  # noqa: F401  (loads .env)
     ii = minimint.Interpolator(["Gaia_G_EDR3", "Gaia_BP_EDR3", "Gaia_RP_EDR3"], data_prefix=os.path.join(os.path.expanduser(os.path.expandvars("$OCEN_ISOCHRONES")), "minimint"))
     m = np.linspace(0.1, ii.getMaxMass(np.log10(age_gyr*1e9), feh)-1e-4, 3000); r = ii(m, np.log10(age_gyr*1e9), feh)
     dmod = 5*np.log10(d_kpc*1e3)-5; ok = np.isfinite(r["Gaia_G_EDR3"])
@@ -98,7 +98,7 @@ def main():
     pm = (np.abs(pa-ta(u)) < 2.0) & (np.abs(pd-td(u)) < 1.5)
     on = pm & (np.abs(x-tl(u)) < 1.5); off = pm & (np.abs(x-tl(u)) > 4) & (np.abs(x-tl(u)) < 12)
     # footprint area of the on / off sky regions per bin (random points, same GC masks and b > 8)
-    from ocen_dm.streams.path import project_gc
+    from ocen_stream.path import project_gc
     from branch_search_gaia import GC
     rng = np.random.default_rng(2); n = 6_000_000; l = rng.uniform(-110, 10, n); b = np.degrees(np.arcsin(rng.uniform(np.sin(np.radians(-20)), np.sin(np.radians(75)), n)))
     ru, rx = project_gc(l, b, GC); ok = (b > 8) & ~gc_masked(l, b); ron = ok & (np.abs(rx-tl(ru)) < 1.5); roff = ok & (np.abs(rx-tl(ru)) > 4) & (np.abs(rx-tl(ru)) < 12)

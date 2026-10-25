@@ -1,0 +1,46 @@
+# Raw downloads are never committed; they are reproduced by `ocen fetch-data`.
+data/raw/
+data/interim/
+data/processed/
+results/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+.DS_Store
+.ask-codex-packet.md
+*.tmp*
+.*.part
+docs/*.aux
+docs/*.fdb_latexmk
+docs/*.fls
+docs/*.log
+docs/*.out
+docs/*.bbl
+docs/*.blg
+# LaTeX by-products (any directory)
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+*.bbl
+*.blg
+*.synctex.gz
+*.build.log
+# local run logs and scratch
+logs/
+tmp/
+.ask-codex-packet*.md
+recovery_snapshot_*.tar.gz
+# MkDocs build output
+site/
+# project journal: kept locally, never committed
+JOURNAL.md
+
+# machine-specific locations of external inputs (see docs/kb/getting_started.md)
+.env
+
+# draft papers (unpublished; kept out of the public repository)
+/paper/

@@ -32,7 +32,7 @@ from scipy.special import ndtr
 from scipy.ndimage import gaussian_filter
 import stream_sky_local as SL
 from stream_spline_fit import basis
-from ocen_dm.streams.path import project_gc
+from ocen_stream.path import project_gc
 
 NBOOT, DROP = 8, ((6., 9.),)
 J = lambda n: json.loads((ROOT/f"results/plot_data/{n}.json").read_text())

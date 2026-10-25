@@ -7,7 +7,7 @@ Usage: python bin/streams/lmc_tango_check.py potentials_axisym|potentials_triax 
 import os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/"src"))
-import ocen_dm  # noqa: E402,F401  (loads the local .env)
+import ocen_stream  # noqa: E402,F401  (loads the local .env)
 import numpy as np, agama  # noqa: E402
 agama.setUnits(mass=232500, length=1, velocity=1)
 D = os.path.expandvars("$OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977/") + sys.argv[1]

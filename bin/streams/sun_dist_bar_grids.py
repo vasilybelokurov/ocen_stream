@@ -12,7 +12,7 @@ Output results/plot_data/sun_dist_bar_grids.json (resumable). Usage: OMP_NUM_THR
 import itertools, json, sys, time
 import numpy as np
 from grid4_common import ROOT, make_spray, score, project_gc, GC, du, OCEN_OBS, PMRA, PMDEC
-from ocen_dm.cluster import OCEN_DISTANCE_KPC
+from ocen_stream.cluster import OCEN_DISTANCE_KPC
 
 CAT = (OCEN_OBS["pmra"], OCEN_OBS["pmdec"])
 CFG = []

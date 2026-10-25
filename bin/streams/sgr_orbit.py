@@ -19,8 +19,8 @@ import numpy as np
 from astropy.table import Table
 from scipy.integrate import solve_ivp
 from scipy.special import erf
-from ocen_dm.streams.restricted import AGAMA_T_MYR, agama_kpc, host_potential
-from ocen_dm.streams.frames import to_model
+from ocen_stream.restricted import AGAMA_T_MYR, agama_kpc, host_potential
+from ocen_stream.frames import to_model
 
 G = 4.300917e-6
 

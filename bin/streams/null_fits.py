@@ -46,8 +46,8 @@ _MCM = {}
 
 def mcmillan():
     if not _MCM:
-        from ocen_dm.streams.restricted import host_potential
-        from ocen_dm.streams.frames import frame_r0
+        from ocen_stream.restricted import host_potential
+        from ocen_stream.frames import frame_r0
         h = host_potential("McMillan17"); r0 = frame_r0("gravity21")
         _MCM.update(host=h, vc=float(np.sqrt(-r0*h.force([r0, 0., 0.])[0])))
     return _MCM
@@ -59,8 +59,8 @@ def evaluate(args):
     if rid and jf.exists():
         return json.loads(jf.read_text())
     from grid4_common import make_spray, win, project_gc, GC
-    from ocen_dm.streams.frames import frame_r0
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.frames import frame_r0
+    from ocen_stream.score import score_conditional
     import rescore_batch as RB
     from profile_nm import ln_prior
     p = to_params(model, z); t0 = time.time()

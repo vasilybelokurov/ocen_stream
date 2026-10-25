@@ -72,10 +72,10 @@ COARSE = "--coarse" in sys.argv            # figure only: dphi2 and pmra rows wi
 def cluster_orbit():
     """omega Cen's orbit in McMillan17 projected on the stream frame: dict phi1, dphi2, pmra, pmdec, dist (past branch = trailing side,
     phi1 > 0; forward branch to phi1 ~ -5), points inside the footprint |dphi2| < 15 only."""
-    from ocen_dm.streams.restricted import host_potential, agama_kpc, AGAMA_T_MYR
-    from ocen_dm.streams.frames import to_model, OCEN_OBS, observables
-    from ocen_dm.streams.path import project_gc
-    from ocen_dm.cluster import OCEN_DISTANCE_KPC
+    from ocen_stream.restricted import host_potential, agama_kpc, AGAMA_T_MYR
+    from ocen_stream.frames import to_model, OCEN_OBS, observables
+    from ocen_stream.path import project_gc
+    from ocen_stream.cluster import OCEN_DISTANCE_KPC
     agama = agama_kpc(); GCf = json.loads((ROOT/"results/plot_data/stream54_gc_frame_chord.json").read_text()); h = host_potential("McMillan17")
     ic = to_model(OCEN_OBS["ra"], OCEN_OBS["dec"], OCEN_DISTANCE_KPC, OCEN_OBS["pmra"], OCEN_OBS["pmdec"], OCEN_OBS["vlos"], "gravity21")[0]
     out = []

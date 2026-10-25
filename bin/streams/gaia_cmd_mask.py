@@ -45,7 +45,7 @@ BINS = ((6, 14), (14, 18), (18, 22), (22, 26), (26, 30))
 
 def isochrone_branches():
     import minimint, os
-    import ocen_dm  # noqa: F401
+    import ocen_stream  # noqa: F401
     ii = minimint.Interpolator(["Gaia_G_EDR3", "Gaia_BP_EDR3", "Gaia_RP_EDR3"], data_prefix=os.path.join(os.path.expanduser(os.path.expandvars("$OCEN_ISOCHRONES")), "minimint"))
     la = np.log10(12.5e9); m = np.linspace(0.12, ii.getMaxMass(la, -1.7)-1e-4, 20000); r = ii(m, la, -1.7)
     G = r["Gaia_G_EDR3"]+5*np.log10(5430)-5; c = r["Gaia_BP_EDR3"]-r["Gaia_RP_EDR3"]+COL_SHIFT

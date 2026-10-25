@@ -36,7 +36,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from track_sensitivity import EDGES, SEGMENTS, observed, tracks, vec
-from ocen_dm.cluster import MU_SYS, MU_SYS_ERR, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC
+from ocen_stream.cluster import MU_SYS, MU_SYS_ERR, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC
 
 OUTDIR = ROOT/"results/plot_data/track_fits_20261016"
 SENS = ROOT/"results/plot_data/track_sensitivity_20261016.json"

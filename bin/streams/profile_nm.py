@@ -28,8 +28,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 STEP0, TOL, NFINAL = 0.1, 0.05, 4
 SOURCES = ["bin/streams/profile_nm.py", "bin/streams/grid4_common.py", "bin/streams/rescore_batch.py", "bin/streams/mock_data.py",
-           "bin/streams/emulator_design.py", "src/ocen_dm/streams/score.py", "src/ocen_dm/streams/spray.py",
-           "src/ocen_dm/streams/restricted.py", "src/ocen_dm/streams/mw_variants.py", "src/ocen_dm/streams/frames.py",
+           "bin/streams/emulator_design.py", "src/ocen_stream/score.py", "src/ocen_stream/spray.py",
+           "src/ocen_stream/restricted.py", "src/ocen_stream/mw_variants.py", "src/ocen_stream/frames.py",
            "bin/streams/training_set.py"]
 
 
@@ -48,12 +48,12 @@ def evaluate(args):
         raise RuntimeError(f"sources changed: {changed}")
     import emulator_design as ED, rescore_batch as RB
     from grid4_common import make_spray, win, project_gc, GC
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.score import score_conditional
     design = spec.get("design", "v1"); frame = ED.DESIGNS[design]["frame"]
     p = ED.unit_to_params(np.asarray(u), design); t0 = time.time()
     axi = dict(halo_q=p["halo_q"], vc_target=p["vc"])
     if frame != "baumgardt":
-        from ocen_dm.streams.frames import frame_r0
+        from ocen_stream.frames import frame_r0
         axi["r0_kpc"] = frame_r0(frame)
     m = make_spray(p["omega"], p["angle"], p["amp"], p["dist"], nrel=nrel, seed=seed, pm=(p["pmra"], p["pmdec"]),
                    host_kw=dict(bar_size=p["size"], axi_variant=axi), max_age_myr=700., epoch_offset=off, frame=frame)
@@ -154,10 +154,10 @@ class NM:
 
 
 def ln_prior(p, vc_prior=False):
-    """Measurement priors on omega Cen's distance and PMs (src/ocen_dm/cluster.py), as agreed with the user 2026-10-18;
+    """Measurement priors on omega Cen's distance and PMs (src/ocen_stream/cluster.py), as agreed with the user 2026-10-18;
     vc_prior: plus the v_c(R0) prior frames.VC_PRIOR_KMS (agreed 2026-10-20)."""
-    from ocen_dm.cluster import OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC, MU_SYS, MU_SYS_ERR
-    from ocen_dm.streams.frames import VC_PRIOR_KMS
+    from ocen_stream.cluster import OCEN_DISTANCE_KPC, OCEN_DISTANCE_ERR_KPC, MU_SYS, MU_SYS_ERR
+    from ocen_stream.frames import VC_PRIOR_KMS
     return (-0.5*((p["dist"]-OCEN_DISTANCE_KPC)/OCEN_DISTANCE_ERR_KPC)**2-0.5*((p["pmra"]-MU_SYS[0])/MU_SYS_ERR)**2
             -0.5*((p["pmdec"]-MU_SYS[1])/MU_SYS_ERR)**2-(0.5*((p["vc"]-VC_PRIOR_KMS[0])/VC_PRIOR_KMS[1])**2 if vc_prior else 0.))
 

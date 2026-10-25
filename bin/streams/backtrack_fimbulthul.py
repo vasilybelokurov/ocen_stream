@@ -9,8 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, astropy.coordinates as coord, astropy.units as u
 from astropy.table import Table
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, host_potential
-from ocen_dm.streams.rotation import _galcen
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, agama_kpc, host_potential
+from ocen_stream.rotation import _galcen
 
 T_BACK, NT = 1500., 3001
 D_GRID = np.arange(2.5, 6.51, 0.1)

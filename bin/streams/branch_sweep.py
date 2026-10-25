@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 from scipy.ndimage import gaussian_filter1d
-from ocen_dm.streams.path import project_gc
+from ocen_stream.path import project_gc
 from stream_spline_fit import sky_tracks
 
 GC = json.loads((ROOT/"results/plot_data/stream54_gc_frame_chord.json").read_text())

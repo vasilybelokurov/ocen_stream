@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
-from ocen_dm.cluster import OCEN_DEC, OCEN_RA  # noqa: E402
+from ocen_stream.cluster import OCEN_DEC, OCEN_RA  # noqa: E402
 RA0, DE0 = OCEN_RA, OCEN_DEC
 EDGES = [3, 6, 10, 15, 25, 36]
 

@@ -1,6 +1,6 @@
-"""Shared paths for catalogue preparation and kinematic fits.
+"""Shared paths (repository root, data and results directories, the local .env).
 
-OCEN_DM_ROOT can override the repository root. Some exploratory tails modules
+OCEN_STREAM_ROOT can override the repository root. Some exploratory tails modules
 also use working-directory-relative outputs and external local resources;
 this module does not centralise every path in the repository.
 """
@@ -30,11 +30,11 @@ def project_root() -> Path:
     Returns
     -------
     pathlib.Path
-        The repository root. Overridden by the ``OCEN_DM_ROOT`` environment
+        The repository root. Overridden by the ``OCEN_STREAM_ROOT`` environment
         variable when set, otherwise inferred from this file's location
-        (``src/ocen_dm/paths.py`` -> two levels up).
+        (``src/ocen_stream/paths.py`` -> two levels up).
     """
-    env = os.environ.get("OCEN_DM_ROOT")
+    env = os.environ.get("OCEN_STREAM_ROOT")
     if env:
         return Path(env).expanduser().resolve()
     return Path(__file__).resolve().parents[2]
@@ -89,7 +89,7 @@ def load_local_env(path: Path | None = None) -> dict[str, str]:
     locations of external inputs such as ``OCEN_CATALOGUES``. Values are expanded
     for ``~`` and ``$VAR``. A variable that is already set in the environment is
     never overwritten, so an explicit ``export`` still wins. Called on
-    ``import ocen_dm``; returns the variables it set.
+    ``import ocen_stream``; returns the variables it set.
     """
     path = Path(path) if path is not None else project_root() / ".env"
     applied: dict[str, str] = {}

@@ -9,10 +9,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"bin/streams")); sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
 from spray_bar_grid2 import load_data, w
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
-from ocen_dm.streams.frames import observables
-from ocen_dm.streams.spray import spray_unwrapped
-from ocen_dm.streams.score import score_chi_kde
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
+from ocen_stream.frames import observables
+from ocen_stream.spray import spray_unwrapped
+from ocen_stream.score import score_chi_kde
 
 ap = argparse.ArgumentParser(); ap.add_argument("--models", nargs="+"); ap.add_argument("--seeds", type=int, nargs="+", default=[2, 3, 4])
 ap.add_argument("--double", action="store_true"); a = ap.parse_args()

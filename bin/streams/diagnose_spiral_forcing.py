@@ -22,8 +22,8 @@ sys.path.insert(0, str(ROOT / "src"))
 import numpy as np
 
 from grid4_common import T, make_spray, score, du
-from ocen_dm.streams.restricted import HUNTER24_DIR, agama_kpc, host_potential
-from ocen_dm.streams.spiral import reflected_file, with_spiral
+from ocen_stream.restricted import HUNTER24_DIR, agama_kpc, host_potential
+from ocen_stream.spiral import reflected_file, with_spiral
 from refine_bar_profiles import atomic_json, NAMES
 
 

@@ -28,10 +28,10 @@ import numpy as np
 from scipy.optimize import minimize
 
 from grid4_common import GC, M, T, d, make_spray, r_kpc, score, w
-from ocen_dm.cluster import MU_SYS, MU_SYS_ERR, OCEN_DEC, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC, OCEN_RA, OCEN_VSYS_KMS
-from ocen_dm.streams.frames import observables, to_model
-from ocen_dm.streams.restricted import AGAMA_T_MYR, host_potential
-from ocen_dm.streams.spray import spray_unwrapped
+from ocen_stream.cluster import MU_SYS, MU_SYS_ERR, OCEN_DEC, OCEN_DISTANCE_ERR_KPC, OCEN_DISTANCE_KPC, OCEN_RA, OCEN_VSYS_KMS
+from ocen_stream.frames import observables, to_model
+from ocen_stream.restricted import AGAMA_T_MYR, host_potential
+from ocen_stream.spray import spray_unwrapped
 
 OUT = ROOT/"results/streams/paper"; OUT.mkdir(parents=True, exist_ok=True)
 JS = ROOT/"results/plot_data/paper_models.json"

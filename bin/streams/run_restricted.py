@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restricted N-body run of an omega Cen model on its orbit (src/ocen_dm/streams/restricted.py).
+"""Restricted N-body run of an omega Cen model on its orbit (src/ocen_stream/restricted.py).
 
 Particles come from an equilibrium IC file of bin/nbody/build_ics.py (pc, km/s, Msun, species).
 The satellite centre is integrated back from today's phase-space point (OCEN_TODAY) by --tback
@@ -33,7 +33,7 @@ sys.path.insert(0, str(ROOT/"src"))
 
 import numpy as np
 
-from ocen_dm.streams.restricted import (AGAMA_T_MYR, OCEN_TODAY, FrozenCore, RestrictedState, advance, agama_kpc,
+from ocen_stream.restricted import (AGAMA_T_MYR, OCEN_TODAY, FrozenCore, RestrictedState, advance, agama_kpc,
                                         bound_set, host_potential, rmax_of_energy)
 
 SPECIES = ("stars", "remnants", "halo")
@@ -123,7 +123,7 @@ def main():
         E = pot_all.potential(rel[:, :3]) + 0.5*np.sum(rel[:, 3:]**2, axis=1)
         rmax_pc = rmax_of_energy(pot_all, E)*1e3
         if args.spin is not None:
-            from ocen_dm.streams.rotation import spin_up
+            from ocen_stream.rotation import spin_up
             sp = json.loads(args.spin.read_text())
             lum = species != 2                                             # 0 stars, 1 remnants, 2 halo: DM not rotated
             rel_s, flipped = spin_up(rel[lum], rmax_pc[lum], OCEN_TODAY, sp["q0"], sp["rq_pc"], pa_deg=sp["pa_deg"],

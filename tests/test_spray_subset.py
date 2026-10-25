@@ -65,7 +65,7 @@ def _host_today():
 
 @pytest.mark.parametrize("case", ["uniform", "spin", "peri"])
 def test_subset_options_bit_identical(case):
-    from ocen_dm.streams.spray import spray_unwrapped
+    from ocen_stream.spray import spray_unwrapped
     host, today = _host_today()
     if case == "peri":
         trel = G.peri_release_times(host, today, 600, 1000., 10.)[0]
@@ -85,7 +85,7 @@ def test_subset_options_bit_identical(case):
 
 def test_chunked_integration_bit_identical():
     """spray_unwrapped(chunk=...) bounds memory; chunk sizes 1, 7 and > N must give identical outputs."""
-    from ocen_dm.streams.spray import spray_unwrapped
+    from ocen_stream.spray import spray_unwrapped
     host, today = _host_today()
     trel = np.linspace(G.T-1000/G.AGAMA_T_MYR, G.T, 300)
     runs = [spray_unwrapped(host, today, G.T, G.r_kpc, G.M, trel, seed=3, chunk=c) for c in (10**9, 7, 1)]

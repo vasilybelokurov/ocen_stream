@@ -9,10 +9,10 @@ import argparse, itertools, json, sys, time
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
-from ocen_dm.streams.frames import observables
-from ocen_dm.streams.spray import spray
-from ocen_dm.streams.track import measure
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
+from ocen_stream.frames import observables
+from ocen_stream.spray import spray
+from ocen_stream.track import measure
 
 w = lambda x: np.where(x > 180, x-360, x)
 OMEGA = [30., 31.5, 33., 34.5, 36.]; ANGLE = [24., 28., 32.]; AMP = [0.8, 1.0, 1.2]

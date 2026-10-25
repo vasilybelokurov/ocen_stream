@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from grid4_common import GC, d, du, dx, project_gc
-from ocen_dm.streams.path import gc_rotation, to_stream
+from ocen_stream.path import gc_rotation, to_stream
 
 
 def pm_basis(l, b):

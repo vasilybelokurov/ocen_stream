@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark of the MW-LMC orbit (src/ocen_dm/streams/lmc.py, rigid MW = Hunter+2024 axi) against Vasiliev+2021 (Tango) N-body
+"""Benchmark of the MW-LMC orbit (src/ocen_stream/lmc.py, rigid MW = Hunter+2024 axi) against Vasiliev+2021 (Tango) N-body
 runs (Zenodo 4300977, $OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977, potentials_{axisym,triax}/trajlmc.txt, accel.txt;
 time in AGAMA units of 0.9778 Gyr, today t = 0; x mirrored to our frame). Compared vs lookback time: LMC distance, and the MW
 reflex velocity dv_MW(t) = v_MW(t) - v_MW(today) = integral_t^0 acc dt' (acc = minus the MW-centre acceleration, both codes).
@@ -11,8 +11,8 @@ import numpy as np
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.integrate import cumulative_trapezoid
-from ocen_dm.streams.restricted import AGAMA_T_MYR
-from ocen_dm.streams.lmc import mw_lmc_orbit
+from ocen_stream.restricted import AGAMA_T_MYR
+from ocen_stream.lmc import mw_lmc_orbit
 
 ROOT = Path(__file__).resolve().parents[2]; TD = Path(os.path.expandvars("$OCEN_CATALOGUES/vasiliev21_tango_zenodo4300977"))
 T = 1955.58/AGAMA_T_MYR; MIR = np.array([-1, 1, 1])

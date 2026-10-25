@@ -11,9 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path.insert(0, str(ROOT/"src"))
 import numpy as np, astropy.coordinates as coord, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from astropy.table import Table
 from scipy.stats import spearmanr
-from ocen_dm.streams.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
-from ocen_dm.streams.frames import observables
-from ocen_dm.streams.spray import spray_unwrapped
+from ocen_stream.restricted import AGAMA_T_MYR, OCEN_TODAY, host_potential
+from ocen_stream.frames import observables
+from ocen_stream.spray import spray_unwrapped
 
 w = lambda x: np.where(x > 180, x-360, x)
 

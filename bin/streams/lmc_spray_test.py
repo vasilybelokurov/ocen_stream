@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end test of the LMC option (host_potential(..., lmc=dict(mass=M)); src/ocen_dm/streams/lmc.py): omega Cen spray
+"""End-to-end test of the LMC option (host_potential(..., lmc=dict(mass=M)); src/ocen_stream/lmc.py): omega Cen spray
 and score at fixed bar models with M_LMC = 0, 1.0, 1.5, 2.0 e11 Msun, everything else identical (bar3d_sweep settings: amp
 1.2, d 5.6 kpc, catalogue PMs, baumgardt frame, 8000 epochs over the last 1000 Myr, seed 1, debris < 700 Myr).
 Per run: lnL, phi1-segment lnL, footprint medians (pmra, pmdec, vlos, d) per 2-deg phi1 bin, and the omega Cen centre-orbit
@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np
 from grid4_common import ROOT, T, make_spray, score, project_gc, GC, du, OCEN_OBS
-from ocen_dm.streams.restricted import agama_kpc, host_potential, AGAMA_T_MYR
-from ocen_dm.streams.frames import to_model
+from ocen_stream.restricted import agama_kpc, host_potential, AGAMA_T_MYR
+from ocen_stream.frames import to_model
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--an", type=float, default=16.); ap.add_argument("--om", type=float, default=34.); ap.add_argument("--size", type=float, default=1.0)

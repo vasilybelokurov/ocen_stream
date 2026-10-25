@@ -24,7 +24,7 @@ sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
 warnings.filterwarnings("ignore")
 import emulator_design as ED      # noqa: E402
 import emulator_report as ER      # noqa: E402
-from ocen_dm.streams.emulator import group_replicates, MeanEmulator   # noqa: E402
+from ocen_stream.emulator import group_replicates, MeanEmulator   # noqa: E402
 
 HELD = "validation (held out)"
 
@@ -39,7 +39,7 @@ def to_unit(p, smax):
 def score_spray(path, cat, bounds):
     from grid4_common import win, project_gc, GC
     BG_BOUNDS, V_BOUNDS = [tuple(map(tuple, bounds[0])), tuple(bounds[1])]
-    from ocen_dm.streams.score import score_conditional
+    from ocen_stream.score import score_conditional
     m = dict(np.load(path)); mu, mx = project_gc(m["l"], m["b"], GC)
     return score_conditional(cat["du"], cat["dw"], cat["dv"], cat["dev"], cat["cov"], mu, np.column_stack((mx, m["pmra"], m["pmdec"])),
                              m["vlos"], m["chi"], m["age"], u_window=win, w_bounds=BG_BOUNDS, v_bounds=V_BOUNDS, chi_edges=np.arange(0., 205., 5.),

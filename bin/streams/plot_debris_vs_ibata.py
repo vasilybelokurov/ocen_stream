@@ -32,8 +32,8 @@ import astropy.coordinates as coord
 import astropy.units as u
 from astropy.table import Table
 
-from ocen_dm.streams.analysis import load, run_core, run_particles
-from ocen_dm.streams.restricted import OCEN_TODAY, bound_set
+from ocen_stream.analysis import load, run_core, run_particles
+from ocen_stream.restricted import OCEN_TODAY, bound_set
 
 R_SUN_KPC, V_SUN = 8.178, (11.1, 12.24+240.0, 7.25)
 OCEN_LB = (309.10, 14.97)
@@ -45,7 +45,7 @@ INK, MUTED, GRID = "#1f1f1e", "#6b6a64", "#e4e3dc"
 
 def observables(xv, frame="baumgardt"):
     if frame != "baumgardt":
-        from ocen_dm.streams.frames import observables as obs_frame
+        from ocen_stream.frames import observables as obs_frame
         return obs_frame(xv, frame)
     gc = coord.Galactocentric(x=-xv[:, 0]*u.kpc, y=xv[:, 1]*u.kpc, z=xv[:, 2]*u.kpc,
                               v_x=-xv[:, 3]*u.km/u.s, v_y=xv[:, 4]*u.km/u.s, v_z=xv[:, 5]*u.km/u.s,

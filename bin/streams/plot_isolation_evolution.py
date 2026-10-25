@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
-from ocen_dm.streams.analysis import load, run_particles, snapshot_times
+from ocen_stream.analysis import load, run_particles, snapshot_times
 
 EDGES = np.logspace(np.log10(0.3), 2, 17)
 MID = np.sqrt(EDGES[1:]*EDGES[:-1])

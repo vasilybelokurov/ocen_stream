@@ -2,9 +2,9 @@
 import os, sys, numpy as np
 ROOT = os.getcwd()
 sys.path[:0] = [ROOT+"/bin/streams", ROOT+"/src"]
-from ocen_dm.streams.restricted import host_potential, agama_kpc, AGAMA_T_MYR, HUNTER24_DIR
-from ocen_dm.streams.mw_variants import axisymmetric_variant
-from ocen_dm.streams.frames import to_model, OCEN_OBS, frame_r0
+from ocen_stream.restricted import host_potential, agama_kpc, AGAMA_T_MYR, HUNTER24_DIR
+from ocen_stream.mw_variants import axisymmetric_variant
+from ocen_stream.frames import to_model, OCEN_OBS, frame_r0
 agama = agama_kpc()
 T = 1955.58/AGAMA_T_MYR
 R0 = frame_r0("gravity21")

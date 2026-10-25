@@ -33,14 +33,14 @@ def rows_of(ds, design):
 
 
 def grouped(R):
-    from ocen_dm.streams.emulator import group_replicates
+    from ocen_stream.emulator import group_replicates
     return group_replicates(np.array([r["unit"] for r in R]), np.array([r["total_jk"] for r in R]), np.array([r["var_jk"] for r in R]),
                             np.array([r["key"] for r in R]))
 
 
 def cv(g, folds, trend):
     import emulator_design as ED
-    from ocen_dm.streams.emulator import MeanEmulator
+    from ocen_stream.emulator import MeanEmulator
     n = len(g["ybar"]); mu, sp, nv = np.zeros(n), np.zeros(n), np.zeros(n)
     for f in folds:
         tr = np.ones(n, bool); tr[f] = False
@@ -56,7 +56,7 @@ def task(args):
     import emulator_design as ED
     import emulator_report as ER
     from mock_recovery import to_unit
-    from ocen_dm.streams.emulator import MeanEmulator
+    from ocen_stream.emulator import MeanEmulator
     from scipy.optimize import minimize
     g = grouped(rows_of(ds, design)); n = len(g["ybar"])
     rnd = np.array_split(np.random.default_rng(0).permutation(n), 5)

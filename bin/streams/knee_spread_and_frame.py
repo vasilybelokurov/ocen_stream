@@ -12,7 +12,7 @@ Usage: python bin/streams/knee_spread_and_frame.py
 import json
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 from grid4_common import ROOT, project_gc, GC, du, dx, d, cov, score_conditional
-from ocen_dm.streams.path import project, load
+from ocen_stream.path import project, load
 from d1_segments import MODELS, single_scores
 
 M = {a: dict(np.load(ROOT/"results/streams"/p)) for a, (p, _) in MODELS.items()}
