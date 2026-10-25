@@ -203,24 +203,24 @@ _ER = {0: 0.01312004499419488073250, 5: -1.22515644637620444072057, 6: -0.495758
        8: -0.35032884874997368168865, 9: 0.33417911871301747902973, 10: 0.08192320648511571246571, 11: -0.02235530786388629525884}
 
 
-def _deriv(y, t, tb, with_acc=False):
+def _deriv(y, t, tb, with_acc=False, mi=None):
     """dy/dt for (x, v) (N, 6), the chi integrand |r| - |r_prog| and, optionally, AGAMA's accuracy factor
     min(1, |E| / max(|Epot|, Ekin)) (orbit.cpp OrbitIntegrator::eval)."""
     x, v = y[:, :3], y[:, 3:]
     if with_acc:
-        pot, vjp = jax.vjp(lambda z: J.phi(z, t, tb), x); a = -vjp(jnp.ones_like(pot))[0]
+        pot, vjp = jax.vjp(lambda z: J.phi(z, t, tb, mi), x); a = -vjp(jnp.ones_like(pot))[0]
         ek = 0.5*jnp.sum(v*v, 1); fac = jnp.minimum(1., jnp.abs(pot+ek)/jnp.maximum(jnp.abs(pot), ek))
     else:
-        a, fac = J.accel(x, t, tb), None
-    dchi = jnp.linalg.norm(x, axis=1)-jnp.linalg.norm(J.centre(t, tb), axis=1)
+        a, fac = J.accel(x, t, tb, mi), None
+    dchi = jnp.linalg.norm(x, axis=1)-jnp.linalg.norm(J.centre(t, tb, mi), axis=1)
     return jnp.concatenate((v, a), 1), dchi, fac
 
 
-def _init_step(y, t, tb, acc):
+def _init_step(y, t, tb, acc, mi=None):
     """AGAMA initTimeStep (accAbs = 0) times the accuracy factor; returns (h, k1)."""
-    k1, _, fac = _deriv(y, t, tb, True)
+    k1, _, fac = _deriv(y, t, tb, True, mi)
     h1 = jnp.clip(jnp.sqrt(jnp.sum(y*y, 1)/jnp.sum(k1*k1, 1))*0.01, 1e-12, 1e12)
-    k2 = _deriv(y+h1[:, None]*k1, t+h1, tb)[0]; xt = y+0.5*h1[:, None]*(k1+k2); k3 = _deriv(xt, t+h1, tb)[0]
+    k2 = _deriv(y+h1[:, None]*k1, t+h1, tb, mi=mi)[0]; xt = y+0.5*h1[:, None]*(k1+k2); k3 = _deriv(xt, t+h1, tb, mi=mi)[0]
     d0 = jnp.maximum(jnp.abs(y), jnp.abs(xt)); d1 = jnp.maximum(jnp.abs(k1), jnp.abs(k3))
     d2 = jnp.abs((3*k2-k1-2*k3)/h1[:, None]); d3 = jnp.abs(6*(k3-k2)/(h1**2)[:, None])
     h2 = jnp.min((d0*d2+d1*d1)/(d1*d3+d2*d2), 1)
@@ -230,16 +230,14 @@ def _init_step(y, t, tb, acc):
 def _attempts(s, T, tb, acc, n_att):
     """n_att DOP853 step attempts for every particle (accept / reject / finish as AGAMA's doStep + OrbitIntegrator::run)."""
     def one(_, s):
-        t, y, k1, h, chi, nbad, prev, done = s
-        rem = T-t; dt = jnp.minimum(h, rem); K = [k1]; D = [_deriv(y, t, tb)[1]]
+        t, y, k1, h, chi, nbad, prev, done, mi = s
+        mi_ = mi if "K" in tb else None                                                   # model index (batched models only)
+        rem = T-t; dt = jnp.minimum(h, rem); K = [k1]; D = [_deriv(y, t, tb, mi=mi_)[1]]
         for i, (c, a) in enumerate(zip(_C, _A)):
             yi = y+dt[:, None]*sum(aj*K[j] for j, aj in enumerate(a) if aj)
-            if i < 10:
-                k, d, _ = _deriv(yi, t+c*dt, tb); K.append(k); D.append(d)
-            else:
-                k, d, _ = _deriv(yi, t+dt, tb); K.append(k); D.append(d)
+            k, d, _ = _deriv(yi, t+c*dt, tb, mi=mi_); K.append(k); D.append(d)
         kb = sum(b*K[j] for j, b in _B.items()); ynew = y+dt[:, None]*kb
-        k13, d13, fac = _deriv(ynew, t+dt, tb, True)
+        k13, d13, fac = _deriv(ynew, t+dt, tb, True, mi_)
         sk = acc*jnp.maximum(jnp.abs(y), jnp.abs(ynew))*fac[:, None]
         e3 = jnp.sum(((kb-sum(b*K[j] for j, b in _BHH.items()))/sk)**2, 1); e5 = jnp.sum((sum(b*K[j] for j, b in _ER.items())/sk)**2, 1)
         den = jnp.sqrt(6*(e5+0.01*e3)); err = jnp.where(den == 0, 0., e5*dt/den); f8 = err**0.125
@@ -252,7 +250,7 @@ def _attempts(s, T, tb, acc, n_att):
         t = jnp.where(acc_, jnp.where(dt == rem, T, t+dt), t); y = jnp.where(acc_[:, None], ynew, y); k1 = jnp.where(acc_[:, None], k13, k1)
         h = jnp.where(go, jnp.where(ok, hacc, hrej), h); nbad = jnp.where(go, jnp.where(ok, 0, nb), nbad)
         prev = jnp.where(go, jnp.where(ok, jnp.inf, err), prev); done = done | (t >= T)
-        return t, y, k1, h, chi, nbad, prev, done
+        return t, y, k1, h, chi, nbad, prev, done, mi
     return jax.lax.fori_loop(0, n_att, one, s)
 
 
@@ -260,7 +258,7 @@ _attempts_jit = jax.jit(_attempts, static_argnums=(4,))
 _init_jit = jax.jit(_init_step)
 
 
-def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=None, handoff=None, max_att=200000):
+def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=None, handoff=None, max_att=200000, mi=None):
     """AGAMA's DOP853 for every particle from t0 to T, carrying chi [kpc Myr]. Work-efficient on a GPU: n_att attempts per call,
     then the unfinished particles are compacted into a power-of-two array (finished ones stop costing anything). Returns
     (final (N, 6), chi, number of accepted+rejected attempts of the slowest particle). trace (optional list): appended with
@@ -269,9 +267,10 @@ def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=
     reached, the unfinished particles and the tables move to the CPU device and the same loop continues there (no change to the
     result: on a GPU the last ~0.1% of particles, which pass through the cluster core, otherwise take ~half the time, latency-
     bound; docs/reviews/straggler_fable_20261025.md). A no-op when the default device is already the CPU."""
-    T = tb["T"]; n = len(ic); t = jnp.asarray(t0); y = jnp.asarray(ic); h, k1 = _init_jit(y, t, tb, acc)
+    T = tb["T"]; n = len(ic); t = jnp.asarray(t0); y = jnp.asarray(ic); mi = jnp.zeros(n, jnp.int32) if mi is None else jnp.asarray(mi)
+    h, k1 = _init_jit(y, t, tb, acc, mi if "K" in tb else None)
     out_y, out_chi = np.zeros((n, 6)), np.zeros(n); idx = np.arange(n); calls = 0
-    s = (t, y, k1, h, jnp.zeros(n), jnp.zeros(n, jnp.int32), jnp.full(n, jnp.inf), jnp.zeros(n, bool))
+    s = (t, y, k1, h, jnp.zeros(n), jnp.zeros(n, jnp.int32), jnp.full(n, jnp.inf), jnp.zeros(n, bool), mi)
     while True:
         t_c = __import__("time").perf_counter(); n_live = int(np.sum(idx >= 0)) if trace is not None else 0
         s = _attempts_jit(s, T, tb, acc, n_att); calls += 1
@@ -291,7 +290,7 @@ def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=
         m = max(min_size, 1 << (2*int(np.ceil(np.log2(act.size)/2))))                     # powers of 4: fewer compiled shapes
         if m < len(idx):                                                                  # compact: keep the unfinished ones
             sel = np.concatenate((act, np.full(m-act.size, act[0])))
-            s = tuple(a[sel] for a in s); s = s[:7]+(s[7].at[act.size:].set(True),)
+            s = tuple(a[sel] for a in s); s = s[:7]+(s[7].at[act.size:].set(True),)+s[8:]
             idx = np.concatenate((idx[act], np.full(m-act.size, -1)))
         else:
             idx = np.where(done, -1, idx)
@@ -343,3 +342,26 @@ _orbit_jit = jax.jit(centre_orbit_dop853, static_argnames=("acc", "nmax"))
 _orbit_resample_jit = jax.jit(_orbit_resample)
 _release_ic_jit = jax.jit(_release_ic)
 ORBIT_ACC = 1e-10            # same accuracy vs AGAMA as 1e-12 (0.06 pc over the last 700 Myr, = AGAMA's own closure); 5.7k steps
+
+
+_SHARED = ("bar", "m", "du", "dw", "rs", "zs", "nu", "nw", "T")
+_PER_MODEL = ("axi", "A", "S", "theta_T", "omega")
+
+
+def release_batch(params_list, ht, inp, trel, keep):
+    """release for K models at once: per-model host entries and centre orbits stacked on a leading axis (tb["K"] = K), the
+    particles of all models concatenated with their model index mi. Returns (tb, ic, t0, mi, n_per_model)."""
+    out = [release(p, ht, inp, trel, keep) for p in params_list]                         # orbits on the CPU, ICs on the GPU
+    tbs = [o[0] for o in out]; K = len(tbs)
+    tb = {k: tbs[0][k] for k in _SHARED+("sat", "lr0", "dlr", "nr", "mtot", "G", "tc0", "dtc")}
+    tb.update({k: jnp.stack([jnp.asarray(t[k]) for t in tbs]) for k in _PER_MODEL+("orb",)}); tb["K"] = K
+    n = [o[1].shape[0] for o in out]
+    return tb, jnp.concatenate([o[1] for o in out]), jnp.concatenate([o[2] for o in out]), jnp.repeat(jnp.arange(K), np.array(n)), n
+
+
+def spray_batch(params_list, ht, inp, trel, keep, acc=1e-8, n_att=32):
+    """K model streams in one DOP853 integration (the latency-bound tails of the models overlap). Returns a list of
+    (final (N_k, 6), chi, age) per model."""
+    tb, ic, t0, mi, n = release_batch(params_list, ht, inp, trel, keep)
+    y, chi, _ = dop853_chi(ic, t0, tb, acc, n_att, mi=mi); age = np.asarray((inp["T"]-t0)*T_MYR); e = np.cumsum([0]+n)
+    return [(jnp.asarray(y[a:b]), jnp.asarray(chi[a:b]), age[a:b]) for a, b in zip(e[:-1], e[1:])]

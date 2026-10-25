@@ -67,14 +67,15 @@ def _w(t):
     return jnp.stack(((1-t)**3/6, (3*t3-6*t2+4)/6, (-3*t3+3*t2+3*t+1)/6, t3/6), -1)
 
 
-def _spline2(c, x, y, nx, ny):
+def _spline2(c, x, y, nx, ny, mi=None):
     """tensor cubic B-spline at grid coordinates (x, y) (in node units) of padded coefficients c (..., nx+4, ny+4). Beyond the grid
     the cell index is clamped but the weights are not: the last cell's cubic is extrapolated (the grid, R <= 30, |z| <= 10 kpc,
-    covers all orbits here)."""
+    covers all orbits here). mi (optional, (N,) ints): per-point index into a leading model axis of c (batched models)."""
     i = jnp.clip(jnp.floor(x), 0, nx-2); j = jnp.clip(jnp.floor(y), 0, ny-2)
     wx, wy = _w(x-i), _w(y-j); k = jnp.arange(4)
     I = (i.astype(jnp.int32)+1)[..., None]+k; J = (j.astype(jnp.int32)+1)[..., None]+k
-    return jnp.einsum("...nkl,nk,nl->...n", c[..., I[:, :, None], J[:, None, :]], wx, wy)
+    g = c[..., I[:, :, None], J[:, None, :]] if mi is None else c[mi[:, None, None], I[:, :, None], J[:, None, :]]
+    return jnp.einsum("...nkl,nk,nl->...n", g, wx, wy)
 
 
 def _spline1(c, x, n):
@@ -88,38 +89,44 @@ def _hermite(t, tk, f, df):
     return (2*h**3-3*h**2+1)*f[k]+(h**3-2*h**2+h)*df[k]*dt+(-2*h**3+3*h**2)*f[k+1]+(h**3-h**2)*df[k+1]*dt
 
 
-def centre(t, tb):
+def _p(tb, key, mi):
+    """a per-model table entry, per point when models are batched (mi = model index of each point)."""
+    return tb[key] if mi is None else tb[key][mi]
+
+
+def centre(t, tb, mi=None):
     """progenitor centre position at times t (N,): cubic Hermite interpolation of the orbit, either on the adaptive DOP853 steps
     (tb["tcs"], knots ascending) or on a uniform grid (tb["tc0"], tb["dtc"]; benchmark inputs)."""
     if "tcs" in tb:
         return _hermite(t, tb["tcs"], tb["orb"][:, :3], tb["orb"][:, 3:])
-    s = (t-tb["tc0"])/tb["dtc"]; k = jnp.clip(jnp.floor(s), 0, tb["orb"].shape[0]-2); h = (s-k)[:, None]; k = k.astype(jnp.int32)
-    p0, p1, v0, v1 = tb["orb"][k, :3], tb["orb"][k+1, :3], tb["orb"][k, 3:]*tb["dtc"], tb["orb"][k+1, 3:]*tb["dtc"]
+    s = (t-tb["tc0"])/tb["dtc"]; k = jnp.clip(jnp.floor(s), 0, tb["orb"].shape[-2]-2); h = (s-k)[:, None]; k = k.astype(jnp.int32)
+    o0, o1 = (tb["orb"][k], tb["orb"][k+1]) if mi is None else (tb["orb"][mi, k], tb["orb"][mi, k+1])
+    p0, p1, v0, v1 = o0[:, :3], o1[:, :3], o0[:, 3:]*tb["dtc"], o1[:, 3:]*tb["dtc"]
     return (2*h**3-3*h**2+1)*p0+(h**3-2*h**2+h)*v0+(-2*h**3+3*h**2)*p1+(h**3-h**2)*v1
 
 
-def phi_host(x, t, tb):
-    """host potential at positions x (N, 3) and times t (N,)."""
+def phi_host(x, t, tb, mi=None):
+    """host potential at positions x (N, 3) and times t (N,); mi: model index per point when tb holds K batched models."""
     R = jnp.hypot(x[:, 0], x[:, 1]); az = jnp.abs(x[:, 2]); g = lambda r, z: (jnp.arcsinh(r/tb["rs"])/tb["du"], jnp.arcsinh(z/tb["zs"])/tb["dw"])
-    axi = _spline2(tb["axi"], *g(R, az), tb["nu"], tb["nw"])
-    modes = _spline2(tb["bar"], *g(R/tb["S"], az/tb["S"]), tb["nu"], tb["nw"])                  # bar term at x / S, (n_modes, N)
-    ang = jnp.arctan2(x[:, 1], x[:, 0])-(tb["theta_T"]+tb["omega"]*(t-tb["T"]))
-    return axi+tb["A"]*jnp.sum(modes*jnp.cos(tb["m"][:, None]*ang[None, :]), 0)
+    S = _p(tb, "S", mi); axi = _spline2(tb["axi"], *g(R, az), tb["nu"], tb["nw"], mi)
+    modes = _spline2(tb["bar"], *g(R/S, az/S), tb["nu"], tb["nw"])                              # bar term at x / S, (n_modes, N)
+    ang = jnp.arctan2(x[:, 1], x[:, 0])-(_p(tb, "theta_T", mi)+_p(tb, "omega", mi)*(t-tb["T"]))
+    return axi+_p(tb, "A", mi)*jnp.sum(modes*jnp.cos(tb["m"][:, None]*ang[None, :]), 0)
 
 
-def phi_sat(x, t, tb):
+def phi_sat(x, t, tb, mi=None):
     """progenitor potential (frozen profile carried along its orbit); -G M / r beyond the table."""
-    r = jnp.linalg.norm(x-centre(t, tb), axis=1); s = (jnp.log(r)-tb["lr0"])/tb["dlr"]
+    r = jnp.linalg.norm(x-centre(t, tb, mi), axis=1); s = (jnp.log(r)-tb["lr0"])/tb["dlr"]
     return jnp.where(s < tb["nr"]-1, _spline1(tb["sat"], jnp.maximum(s, 0.), tb["nr"]), -tb["G"]*tb["mtot"]/r)
 
 
-def phi(x, t, tb):
-    return phi_host(x, t, tb)+phi_sat(x, t, tb)
+def phi(x, t, tb, mi=None):
+    return phi_host(x, t, tb, mi)+phi_sat(x, t, tb, mi)
 
 
-def accel(x, t, tb):
+def accel(x, t, tb, mi=None):
     """-grad Phi at (N, 3) positions; particles are independent, so the gradient of the sum is per particle."""
-    return -jax.grad(lambda y: jnp.sum(phi(y, t, tb)))(x)
+    return -jax.grad(lambda y: jnp.sum(phi(y, t, tb, mi)))(x)
 
 
 @jax.jit
