@@ -137,13 +137,24 @@ def release(params, ht, inp, trel, keep):
     cpu = jax.devices("cpu")[0]; dev = jax.devices()[0]                  # one orbit = ~6k sequential steps: latency-bound on a GPU
     a = jax.device_put((today_xv(params["dist"], params["pmra"], params["pmdec"], inp), {k: v for k, v in tb.items()}, T), cpu)
     with jax.default_device(cpu):
-        tcs, orb, acc_c, _ = jax.device_put(_orbit_jit(*a, acc=ORBIT_ACC), dev)
-    tb = dict(tb, sat=inp["sat"], lr0=inp["lr0"], dlr=inp["dlr"], nr=inp["nr"], mtot=inp["mtot"], G=inp["G"], tcs=tcs, orb=orb)
-    trel = jnp.asarray(trel)
-    orbit_r = jnp.concatenate((J._hermite(trel, tcs, orb[:, :3], orb[:, 3:]), J._hermite(trel, tcs, orb[:, 3:], acc_c)), 1)
+        tcu, orbu, orbit_r = jax.device_put(_orbit_resample_jit(*a, jnp.asarray(trel)), dev)
+    # the particles see the centre on a uniform 0.05-Myr grid (O(1) lookup in every force call; a search over the adaptive steps made
+    # the GPU spray 3x slower)
+    tb = dict(tb, sat=inp["sat"], lr0=inp["lr0"], dlr=inp["dlr"], nr=inp["nr"], mtot=inp["mtot"], G=inp["G"], tc0=tcu[0], dtc=tcu[1]-tcu[0], orb=orbu)
+    ic, rj = _release_ic_jit(orbit_r, jnp.asarray(trel), tb, inp)
+    return tb, ic[keep], jnp.repeat(jnp.asarray(trel), 2)[keep], jnp.repeat(rj, 2)[keep]
+
+
+def _orbit_resample(xv0, tb, T, trel, n_grid=39112):
+    """adaptive centre orbit, resampled on a uniform grid (Hermite in the DOP853 steps), and its state at the release epochs."""
+    tcs, orb, acc_c, _ = centre_orbit_dop853(xv0, tb, T, acc=ORBIT_ACC)
+    tcu = jnp.linspace(0., T, n_grid+1); H = lambda t: jnp.concatenate((J._hermite(t, tcs, orb[:, :3], orb[:, 3:]), J._hermite(t, tcs, orb[:, 3:], acc_c)), 1)
+    return tcu, H(tcu), H(trel)
+
+
+def _release_ic(orbit_r, trel, tb, inp):
     rj, vj, Rm = rj_vj_R(orbit_r, trel, tb, inp)
-    ic, _ = release_ic(orbit_r, rj, vj, Rm, inp["bank"])
-    return tb, ic[keep], jnp.repeat(trel, 2)[keep], jnp.repeat(rj, 2)[keep]
+    return release_ic(orbit_r, rj, vj, Rm, inp["bank"])[0], rj
 
 
 def spray(params, ht, inp, trel, keep, dt=0.2/T_MYR, flag_rj=0.5, rtol=1e-6, pad=512, method="yoshida", acc=1e-8, n_att=32, handoff=None):
@@ -273,8 +284,8 @@ def dop853_chi(ic, t0, tb, acc=1e-8, n_att=32, min_size=256, trace=None, finish=
         if act.size == 0:
             return out_y, out_chi*T_MYR, calls*n_att
         if handoff is not None and calls*n_att >= handoff and s[1].devices() != {cpu := jax.devices("cpu")[0]}:
-            s, tb, T = jax.device_put((s, tb, T), cpu); min_size = 8                       # small arrays are cheap on a CPU
-        m = max(min_size, 1 << int(np.ceil(np.log2(act.size))))
+            s, tb, T = jax.device_put((s, tb, T), cpu); min_size = 64                      # small arrays are cheap on a CPU
+        m = max(min_size, 1 << (2*int(np.ceil(np.log2(act.size)/2))))                     # powers of 4: fewer compiled shapes
         if m < len(idx):                                                                  # compact: keep the unfinished ones
             sel = np.concatenate((act, np.full(m-act.size, act[0])))
             s = tuple(a[sel] for a in s); s = s[:7]+(s[7].at[act.size:].set(True),)
@@ -326,4 +337,6 @@ def centre_orbit_dop853(xv0, tb, T, acc=1e-12, nmax=32768):
 
 
 _orbit_jit = jax.jit(centre_orbit_dop853, static_argnames=("acc", "nmax"))
+_orbit_resample_jit = jax.jit(_orbit_resample)
+_release_ic_jit = jax.jit(_release_ic)
 ORBIT_ACC = 1e-10            # same accuracy vs AGAMA as 1e-12 (0.06 pc over the last 700 Myr, = AGAMA's own closure); 5.7k steps

@@ -26,7 +26,7 @@ def test_centre_orbit_vs_agama(released):
     """over the release window (last 700 Myr) within 0.1 pc of the AGAMA (back + forward, 1e-12) orbit, whose own closure error
     today is 0.06 pc; over the full 1.96 Gyr the table-force error accumulates to ~0.6 pc (vs AGAMA backward-only: 0.007 pc at
     700 Myr), negligible against r_J ~ 190 pc."""
-    J = released[0]; c = np.asarray(J._hermite(jnp.asarray(z["tc"]), tb["tcs"], tb["orb"][:, :3], tb["orb"][:, 3:]))   # adaptive steps
+    c = np.asarray(tb["orb"])[:, :3]                                                  # uniform grid, as AGAMA's
     age = (float(z["T"])-z["tc"])*977.79; d = np.linalg.norm(c-z["orb"][:, :3], axis=1)
     assert d[age < 700].max() < 1e-4 and d.max() < 2e-3, (d[age < 700].max(), d.max())
 

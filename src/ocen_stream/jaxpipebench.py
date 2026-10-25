@@ -47,10 +47,11 @@ def main():
                     (m, e), dt = timed(meas, obs, chi, age, bank); c2.append(float(JS.chi2(m, e, si))); r.setdefault("score_s", []).append(dt)
                 r["chi2"] = c2
             else:
-                r[meth+"_max_dv_vs_gpu_only"] = float(np.abs(xv[:, 3:]-ref[:, 3:]).max())
+                dvv = np.linalg.norm(xv[:, 3:]-ref[:, 3:], axis=1); r[meth+"_max_dv_vs_gpu_only"] = float(dvv.max())
+                r[meth+"_n_dv_gt_0.01kms"] = int(np.sum(dvv > 0.01)); r[meth+"_n_dv_gt_1kms"] = int(np.sum(dvv > 1.))
         res[name] = r; tf.write_text(json.dumps(res, indent=1))
         print(f"{name}: release {r['release_s']:.2f} s; spray (incl. release) dop853 {r['dop853_s']:.1f} s, hand-off at 1600 "
-              f"{r['dop853_ho1600_s']:.1f} s (max |dv| vs GPU-only {r['dop853_ho1600_max_dv_vs_gpu_only']:.1e} km/s), at 2000 {r['dop853_ho2000_s']:.1f} s; "
+              f"{r['dop853_ho1600_s']:.1f} s (vs GPU-only: max |dv| {r['dop853_ho1600_max_dv_vs_gpu_only']:.1e} km/s, {r['dop853_ho1600_n_dv_gt_0.01kms']} particles > 0.01, {r['dop853_ho1600_n_dv_gt_1kms']} > 1 km/s), at 2000 {r['dop853_ho2000_s']:.1f} s; "
               f"score {np.median(r['score_s'][1:]):.2f} s; chi2 {', '.join(f'{c:.2f}' for c in r['chi2'])}", flush=True)
     print(json.dumps(res))
 
