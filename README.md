@@ -19,7 +19,7 @@ copied with it. Documents written before the split (`docs/reviews/`, `docs/STREA
 ## Set-up
 
 ```bash
-source ~/Work/venvs/.venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -e .            # agama separately
 # .env (gitignored) sets OCEN_CATALOGUES, OCEN_ISOCHRONES, OCEN_BAR_DIR, OCEN_SIMS
 OMP_NUM_THREADS=1 PYTHONPATH=src python -m pytest -q
