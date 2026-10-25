@@ -1,0 +1,2818 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Knowledge base of the oCen_stream project (stream data, spray models, bar fits, reviews, literature)">
+      
+      
+      
+        <link rel="canonical" href="https://vasilybelokurov.github.io/ocen_stream/kb/models/stream_results_index/">
+      
+      
+        <link rel="prev" href="../stream_likelihood_versions/">
+      
+      
+        <link rel="next" href="../../stream_status/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Results index - oCen_stream: the Omega Centauri stream and the Milky Way bar</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#stream-results-index" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="oCen_stream: the Omega Centauri stream and the Milky Way bar" class="md-header__button md-logo" aria-label="oCen_stream: the Omega Centauri stream and the Milky Way bar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            oCen_stream: the Omega Centauri stream and the Milky Way bar
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Results index
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vasilybelokurov/ocen_stream" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vasilybelokurov/ocen_stream
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../data/tails_streams/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Data
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../stream_likelihood_versions/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Models
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../stream_status/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  History
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../literature/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Literature
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../reviews/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reviews
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="oCen_stream: the Omega Centauri stream and the Milky Way bar" class="md-nav__button md-logo" aria-label="oCen_stream: the Omega Centauri stream and the Milky Way bar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    oCen_stream: the Omega Centauri stream and the Milky Way bar
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vasilybelokurov/ocen_stream" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vasilybelokurov/ocen_stream
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data/tails_streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream sample and caches
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data/potentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potentials and frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Models
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stream_likelihood_versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Likelihood versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Results index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stream_status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status (2026-10-18)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../STREAM_PM_REFINEMENT_2026-10-13/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PM refinement (2026-10-13)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../STREAM_KNEE_INVESTIGATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knee investigation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../STREAM_DIAGNOSTIC_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostic plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../STREAM_FIT_CAMPAIGN_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fit campaign plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../STREAM_EXPERIMENTS_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../STREAM_FIT_METHODS_REVIEW/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream-fitting methods review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../STREAM_REQUIREMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../literature/omega_cen_stream_distances_2026-10-10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream distances literature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../literature/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Literature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reviews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviews
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="stream-results-index">Stream results index<a class="headerlink" href="#stream-results-index" title="Permanent link">&para;</a></h1>
+<p>Generated by <code>bin/streams/score_provenance.py</code> from the code audit in <code>bin/streams/score_registry.py</code>; do not edit by hand. Version definitions: <a href="../stream_likelihood_versions/">stream likelihood versions</a>.</p>
+<p>Columns: <strong>path</strong> (repository-relative); <strong>written</strong> (UTC, newest file in a directory); <strong>score</strong> (version and function; 'wrapper default at write time' = grid4_common.score with the version in force then); <strong>by</strong> (<code>registry</code> = script audit, <code>settings</code> = the file's own record, <code>mtime only</code> = no registry entry, version from the date only); <strong>commit</strong> (last commit before the write); <strong>script</strong>, <strong>options</strong> (non-default score options), <strong>spray</strong> (particle settings), <strong>file records</strong> (what the output itself stores).</p>
+<table>
+<thead>
+<tr>
+<th>path</th>
+<th>written</th>
+<th>score</th>
+<th>by</th>
+<th>commit</th>
+<th>script</th>
+<th>options</th>
+<th>spray</th>
+<th>file records</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>results/plot_data/agecut_rescore.json</code></td>
+<td>2026-10-10 07:46</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>4468bc5</code></td>
+<td>bin/streams/agecut_rescore.py</td>
+<td>age_max in (500, 700, 1000)</td>
+<td>spray_grid4 sprays (8000, seed 1, no age cut)</td>
+<td>partly: age_max as key, params</td>
+</tr>
+<tr>
+<td><code>results/plot_data/bar_profile_refinement_20261013/</code></td>
+<td>2026-10-13 08:31</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>12c7785</code></td>
+<td>bin/streams/refine_bar_profiles.py</td>
+<td></td>
+<td>fit: make_spray(..., nrel 8000, seed 1, bar_size, max_age 700); validate: nrel 32000, seeds 4-6</td>
+<td>partly: args, nrel, seed, per-eval lnL/K/frac_bg; score string 'unchanged score_conditional'</td>
+</tr>
+<tr>
+<td><code>results/plot_data/bootstrap_grid4.json</code></td>
+<td>2026-10-09 15:50</td>
+<td>as grid4_perstar.npz (no scoring here)</td>
+<td>registry</td>
+<td><code>0187cb9</code></td>
+<td>bin/streams/bootstrap_grid4.py</td>
+<td>block bootstrap over phi1 of results/plot_data/grid4_perstar.npz</td>
+<td>spray_grid4 sprays (8000, seed 1)</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/cluster_mass_test.json</code></td>
+<td>2026-10-10 18:57</td>
+<td>S2 (wrapper default at write time) ('seg') + S2 re-implemented (seg_x, seg_pm)</td>
+<td>registry</td>
+<td><code>3360fe5</code></td>
+<td>bin/streams/cluster_mass_test.py</td>
+<td></td>
+<td>make_spray(36, 28, 1.2, 5.6, nrel 32000, seeds 1-3, catalogue PMs, bar_size 1.15, mass_factor 0.7/1.0/1.5)</td>
+<td>partly: mass_factor, seed</td>
+</tr>
+<tr>
+<td><code>results/plot_data/d1_segments.json</code></td>
+<td>2026-10-10 09:04</td>
+<td>S2 (wrapper default at write time) ('all') + S2 re-implemented (x, pm, v: obs_split.single_scores)</td>
+<td>registry</td>
+<td><code>6046af8</code></td>
+<td>bin/streams/d1_segments.py</td>
+<td>segments u &lt; 4, 4-17, &gt; 17</td>
+<td>32000, seed 1: seed_test 16/20 deg, d1 24 deg, spin_exag 28 deg f0</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/d2_mock_recovery.json</code></td>
+<td>2026-10-10 08:32</td>
+<td>S2 direct</td>
+<td>registry</td>
+<td><code>4c93522</code></td>
+<td>bin/streams/d2_mock_recovery.py</td>
+<td>mock data drawn from truth sprays with legacy chi-bin kernels (rng 11); real du, e_v, cov</td>
+<td>truths make_spray(..., nrel 32000, seed 7); candidates spray_grid4 (8000, seed 1)</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/d3_free_pm.json</code></td>
+<td>2026-10-10 08:12</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>3d5e5a2</code></td>
+<td>bin/streams/d3_free_pm.py</td>
+<td></td>
+<td>make_spray(35.5, 28, 1.2, 5.6, nrel 32000, seed 1, PMs catalogue + i,j x 0.027)</td>
+<td>partly: setup, sigma, PM offsets, lnL</td>
+</tr>
+<tr>
+<td><code>results/plot_data/d3_free_pm_perstar.npz</code></td>
+<td>2026-10-10 08:12</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>3d5e5a2</code></td>
+<td>bin/streams/d3_free_pm.py</td>
+<td></td>
+<td>make_spray(35.5, 28, 1.2, 5.6, nrel 32000, seed 1, PMs catalogue + i,j x 0.027)</td>
+<td>partly: setup, sigma, PM offsets, lnL</td>
+</tr>
+<tr>
+<td><code>results/plot_data/escape_pilot_20261013/</code></td>
+<td>2026-10-13 08:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>c2f4c35</code></td>
+<td>bin/streams/compare_escape_recipes.py</td>
+<td>arm_only None case scores both launch arms (chi &gt; 0)</td>
+<td>make_spray(refined params, nrel 8000, seed 4, bar_size, max_age 700, escape fardal|chen24, arm_only 1|None)</td>
+<td>partly: args, parameters, recipe, arm_only, SHA-256 of score/spray/escape/grid4_common at creation</td>
+</tr>
+<tr>
+<td><code>results/plot_data/fimbulthul_backtrack.json</code></td>
+<td>2026-10-08 17:28</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/fit_bar_ocen.json</code></td>
+<td>2026-10-09 07:06</td>
+<td>S1 robust (default) / S2 direct (--conditional, suffix _cond)</td>
+<td>registry</td>
+<td><code>e2c1382</code></td>
+<td>bin/streams/fit_bar_ocen.py</td>
+<td>score_chi_kde(..., robust=True); or score_conditional(..., u_window=member range)</td>
+<td>spray_unwrapped, 8000 epochs, seed 1, both arms integrated, trailing kept, no bar_size</td>
+<td>partly: prior, bounds, per-evaluation params/lnL; key 'angle' = 28 even with --free-angle</td>
+</tr>
+<tr>
+<td><code>results/plot_data/fit_bar_ocen_freeangle.json</code></td>
+<td>2026-10-09 07:56</td>
+<td>S1 robust (default) / S2 direct (--conditional, suffix _cond)</td>
+<td>registry</td>
+<td><code>4be3433</code></td>
+<td>bin/streams/fit_bar_ocen.py</td>
+<td>score_chi_kde(..., robust=True); or score_conditional(..., u_window=member range)</td>
+<td>spray_unwrapped, 8000 epochs, seed 1, both arms integrated, trailing kept, no bar_size</td>
+<td>partly: prior, bounds, per-evaluation params/lnL; key 'angle' = 28 even with --free-angle</td>
+</tr>
+<tr>
+<td><code>results/plot_data/fit_lmc_ocen_M0.0e+00_an16_om34_s1.json</code></td>
+<td>2026-10-12 22:59</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>0a0fccc</code></td>
+<td>bin/streams/fit_lmc_ocen.py</td>
+<td></td>
+<td>make_spray(..., nrel 8000, seed, bar_size, lmc mass, max_age 700)</td>
+<td>partly: args, prior, bounds, log; not nrel</td>
+</tr>
+<tr>
+<td><code>results/plot_data/fit_lmc_ocen_M1.5e+11_an16_om34_s1.json</code></td>
+<td>2026-10-12 23:00</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>0a0fccc</code></td>
+<td>bin/streams/fit_lmc_ocen.py</td>
+<td></td>
+<td>make_spray(..., nrel 8000, seed, bar_size, lmc mass, max_age 700)</td>
+<td>partly: args, prior, bounds, log; not nrel</td>
+</tr>
+<tr>
+<td><code>results/plot_data/frame_check.json</code></td>
+<td>2026-10-10 09:04</td>
+<td>S2 direct (spline-path frame) + S2 re-implemented</td>
+<td>registry</td>
+<td><code>6046af8</code></td>
+<td>bin/streams/knee_spread_and_frame.py</td>
+<td>spline frame stream54_path.json, u_window from it</td>
+<td>d1_segments sprays (32000, seed 1)</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/frame_decomp_edges.json</code></td>
+<td>2026-10-10 15:56</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>0fd4877</code></td>
+<td>bin/streams/frame_decomp_edges.py</td>
+<td>model frame ic/proj varied; data always chord frame</td>
+<td>make_spray(..., d 5.6, nrel 32000, seed 1, catalogue PMs, bar_size, frame=ic, proj_frame=proj)</td>
+<td>partly: config (test, om, an, am, size, ic, proj)</td>
+</tr>
+<tr>
+<td><code>results/plot_data/grid4.json</code></td>
+<td>2026-10-09 14:46</td>
+<td>S2 direct</td>
+<td>registry</td>
+<td><code>196a95d</code></td>
+<td>bin/streams/grid4.py</td>
+<td>score_conditional(..., u_window=member range)</td>
+<td>spray_unwrapped, 8000 epochs, seed 1, both arms integrated, trailing saved, PMs (-3.2223, -6.7517), no bar_size</td>
+<td>partly: pm, per point omega/angle/amp/d/lnL/frac_bg/K; not nrel, seed</td>
+</tr>
+<tr>
+<td><code>results/plot_data/grid4_perstar.npz</code></td>
+<td>2026-10-09 15:50</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>0187cb9</code></td>
+<td>bin/streams/rescore_grid4_perstar.py</td>
+<td></td>
+<td>spray_grid4 sprays (8000, seed 1)</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/grid4_spin.json</code></td>
+<td>2026-10-09 19:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>5f3334b</code></td>
+<td>bin/streams/grid4_spin.py</td>
+<td></td>
+<td>make_spray defaults (8000, seed 1) with spin=SPIN (results/streams/spin/A_nodm_vrot.json)</td>
+<td>partly: spin file, per point params/lnL/K</td>
+</tr>
+<tr>
+<td><code>results/plot_data/grid4_spin_perstar.npz</code></td>
+<td>2026-10-09 19:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>5f3334b</code></td>
+<td>bin/streams/grid4_spin.py</td>
+<td></td>
+<td>make_spray defaults (8000, seed 1) with spin=SPIN (results/streams/spin/A_nodm_vrot.json)</td>
+<td>partly: spin file, per point params/lnL/K</td>
+</tr>
+<tr>
+<td><code>results/plot_data/kernel_check.json</code></td>
+<td>2026-10-09 15:36</td>
+<td>S2 direct</td>
+<td>registry</td>
+<td><code>d8af9e9</code></td>
+<td>bin/streams/kernel_check.py</td>
+<td>h = (0.5, 0.5, 0.2, 0.2) x f, hv = 5 x f, f in (1, 1.5, 2); own n_eff with legacy chi bins</td>
+<td>spray_grid4 sprays (8000, seed 1), 8 tags</td>
+<td>partly: factor f as key</td>
+</tr>
+<tr>
+<td><code>results/plot_data/lmc_spray_test.jsonl</code></td>
+<td>2026-10-12 07:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>5487bb8</code></td>
+<td>bin/streams/lmc_spray_test.py</td>
+<td></td>
+<td>make_spray(..., d 5.6, nrel 8000, seed, catalogue PMs, bar_size, lmc mass, max_age 700)</td>
+<td>partly: an, om, size, amp, mass, seed (append-only)</td>
+</tr>
+<tr>
+<td><code>results/plot_data/m5_independent_selection.json</code></td>
+<td>2026-10-10 08:05</td>
+<td>none (member selection test)</td>
+<td>registry</td>
+<td><code>4c49654</code></td>
+<td>bin/streams/m5_independent_selection.py</td>
+<td></td>
+<td>none</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/mass_sweep.json</code></td>
+<td>2026-10-10 16:51</td>
+<td>S2 (wrapper default at write time) ('seg') + S2 re-implemented (seg_x, seg_pm)</td>
+<td>registry</td>
+<td><code>23aa504</code></td>
+<td>bin/streams/mass_sweep.py</td>
+<td></td>
+<td>make_spray(36, 28, 1.2, 5.6, nrel 32000, seeds 1-3, catalogue PMs, bar_size 1.15, axi_variant vc_target or mass_scale)</td>
+<td>partly: kind, vc, seed, diagnostics</td>
+</tr>
+<tr>
+<td><code>results/plot_data/mpsscan_10_20260923.json</code></td>
+<td>2026-09-24 07:42</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>d0fb408</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/mpsscan_11_20260923.json</code></td>
+<td>2026-09-24 08:16</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>d0fb408</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/mpsscan_12_20260923.json</code></td>
+<td>2026-09-24 08:13</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>d0fb408</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/mpsscan_8_20260923.json</code></td>
+<td>2026-09-24 07:21</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>d0fb408</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/mpsscan_9_20260923.json</code></td>
+<td>2026-09-24 07:33</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>d0fb408</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/mpsscan_9_nohalo_20260923.json</code></td>
+<td>2026-09-24 09:46</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>04b2941</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/neff_study_20261017.json</code></td>
+<td>2026-10-17 12:07</td>
+<td>S3 pooled (= S4-pooled)</td>
+<td>registry</td>
+<td><code>b62eabf</code></td>
+<td>bin/streams/neff_study.py</td>
+<td>pooled=True, return_neff=True</td>
+<td>paper_models.spray, nrel 32k/128k/256k/512k, seeds 1-5, max_age 700; A = bar28, B = bar16 (paper_models.json display)</td>
+<td>partly: params, nrel, seed, total, per_star, n_eff</td>
+</tr>
+<tr>
+<td><code>results/plot_data/neff_study_20261017.log</code></td>
+<td>2026-10-17 09:46</td>
+<td>S3 pooled (= S4-pooled)</td>
+<td>registry</td>
+<td><code>b62eabf</code></td>
+<td>bin/streams/neff_study.py</td>
+<td>pooled=True, return_neff=True</td>
+<td>paper_models.spray, nrel 32k/128k/256k/512k, seeds 1-5, max_age 700; A = bar28, B = bar16 (paper_models.json display)</td>
+<td>partly: params, nrel, seed, total, per_star, n_eff</td>
+</tr>
+<tr>
+<td><code>results/plot_data/noise_test.json</code></td>
+<td>2026-10-09 06:16</td>
+<td>S1 robust</td>
+<td>registry</td>
+<td><code>29ea777</code></td>
+<td>bin/streams/noise_test.py</td>
+<td>score_chi_kde(..., robust=True)</td>
+<td>spray_unwrapped from fixed OCEN_TODAY, nrel 8000 seeds 2-4 (+ 16000 seed 2 with --double)</td>
+<td>partly: seed, nrel, lnL</td>
+</tr>
+<tr>
+<td><code>results/plot_data/objective_disagreement_20261016.json</code></td>
+<td>2026-10-16 21:42</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>1603c0d</code></td>
+<td>bin/streams/plot_objective_disagreement.py</td>
+<td></td>
+<td>A: paper bar28_seed4.npz (32000, seed 4); B: 27B long best, 32000, seed 4</td>
+<td>partly: params, lnL, track chi2; not nrel, seed</td>
+</tr>
+<tr>
+<td><code>results/plot_data/ocen_state_sensitivity.json</code></td>
+<td>2026-10-09 06:30</td>
+<td>S1 robust</td>
+<td>registry</td>
+<td><code>09fcc6e</code></td>
+<td>bin/streams/ocen_state_sensitivity.py</td>
+<td>score_chi_kde(..., robust=True)</td>
+<td>spray_unwrapped, host (34.5, 28, 1.2), 8000, seed 1, today from to_model with shifted state</td>
+<td>partly: case, shift, lnL</td>
+</tr>
+<tr>
+<td><code>results/plot_data/paper_models.json</code></td>
+<td>2026-10-16 13:56</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>6681119</code></td>
+<td>bin/streams/paper/paper_models.py</td>
+<td></td>
+<td>nullfit: 8000, seed 1, Nelder-Mead over d/PMs; display: 32000, seeds 4-6; variants: 32000, seed 4 (axi_variant, McMillan17); max_age 700</td>
+<td>partly: params, lnL per seed, lnmeas, host; not nrel, score version</td>
+</tr>
+<tr>
+<td><code>results/plot_data/paper_nullfit_start0.json</code></td>
+<td>2026-10-16 13:51</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>d075117</code></td>
+<td>bin/streams/paper/paper_models.py</td>
+<td></td>
+<td>nullfit: 8000, seed 1, Nelder-Mead over d/PMs; display: 32000, seeds 4-6; variants: 32000, seed 4 (axi_variant, McMillan17); max_age 700</td>
+<td>partly: params, lnL per seed, lnmeas, host; not nrel, score version</td>
+</tr>
+<tr>
+<td><code>results/plot_data/paper_nullfit_start1.json</code></td>
+<td>2026-10-16 13:51</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>d075117</code></td>
+<td>bin/streams/paper/paper_models.py</td>
+<td></td>
+<td>nullfit: 8000, seed 1, Nelder-Mead over d/PMs; display: 32000, seeds 4-6; variants: 32000, seed 4 (axi_variant, McMillan17); max_age 700</td>
+<td>partly: params, lnL per seed, lnmeas, host; not nrel, score version</td>
+</tr>
+<tr>
+<td><code>results/plot_data/particle_convergence_20261017.json</code></td>
+<td>2026-10-17 06:59</td>
+<td>S3 (legacy bins; legacy_bins=True from 2026-10-17)</td>
+<td>registry</td>
+<td><code>ff312ad</code></td>
+<td>bin/streams/particle_convergence.py</td>
+<td></td>
+<td>paper_models.spray, nrel 4k-128k, seeds 1-5, max_age 700; models A, B, C (27B long), E (A + axi q 0.9, vc 230)</td>
+<td>partly: models, nrel, seed, total, per_star, K, frac_bg, tracks</td>
+</tr>
+<tr>
+<td><code>results/plot_data/particle_convergence_20261017.log</code></td>
+<td>2026-10-17 06:59</td>
+<td>S3 (legacy bins; legacy_bins=True from 2026-10-17)</td>
+<td>registry</td>
+<td><code>ff312ad</code></td>
+<td>bin/streams/particle_convergence.py</td>
+<td></td>
+<td>paper_models.spray, nrel 4k-128k, seeds 1-5, max_age 700; models A, B, C (27B long), E (A + axi q 0.9, vc 230)</td>
+<td>partly: models, nrel, seed, total, per_star, K, frac_bg, tracks</td>
+</tr>
+<tr>
+<td><code>results/plot_data/particle_convergence_20261017_v2.json</code></td>
+<td>2026-10-17 07:45</td>
+<td>S3 + S3 pooled + S3 chi_edges</td>
+<td>registry</td>
+<td><code>cfb9f33</code></td>
+<td>bin/streams/particle_convergence.py (CONV_VERSION=_v2)</td>
+<td>legacy (S3); pooled=True; chi_edges = arange(0, 205, 5)</td>
+<td>as particle_convergence</td>
+<td>partly: as above; options only in key names</td>
+</tr>
+<tr>
+<td><code>results/plot_data/particle_convergence_20261017_v2.log</code></td>
+<td>2026-10-17 07:45</td>
+<td>S3 + S3 pooled + S3 chi_edges</td>
+<td>registry</td>
+<td><code>cfb9f33</code></td>
+<td>bin/streams/particle_convergence.py (CONV_VERSION=_v2)</td>
+<td>legacy (S3); pooled=True; chi_edges = arange(0, 205, 5)</td>
+<td>as particle_convergence</td>
+<td>partly: as above; options only in key names</td>
+</tr>
+<tr>
+<td><code>results/plot_data/phase2_variants.json</code></td>
+<td>2026-10-10 10:04</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>17ee126</code></td>
+<td>bin/streams/phase2_variants.py</td>
+<td>age_max 700; M4 variants age_max 1000 and 1500 (window 1500 Myr, nrel 48000)</td>
+<td>make_spray(..., nrel 32000, seed 1, catalogue PMs, window/release/host_kw per variant); baseline = d3_free_pm pm_+0_+0, ref 16 deg = seed_test 32000 s1</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/phase2b_grid.json</code></td>
+<td>2026-10-10 10:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>17ee126</code></td>
+<td>bin/streams/phase2b_grid.py</td>
+<td></td>
+<td>make_spray(om, 28, am, 5.6, nrel 32000, seed 1, PMs catalogue or shifted, bar_size or bar_eta)</td>
+<td>partly: model config, lnL, segments; not nrel, seed</td>
+</tr>
+<tr>
+<td><code>results/plot_data/profile_stage1.json</code></td>
+<td>2026-10-10 18:33</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>acad7bd</code></td>
+<td>bin/streams/profile_stage1.py</td>
+<td></td>
+<td>make_spray(..., nrel 8000, seeds 1-3, bar_size), 40 Sobol points (seed 20261010), RBAR0 5.0</td>
+<td>partly: point params, per-seed lnL, segments; not nrel</td>
+</tr>
+<tr>
+<td><code>results/plot_data/rescore_conditional.json</code></td>
+<td>2026-10-09 13:00</td>
+<td>S2 direct</td>
+<td>registry</td>
+<td><code>51208fc</code></td>
+<td>bin/streams/rescore_conditional.py</td>
+<td>A: chord frame, all members; B: members and particles with u &gt;= 4, u_window from subset; C: spline-path frame (stream54_path.json)</td>
+<td>spray_grid2 sprays (8000, seed 1) + fit28_best, fitfree_best</td>
+<td>no (variant meaning in docstring)</td>
+</tr>
+<tr>
+<td><code>results/plot_data/rho20scan_0.25_20260923.json</code></td>
+<td>2026-09-23 17:03</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>561662a</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/rho20scan_0.5_20260923.json</code></td>
+<td>2026-09-23 17:21</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>561662a</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/rho20scan_1_20260923.json</code></td>
+<td>2026-09-23 17:40</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>6f9669b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/rho20scan_2_20260923.json</code></td>
+<td>2026-09-23 17:57</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>6f9669b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/rho20scan_4_20260923.json</code></td>
+<td>2026-09-23 18:44</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>6f9669b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/rotB_compare.json</code></td>
+<td>2026-10-10 08:58</td>
+<td>none (N-body tracer comparison)</td>
+<td>registry</td>
+<td><code>6046af8</code></td>
+<td>bin/streams/compare_spin_tracers.py</td>
+<td></td>
+<td>results/streams/prescribed/*/snap_today.npz</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/scan_best_fit.json</code></td>
+<td>2026-10-09 08:42</td>
+<td>S1 robust</td>
+<td>registry</td>
+<td><code>4be3433</code></td>
+<td>bin/streams/scan_best_fit.py</td>
+<td>score_chi_kde(..., robust=True) + log-priors</td>
+<td>spray_unwrapped, 8000, seed 1, no bar_size</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/scan_omega_pairs.json</code></td>
+<td>2026-10-09 09:21</td>
+<td>S1 robust</td>
+<td>registry</td>
+<td><code>f9f49e3</code></td>
+<td>bin/streams/scan_omega_pairs.py</td>
+<td>as scan_best_fit.py (imports its evaluate)</td>
+<td>as scan_best_fit.py</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/plot_data/score_convergence_20261017.json</code></td>
+<td>2026-10-17 07:45</td>
+<td>S3 + S3 pooled + S3 chi_edges</td>
+<td>registry</td>
+<td><code>cfb9f33</code></td>
+<td>bin/streams/particle_convergence.py (CONV_VERSION=_v2)</td>
+<td>legacy (S3); pooled=True; chi_edges = arange(0, 205, 5)</td>
+<td>as particle_convergence</td>
+<td>partly: as above; options only in key names</td>
+</tr>
+<tr>
+<td><code>results/plot_data/seed_test.json</code></td>
+<td>2026-10-09 15:53</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>0187cb9</code></td>
+<td>bin/streams/seed_test.py</td>
+<td></td>
+<td>make_spray defaults; (8000, seeds 1-5) and (32000, seeds 1-3)</td>
+<td>partly: tag, nrel, seed, lnL, K</td>
+</tr>
+<tr>
+<td><code>results/plot_data/seed_test_perstar.npz</code></td>
+<td>2026-10-09 15:53</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>0187cb9</code></td>
+<td>bin/streams/seed_test.py</td>
+<td></td>
+<td>make_spray defaults; (8000, seeds 1-5) and (32000, seeds 1-3)</td>
+<td>partly: tag, nrel, seed, lnL, K</td>
+</tr>
+<tr>
+<td><code>results/plot_data/sgr_stream_approach.json</code></td>
+<td>2026-10-08 20:07</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>9a457b4</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spin_exaggerate.json</code></td>
+<td>2026-10-09 22:02</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>df08950</code></td>
+<td>bin/streams/spin_exaggerate.py</td>
+<td></td>
+<td>make_spray(..., nrel 32000, seed 1, spin = SPIN x f, f in 0, 1, 3, 10, -10), grid PMs</td>
+<td>partly: setup, factor, lnL</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spin_pair_test.json</code></td>
+<td>2026-10-09 17:09</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>5f3334b</code></td>
+<td>bin/streams/spin_pair_test.py</td>
+<td></td>
+<td>make_spray(..., nrel 32000, seeds 1-3, spin=SPIN) vs seed_test no-spin sprays</td>
+<td>partly: tag, seed, lnL pair</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spiral_pilot_20261013/</code></td>
+<td>2026-10-13 07:22</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>4cb2fe9</code></td>
+<td>bin/streams/diagnose_spiral_forcing.py</td>
+<td></td>
+<td>make_spray(refined params, nrel 8000, seed 4, bar_size [+ spiral], max_age 700)</td>
+<td>partly: parameters, seed, nrel, spiral, K, frac_bg</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spray_bar_grid.json</code></td>
+<td>2026-10-08 23:45</td>
+<td>none (binned track chi2 per observable)</td>
+<td>registry</td>
+<td><code>66628e4</code></td>
+<td>bin/streams/spray_bar_grid.py</td>
+<td></td>
+<td>spray from fixed OCEN_TODAY</td>
+<td>partly: tracks, chi2</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spray_bar_grid2.json</code></td>
+<td>2026-10-09 00:23</td>
+<td>S0 + S1 robust</td>
+<td>registry</td>
+<td><code>1fd4668</code></td>
+<td>bin/streams/spray_bar_grid2.py</td>
+<td>score(data, mod) (S0); score_chi_kde(..., robust=True)</td>
+<td>spray_unwrapped from fixed OCEN_TODAY, nrel 8000 (CLI), window 1000 Myr (CLI), seed 1, both arms integrated, trailing kept; host bar (omega, angle, amp), no bar_size</td>
+<td>partly: n_data, per model omega/angle/amp/scores/overshoot; not nrel, window, seed, robust flag</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spray_bar_grid2_chikde.json</code></td>
+<td>2026-10-09 05:20</td>
+<td>S1</td>
+<td>registry</td>
+<td><code>cf8c396</code></td>
+<td>bin/streams/rescore_chi_kde.py</td>
+<td>score_chi_kde(d, m) (robust False)</td>
+<td>spray_grid2 sprays (8000, seed 1)</td>
+<td>no (robust flag only in filename)</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spray_bar_grid2_chikde_robust.json</code></td>
+<td>2026-10-09 05:28</td>
+<td>S1 robust</td>
+<td>registry</td>
+<td><code>3f6bee3</code></td>
+<td>bin/streams/rescore_chi_kde.py --robust</td>
+<td>score_chi_kde(d, m, robust=True)</td>
+<td>spray_grid2 sprays (8000, seed 1)</td>
+<td>no (robust flag only in filename)</td>
+</tr>
+<tr>
+<td><code>results/plot_data/spray_bar_grid3.json</code></td>
+<td>2026-10-09 06:11</td>
+<td>S0 + S1 robust</td>
+<td>registry</td>
+<td><code>29ea777</code></td>
+<td>bin/streams/run_grid3.sh -&gt; spray_bar_grid2.py --summary spray_bar_grid3.json</td>
+<td>as spray_bar_grid2.py</td>
+<td>as spray_bar_grid2.py, --nrel 8000, Omega 33-40.5, angle 16-28, amp 1.0-1.6</td>
+<td>partly: as spray_bar_grid2.py</td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream5455_gaia_errors.npz</code></td>
+<td>2026-10-08 22:50</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>b76309e</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream54_cmd_distance.json</code></td>
+<td>2026-10-08 19:28</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>e4e04ac</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream54_gc_frame.json</code></td>
+<td>2026-10-09 12:45</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>51208fc</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream54_gc_frame_chord.json</code></td>
+<td>2026-10-09 12:45</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>51208fc</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream54_path.json</code></td>
+<td>2026-10-09 12:42</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>734b990</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream54_track.json</code></td>
+<td>2026-10-08 22:51</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>b76309e</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream_coordinate.json</code></td>
+<td>2026-10-09 12:31</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>734b990</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/stream_xp_metallicity_members.npz</code></td>
+<td>2026-10-08 19:38</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>0908c7b</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_bar_ridges.json</code></td>
+<td>2026-10-08 21:54</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>5ba7813</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_debris_vs_ibata2024.json</code></td>
+<td>2026-10-08 13:40</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>0c7d760</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_debris_vs_ibata2024_r40_xb.json</code></td>
+<td>2026-10-08 14:12</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>c7e4c07</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_debris_vs_ibata2024_r70_xb.json</code></td>
+<td>2026-10-08 17:27</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_debris_vs_ibata2024_r70_xb_db98_ibata.json</code></td>
+<td>2026-10-08 17:48</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>6c50b44</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_debris_vs_ibata2024_r70_xb_db98_rot.json</code></td>
+<td>2026-10-08 17:27</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_debris_vs_ibata2024_r70_xb_prescribed_maxrot.json</code></td>
+<td>2026-10-08 17:27</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_debris_vs_ibata2024_r70_xb_prescribed_rot.json</code></td>
+<td>2026-10-08 17:27</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_dm_models.json</code></td>
+<td>2026-10-08 13:34</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>86ff726</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_isolation_checks.json</code></td>
+<td>2026-10-08 08:26</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>1e454dd</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_isolation_evolution.json</code></td>
+<td>2026-10-08 08:31</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>2ae3b78</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_nactive_check_A.json</code></td>
+<td>2026-10-08 12:57</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b94a5e7</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_rfreeze_vs_full_A.json</code></td>
+<td>2026-10-08 12:47</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>fbaa420</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_scope_jacobi.json</code></td>
+<td>2026-10-08 06:36</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>bb57503</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_spray_length_bar33.json</code></td>
+<td>2026-10-08 23:17</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>66628e4</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_spray_validation.json</code></td>
+<td>2026-10-08 22:53</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b76309e</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_tupd_convergence.json</code></td>
+<td>2026-10-08 11:13</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b924efd</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/streams_validation_A.json</code></td>
+<td>2026-10-08 12:48</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>fbaa420</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/plot_data/sun_dist_bar_grids.json</code></td>
+<td>2026-10-10 13:24</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>c5b6d82</code></td>
+<td>bin/streams/sun_dist_bar_grids.py</td>
+<td></td>
+<td>make_spray(..., nrel 32000, seed 1, frame baumgardt|ibata19, bar_size)</td>
+<td>partly: config, lnL, segments; not nrel, seed</td>
+</tr>
+<tr>
+<td><code>results/plot_data/track_fits_20261016/</code></td>
+<td>2026-10-16 21:37</td>
+<td>S2 (wrapper default at write time) (rescore lnL_star only; fit objective is a track chi2)</td>
+<td>registry</td>
+<td><code>1603c0d</code></td>
+<td>bin/streams/fit_track_objective.py</td>
+<td></td>
+<td>fit: paper_models.spray 8000, seed 4, max_age 700; rescore: 32000, seeds 5, 6</td>
+<td>partly: fit JSON case, bounds, seed, nrel; rescore.json not nrel</td>
+</tr>
+<tr>
+<td><code>results/plot_data/track_sensitivity_20261016.json</code></td>
+<td>2026-10-16 20:16</td>
+<td>none (track objective)</td>
+<td>registry</td>
+<td><code>369b3b6</code></td>
+<td>bin/streams/track_sensitivity.py</td>
+<td></td>
+<td>paper_models.spray 8000, seeds 4-6, max_age 700</td>
+<td>partly: point, seed, params, tracks; not nrel</td>
+</tr>
+<tr>
+<td><code>results/plot_data/track_sensitivity_20261016.log</code></td>
+<td>2026-10-16 19:40</td>
+<td>none (track objective)</td>
+<td>registry</td>
+<td><code>d885d0a</code></td>
+<td>bin/streams/track_sensitivity.py</td>
+<td></td>
+<td>paper_models.spray 8000, seeds 4-6, max_age 700</td>
+<td>partly: point, seed, params, tracks; not nrel</td>
+</tr>
+<tr>
+<td><code>results/plot_data/unwrapping_33_28_1.0.npz</code></td>
+<td>2026-10-09 00:11</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>5ee97a5</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/streams/A_rf30.log</code></td>
+<td>2026-10-08 12:47</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>fbaa420</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/bar_profile_refinement_20261013/</code></td>
+<td>2026-10-13 07:31</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>4cb2fe9</code></td>
+<td>bin/streams/refine_bar_profiles.py</td>
+<td></td>
+<td>fit: make_spray(..., nrel 8000, seed 1, bar_size, max_age 700); validate: nrel 32000, seeds 4-6</td>
+<td>partly: args, nrel, seed, per-eval lnL/K/frac_bg; score string 'unchanged score_conditional'</td>
+</tr>
+<tr>
+<td><code>results/streams/checks/</code></td>
+<td>2026-10-08 12:24</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>f58252e</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/checks.log</code></td>
+<td>2026-10-08 09:06</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>bc5561b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/cluster_mass/</code></td>
+<td>2026-10-10 18:57</td>
+<td>S2 (wrapper default at write time) ('seg') + S2 re-implemented (seg_x, seg_pm)</td>
+<td>registry</td>
+<td><code>3360fe5</code></td>
+<td>bin/streams/cluster_mass_test.py</td>
+<td></td>
+<td>make_spray(36, 28, 1.2, 5.6, nrel 32000, seeds 1-3, catalogue PMs, bar_size 1.15, mass_factor 0.7/1.0/1.5)</td>
+<td>partly: mass_factor, seed</td>
+</tr>
+<tr>
+<td><code>results/streams/cluster_mass_test.log</code></td>
+<td>2026-10-10 18:57</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>3360fe5</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/d1/</code></td>
+<td>2026-10-10 08:13</td>
+<td>S2 (wrapper default at write time) ('all') + S2 re-implemented (x, pm, v: obs_split.single_scores)</td>
+<td>registry</td>
+<td><code>3d5e5a2</code></td>
+<td>bin/streams/d1_segments.py</td>
+<td>segments u &lt; 4, 4-17, &gt; 17</td>
+<td>32000, seed 1: seed_test 16/20 deg, d1 24 deg, spin_exag 28 deg f0</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/streams/d2/</code></td>
+<td>2026-10-10 08:15</td>
+<td>S2 direct</td>
+<td>registry</td>
+<td><code>3d5e5a2</code></td>
+<td>bin/streams/d2_mock_recovery.py</td>
+<td>mock data drawn from truth sprays with legacy chi-bin kernels (rng 11); real du, e_v, cov</td>
+<td>truths make_spray(..., nrel 32000, seed 7); candidates spray_grid4 (8000, seed 1)</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/streams/d3_free_pm/</code></td>
+<td>2026-10-10 08:12</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>3d5e5a2</code></td>
+<td>bin/streams/d3_free_pm.py</td>
+<td></td>
+<td>make_spray(35.5, 28, 1.2, 5.6, nrel 32000, seed 1, PMs catalogue + i,j x 0.027)</td>
+<td>partly: setup, sigma, PM offsets, lnL</td>
+</tr>
+<tr>
+<td><code>results/streams/db98_ibata/</code></td>
+<td>2026-10-08 18:03</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>6c50b44</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/db98_rot/</code></td>
+<td>2026-10-08 17:22</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/db98_rot_5g/</code></td>
+<td>2026-10-08 17:29</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>6c50b44</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/emulator_check_20261018/</code></td>
+<td>2026-10-18 14:48</td>
+<td>S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; in-worker jackknife (G 10) of the chi score</td>
+<td>registry</td>
+<td><code>340f000</code></td>
+<td>bin/streams/stream_batch.py</td>
+<td>chi_edges arange(0, 205, 5), chunk 50</td>
+<td>make_spray, 256k release epochs, epoch_offset (random grid start) per run, seed per run, max_age 700, bar_size + axi_variant(halo_q, vc_target); jobs.json per batch</td>
+<td>yes: manifest.json, jobs.json, per-run settings, params, seed, epoch_offset, total_jk, var_jk</td>
+</tr>
+<tr>
+<td><code>results/streams/emulator_paperref_20261018/</code></td>
+<td>2026-10-18 15:01</td>
+<td>S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; in-worker jackknife (G 10) of the chi score</td>
+<td>registry</td>
+<td><code>340f000</code></td>
+<td>bin/streams/stream_batch.py</td>
+<td>chi_edges arange(0, 205, 5), chunk 50</td>
+<td>make_spray, 256k release epochs, epoch_offset (random grid start) per run, seed per run, max_age 700, bar_size + axi_variant(halo_q, vc_target); jobs.json per batch</td>
+<td>yes: manifest.json, jobs.json, per-run settings, params, seed, epoch_offset, total_jk, var_jk</td>
+</tr>
+<tr>
+<td><code>results/streams/emulator_round1_20261018/</code></td>
+<td>2026-10-18 11:19</td>
+<td>S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; in-worker jackknife (G 10) of the chi score</td>
+<td>registry</td>
+<td><code>e71ab41</code></td>
+<td>bin/streams/stream_batch.py</td>
+<td>chi_edges arange(0, 205, 5), chunk 50</td>
+<td>make_spray, 256k release epochs, epoch_offset (random grid start) per run, seed per run, max_age 700, bar_size + axi_variant(halo_q, vc_target); jobs.json per batch</td>
+<td>yes: manifest.json, jobs.json, per-run settings, params, seed, epoch_offset, total_jk, var_jk</td>
+</tr>
+<tr>
+<td><code>results/streams/emulator_round2_20261018/</code></td>
+<td>2026-10-18 14:32</td>
+<td>S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; in-worker jackknife (G 10) of the chi score</td>
+<td>registry</td>
+<td><code>137a520</code></td>
+<td>bin/streams/stream_batch.py</td>
+<td>chi_edges arange(0, 205, 5), chunk 50</td>
+<td>make_spray, 256k release epochs, epoch_offset (random grid start) per run, seed per run, max_age 700, bar_size + axi_variant(halo_q, vc_target); jobs.json per batch</td>
+<td>yes: manifest.json, jobs.json, per-run settings, params, seed, epoch_offset, total_jk, var_jk</td>
+</tr>
+<tr>
+<td><code>results/streams/escape_pilot_20261013/</code></td>
+<td>2026-10-13 08:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>c2f4c35</code></td>
+<td>bin/streams/compare_escape_recipes.py</td>
+<td>arm_only None case scores both launch arms (chi &gt; 0)</td>
+<td>make_spray(refined params, nrel 8000, seed 4, bar_size, max_age 700, escape fardal|chen24, arm_only 1|None)</td>
+<td>partly: args, parameters, recipe, arm_only, SHA-256 of score/spray/escape/grid4_common at creation</td>
+</tr>
+<tr>
+<td><code>results/streams/frame_decomp_edges/</code></td>
+<td>2026-10-10 15:56</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>0fd4877</code></td>
+<td>bin/streams/frame_decomp_edges.py</td>
+<td>model frame ic/proj varied; data always chord frame</td>
+<td>make_spray(..., d 5.6, nrel 32000, seed 1, catalogue PMs, bar_size, frame=ic, proj_frame=proj)</td>
+<td>partly: config (test, om, an, am, size, ic, proj)</td>
+</tr>
+<tr>
+<td><code>results/streams/frame_decomp_edges.log</code></td>
+<td>2026-10-10 15:56</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>0fd4877</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/hunter_axi/</code></td>
+<td>2026-10-08 21:34</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>5ba7813</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/hunter_bar33/</code></td>
+<td>2026-10-08 21:40</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>5ba7813</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/hunter_bar37.5/</code></td>
+<td>2026-10-08 21:47</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>5ba7813</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/hunter_bar41/</code></td>
+<td>2026-10-08 21:53</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>5ba7813</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/logs/</code></td>
+<td>2026-10-11 08:59</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>15280b1</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/mass_sweep/</code></td>
+<td>2026-10-10 16:51</td>
+<td>S2 (wrapper default at write time) ('seg') + S2 re-implemented (seg_x, seg_pm)</td>
+<td>registry</td>
+<td><code>23aa504</code></td>
+<td>bin/streams/mass_sweep.py</td>
+<td></td>
+<td>make_spray(36, 28, 1.2, 5.6, nrel 32000, seeds 1-3, catalogue PMs, bar_size 1.15, axi_variant vc_target or mass_scale)</td>
+<td>partly: kind, vc, seed, diagnostics</td>
+</tr>
+<tr>
+<td><code>results/streams/mass_sweep.log</code></td>
+<td>2026-10-10 16:51</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>23aa504</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/paper/</code></td>
+<td>2026-10-16 13:56</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>6681119</code></td>
+<td>bin/streams/paper/paper_models.py</td>
+<td></td>
+<td>nullfit: 8000, seed 1, Nelder-Mead over d/PMs; display: 32000, seeds 4-6; variants: 32000, seed 4 (axi_variant, McMillan17); max_age 700</td>
+<td>partly: params, lnL per seed, lnmeas, host; not nrel, score version</td>
+</tr>
+<tr>
+<td><code>results/streams/phase2/</code></td>
+<td>2026-10-10 10:04</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>17ee126</code></td>
+<td>bin/streams/phase2_variants.py</td>
+<td>age_max 700; M4 variants age_max 1000 and 1500 (window 1500 Myr, nrel 48000)</td>
+<td>make_spray(..., nrel 32000, seed 1, catalogue PMs, window/release/host_kw per variant); baseline = d3_free_pm pm_+0_+0, ref 16 deg = seed_test 32000 s1</td>
+<td>no</td>
+</tr>
+<tr>
+<td><code>results/streams/phase2b/</code></td>
+<td>2026-10-10 10:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>17ee126</code></td>
+<td>bin/streams/phase2b_grid.py</td>
+<td></td>
+<td>make_spray(om, 28, am, 5.6, nrel 32000, seed 1, PMs catalogue or shifted, bar_size or bar_eta)</td>
+<td>partly: model config, lnL, segments; not nrel, seed</td>
+</tr>
+<tr>
+<td><code>results/streams/prescribed/</code></td>
+<td>2026-10-10 08:57</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>6706e2b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/prescribed_maxrot/</code></td>
+<td>2026-10-08 17:12</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/prescribed_rot/</code></td>
+<td>2026-10-08 16:35</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>f77a510</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/profile_s1/</code></td>
+<td>2026-10-10 18:33</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>acad7bd</code></td>
+<td>bin/streams/profile_stage1.py</td>
+<td></td>
+<td>make_spray(..., nrel 8000, seeds 1-3, bar_size), 40 Sobol points (seed 20261010), RBAR0 5.0</td>
+<td>partly: point params, per-seed lnL, segments; not nrel</td>
+</tr>
+<tr>
+<td><code>results/streams/profile_stage1.log</code></td>
+<td>2026-10-10 18:33</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>acad7bd</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/queue.log</code></td>
+<td>2026-10-08 12:26</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>f58252e</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/seed_test/</code></td>
+<td>2026-10-09 17:09</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>5f3334b</code></td>
+<td>bin/streams/seed_test.py</td>
+<td></td>
+<td>make_spray defaults; (8000, seeds 1-5) and (32000, seeds 1-3)</td>
+<td>partly: tag, nrel, seed, lnL, K</td>
+</tr>
+<tr>
+<td><code>results/streams/spin/</code></td>
+<td>2026-10-09 16:39</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>2ea0cf3</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/spin_exag/</code></td>
+<td>2026-10-09 22:02</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>df08950</code></td>
+<td>bin/streams/spin_exaggerate.py</td>
+<td></td>
+<td>make_spray(..., nrel 32000, seed 1, spin = SPIN x f, f in 0, 1, 3, 10, -10), grid PMs</td>
+<td>partly: setup, factor, lnL</td>
+</tr>
+<tr>
+<td><code>results/streams/spin_max/</code></td>
+<td>2026-10-08 17:02</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b21bc3b</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/spiral_pilot_20261013/</code></td>
+<td>2026-10-13 07:21</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>4cb2fe9</code></td>
+<td>bin/streams/diagnose_spiral_forcing.py</td>
+<td></td>
+<td>make_spray(refined params, nrel 8000, seed 4, bar_size [+ spiral], max_age 700)</td>
+<td>partly: parameters, seed, nrel, spiral, K, frac_bg</td>
+</tr>
+<tr>
+<td><code>results/streams/spiral_potential/</code></td>
+<td>2026-10-13 07:17</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>4cb2fe9</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/spray_grid2/</code></td>
+<td>2026-10-09 09:35</td>
+<td>S0 + S1 robust</td>
+<td>registry</td>
+<td><code>4f3e3fc</code></td>
+<td>bin/streams/spray_bar_grid2.py</td>
+<td>score(data, mod) (S0); score_chi_kde(..., robust=True)</td>
+<td>spray_unwrapped from fixed OCEN_TODAY, nrel 8000 (CLI), window 1000 Myr (CLI), seed 1, both arms integrated, trailing kept; host bar (omega, angle, amp), no bar_size</td>
+<td>partly: n_data, per model omega/angle/amp/scores/overshoot; not nrel, window, seed, robust flag</td>
+</tr>
+<tr>
+<td><code>results/streams/spray_grid4/</code></td>
+<td>2026-10-09 14:46</td>
+<td>S2 direct</td>
+<td>registry</td>
+<td><code>196a95d</code></td>
+<td>bin/streams/grid4.py</td>
+<td>score_conditional(..., u_window=member range)</td>
+<td>spray_unwrapped, 8000 epochs, seed 1, both arms integrated, trailing saved, PMs (-3.2223, -6.7517), no bar_size</td>
+<td>partly: pm, per point omega/angle/amp/d/lnL/frac_bg/K; not nrel, seed</td>
+</tr>
+<tr>
+<td><code>results/streams/spray_grid4_spin/</code></td>
+<td>2026-10-09 19:08</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>5f3334b</code></td>
+<td>bin/streams/grid4_spin.py</td>
+<td></td>
+<td>make_spray defaults (8000, seed 1) with spin=SPIN (results/streams/spin/A_nodm_vrot.json)</td>
+<td>partly: spin file, per point params/lnL/K</td>
+</tr>
+<tr>
+<td><code>results/streams/stream54_parallax.npz</code></td>
+<td>2026-10-10 10:50</td>
+<td>n/a (data product)</td>
+<td>name</td>
+<td><code>144630d</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>results/streams/sun_dist_T1.log</code></td>
+<td>2026-10-10 12:04</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>ec78b3d</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/sun_dist_T2.log</code></td>
+<td>2026-10-10 13:24</td>
+<td>as the script logged</td>
+<td>registry</td>
+<td><code>c5b6d82</code></td>
+<td>launch logs of the scripts above (stdout of the run)</td>
+<td></td>
+<td></td>
+<td>n/a (log)</td>
+</tr>
+<tr>
+<td><code>results/streams/sun_dist_bar/</code></td>
+<td>2026-10-10 13:24</td>
+<td>S2 (wrapper default at write time)</td>
+<td>registry</td>
+<td><code>c5b6d82</code></td>
+<td>bin/streams/sun_dist_bar_grids.py</td>
+<td></td>
+<td>make_spray(..., nrel 32000, seed 1, frame baumgardt|ibata19, bar_size)</td>
+<td>partly: config, lnL, segments; not nrel, seed</td>
+</tr>
+<tr>
+<td><code>results/streams/training_9d_20261017/</code></td>
+<td>2026-10-18 07:03</td>
+<td>S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; jackknife (G 10) of the chi score</td>
+<td>registry</td>
+<td><code>4a4274d</code></td>
+<td>bin/streams/training_set.py (+ training_jackknife.py)</td>
+<td>chi_edges arange(0, 205, 5), chunk 50; return_neff, return_components</td>
+<td>make_spray, 256k (calibration 128k) release epochs, legacy epoch grid, seed per run, max_age 700, bar_size + axi_variant(halo_q, vc_target); 9-D Sobol design (design.json)</td>
+<td>yes: manifest.json (source/input/data hashes), per-run settings, params, seed, nrel; _jk.json per run</td>
+</tr>
+<tr>
+<td><code>results/streams/training_9d_reps_20261018/</code></td>
+<td>2026-10-18 09:09</td>
+<td>S4-chi_edges 0-200 + S4-pooled + S3 legacy per run; in-worker jackknife (G 10) of the chi score</td>
+<td>registry</td>
+<td><code>82cf2ec</code></td>
+<td>bin/streams/stream_batch.py</td>
+<td>chi_edges arange(0, 205, 5), chunk 50</td>
+<td>make_spray, 256k release epochs, epoch_offset (random grid start) per run, seed per run, max_age 700, bar_size + axi_variant(halo_q, vc_target); jobs.json per batch</td>
+<td>yes: manifest.json, jobs.json, per-run settings, params, seed, epoch_offset, total_jk, var_jk</td>
+</tr>
+<tr>
+<td><code>results/streams/validation/</code></td>
+<td>2026-10-08 13:08</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b94a5e7</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>results/streams/validation.log</code></td>
+<td>2026-10-08 12:51</td>
+<td>none (no per-star stream likelihood)</td>
+<td>registry</td>
+<td><code>b94a5e7</code></td>
+<td>pre-likelihood tooling (validation, isolation, debris-vs-Ibata, Jacobi scope, Sgr/Fimbulthul, bar ridges, prescribed/restricted/N-body tracer runs, spin fits, spiral potential, DF mass-per-star and rho20 scans)</td>
+<td></td>
+<td>see the writing script</td>
+<td>n/a</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.tabs", "navigation.indexes", "navigation.top", "search.highlight", "content.code.copy", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

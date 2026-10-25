@@ -1,0 +1,1135 @@
+{
+ "generated": "2026-10-17",
+ "note": "Stream subset of oCen_dm's docs/kb/literature.json (2026-10-25): topics tails-and-streams, mw-potential-bar-lmc, stream-fitting-methods, plus papers cited from stream files. Curated from repository citations; identifiers checked in ADS/SciX. Tangential and erroneous entries are listed but not in the SciX library.",
+ "papers": [
+  {
+   "arxiv": "2012.05245",
+   "doi": "10.3847/1538-4357/abfcc2",
+   "bibcode": "2021ApJ...914..123I",
+   "cite": "Ibata et al. 2021",
+   "title": "Charting the Galactic Acceleration Field. I. A Search for Stellar Streams with Gaia DR2 and EDR3",
+   "topic": "data-source",
+   "relevance": "core",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:96",
+    "docs/literature/omega_cen_stream_distances_2026-10-10.md:10"
+   ],
+   "note": "EDR3 stream catalogue (stream 16) used",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2311.17202",
+   "doi": "10.3847/1538-4357/ad382d",
+   "bibcode": "2024ApJ...967...89I",
+   "cite": "Ibata et al. 2024 (STREAMFINDER DR3 atlas)",
+   "title": "Charting the Galactic Acceleration Field. II. A Global Mass Model of the Milky Way from the STREAMFINDER Atlas",
+   "topic": "data-source",
+   "relevance": "core",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:96",
+    "docs/STREAM_KNEE_INVESTIGATION.md:37"
+   ],
+   "note": "source of stream 54/55 members; also MW mass model",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2108.02531",
+   "doi": "10.1093/mnras/stab2280",
+   "bibcode": "2021MNRAS.507.1127K",
+   "cite": "Kuzma, Ferguson & Penarrubia 2021",
+   "title": "Detecting globular cluster tidal extensions with Bayesian inference - I. Analysis of omega Centauri with Gaia EDR3",
+   "topic": "data-source",
+   "relevance": "core",
+   "files": [
+    "OCEN_DM_TAILS_PROJECT.md:121",
+    "docs/literature/omega_cen_stream_distances_2026-10-10.md:20"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2303.17738",
+   "doi": "10.1051/0004-6361/202346547",
+   "bibcode": "2023A&A...677A..37C",
+   "cite": "Castro-Ginard et al. 2023",
+   "title": "Estimating the selection function of Gaia DR3 subsamples",
+   "topic": "data-source",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_fit_campaign_2026-10-08.md:38"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2012.01742",
+   "doi": "10.1051/0004-6361/202039653",
+   "bibcode": "2021A&A...649A...4L",
+   "cite": "Lindegren et al. 2021b (parallax bias)",
+   "title": "Gaia Early Data Release 3. Parallax bias versus magnitude, colour, and position",
+   "topic": "data-source",
+   "relevance": "context",
+   "files": [
+    "bin/streams/parallax_check.py:5"
+   ],
+   "note": "parallax zero-point used in bin/streams/parallax_check.py",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2109.10998",
+   "doi": "10.1093/mnras/stac261",
+   "bibcode": "2022MNRAS.511.4251E",
+   "cite": "Evans, Strigari & Zivick 2022",
+   "title": "Dark and luminous mass components of Omega Centauri from stellar kinematics",
+   "topic": "omega-cen-mass-imbh",
+   "relevance": "core",
+   "files": [
+    "docs/LITERATURE_BASELINES.md:73",
+    "docs/STREAM_EXPERIMENTS_PLAN.md:98"
+   ],
+   "note": "K2 DM comparison baseline; first author is A. J. Evans per ADS (docs/dm_capture_constraints.tex:1085 gives \"Evans, N. W.\" -- author initials wrong there)",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2203.02513",
+   "doi": "10.1093/mnras/stac1516",
+   "bibcode": "2022MNRAS.514.3532E",
+   "cite": "Errani et al. 2022 (C-19)",
+   "title": "The Pristine survey - XVIII. C-19: tidal debris of a dark matter-dominated globular cluster?",
+   "topic": "tides-and-dm-survival",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:97"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2005.12919",
+   "doi": "10.1093/mnras/staa3597",
+   "bibcode": "2021MNRAS.501..179M",
+   "cite": "Malhan, Valluri & Freese 2021",
+   "title": "Probing the nature of dark matter with accreted globular cluster streams",
+   "topic": "tides-and-dm-survival",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:97"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2112.01265",
+   "doi": "10.1051/0004-6361/202244530",
+   "bibcode": "2022A&A...667A.112V",
+   "cite": "Vitral & Boldrini 2022",
+   "title": "Properties of globular clusters formed in dark matter mini-halos",
+   "topic": "tides-and-dm-survival",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:97"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2301.05166",
+   "doi": "10.1051/0004-6361/202244141",
+   "bibcode": "2023A&A...673A..44F",
+   "cite": "Ferrone et al. 2023 (e-TidalGCs)",
+   "title": "The e-TidalGCs project. Modeling the extra-tidal features generated by Galactic globular clusters",
+   "topic": "tails-and-streams",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_KNEE_INVESTIGATION.md:129"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1901.07566",
+   "doi": "10.3847/1538-4357/ab0080",
+   "bibcode": "2019ApJ...872..152I",
+   "cite": "Ibata, Malhan & Martin 2019",
+   "title": "The Streams of the Gaping Abyss: A Population of Entangled Stellar Streams Surrounding the Inner Galaxy",
+   "topic": "tails-and-streams",
+   "relevance": "context",
+   "files": [
+    "docs/literature/omega_cen_stream_distances_2026-10-10.md:13"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1804.11338",
+   "doi": "10.1093/mnras/sty912",
+   "bibcode": "2018MNRAS.477.4063M",
+   "cite": "Malhan & Ibata 2018 (STREAMFINDER I)",
+   "title": "STREAMFINDER - I. A new algorithm for detecting stellar streams",
+   "topic": "tails-and-streams",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:25",
+    "docs/codex_research_fit_campaign_2026-10-08.md:28",
+    "docs/codex_research_knee_2026-10-08.md:64"
+   ],
+   "note": "DOI 10.1093/mnras/sty1036 given in codex_research_fit_campaign_2026-10-08.md:28,118 is ERRONEOUS (ADS: Chen et al. 2018, XMM-SERVS)",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2202.07660",
+   "doi": "10.3847/1538-4357/ac4d2a",
+   "bibcode": "2022ApJ...926..107M",
+   "cite": "Malhan et al. 2022",
+   "title": "The Global Dynamical Atlas of the Milky Way Mergers",
+   "topic": "tails-and-streams",
+   "relevance": "context",
+   "files": [
+    "docs/literature/omega_cen_stream_distances_2026-10-10.md:22"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1911.01548",
+   "doi": "10.1093/mnras/stz3105",
+   "bibcode": "2020MNRAS.491.3374S",
+   "cite": "Simpson et al. 2020 (GALAH)",
+   "title": "The GALAH Survey: Chemically tagging the Fimbulthul stream to the globular cluster omega Centauri",
+   "topic": "tails-and-streams",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_knee_2026-10-08.md:59",
+    "docs/literature/omega_cen_stream_distances_2026-10-10.md:19"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2603.02904",
+   "doi": "10.3847/1538-4357/ae4c59",
+   "bibcode": "2026ApJ..1000..176Z",
+   "cite": "Zheng et al. 2026",
+   "title": "Spatial Property of Multiple Metallic Populations in the Tidal Stream of omega Centauri",
+   "topic": "tails-and-streams",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_KNEE_INVESTIGATION.md:127",
+    "docs/codex_research_knee_2026-10-08.md:68"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2202.04548",
+   "doi": "10.1093/mnras/stac381",
+   "bibcode": "2022MNRAS.512..315K",
+   "cite": "Kuzma et al. 2022 (Pal 5 kinematics)",
+   "title": "Forward and back: kinematics of the Palomar 5 tidal tails",
+   "topic": "tails-and-streams",
+   "relevance": "tangential",
+   "files": [
+    "docs/codex_research_fit_campaign_2026-10-08.md:54"
+   ],
+   "note": "cited once by Codex (DOI link only) for rotation remark",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2208.11135",
+   "doi": "10.1093/mnras/stac3436",
+   "bibcode": "2023MNRAS.518.6200B",
+   "cite": "Belokurov et al. 2023",
+   "title": "Energy wrinkles and phase-space folds of the last major merger",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/progenitor_orbits.tex:683",
+    "src/ocen_dm/tails/bar_migration.py:11"
+   ],
+   "note": "used in src/ocen_dm/tails/bar_migration.py",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1602.07702",
+   "doi": "10.1146/annurev-astro-081915-023441",
+   "bibcode": "2016ARA&A..54..529B",
+   "cite": "Bland-Hawthorn & Gerhard 2016",
+   "title": "The Galaxy in Context: Structural, Kinematic, and Integrated Properties",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "bin/streams/fit_bar_ocen.py:2",
+    "bin/streams/ocen_state_sensitivity.py:3"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "astro-ph/9911161",
+   "doi": "10.1086/301226",
+   "bibcode": "2000AJ....119..800D",
+   "cite": "Dehnen 2000",
+   "title": "The Effect of the Outer Lindblad Resonance of the Galactic Bar on the Local Stellar Velocity Distribution",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/PROGENITOR_ORBITS.md:125",
+    "docs/progenitor_orbits.tex:689",
+    "src/ocen_dm/tails/bar_migration.py:6"
+   ],
+   "note": "bar growth law in src/ocen_dm/tails/bar_migration.py; arXiv ID from ADS",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2402.14907",
+   "doi": "10.1093/mnras/stae1789",
+   "bibcode": "2024MNRAS.532.4389D",
+   "cite": "Dillamore, Belokurov & Evans 2024",
+   "title": "Radial halo substructure in harmony with the Galactic bar",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/STREAM_DIAGNOSTIC_PLAN.md:51",
+    "src/ocen_dm/streams/restricted.py:68"
+   ],
+   "note": "bar pattern-speed law (eq. C3) in src/ocen_dm/streams/restricted.py",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2606.12516",
+   "doi": "10.1093/mnras/stag1449",
+   "bibcode": "2026MNRAS.551g1449D",
+   "cite": "Dillamore, Zhang & Belokurov 2026",
+   "title": "Bar-induced migration of omega Centauri away from Gaia-Sausage-Enceladus",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/LIFETIME_EVOLUTION.md:52",
+    "docs/PROGENITOR_ORBITS.md:118"
+   ],
+   "note": "DOI/bibcode from ADS (repo DOI stag1449 in LIFETIME_EVOLUTION.md:52 matches)",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1812.08192",
+   "doi": "10.1093/mnras/stz1371",
+   "bibcode": "2019MNRAS.487.2685E",
+   "cite": "Erkal et al. 2019 (LMC mass from Orphan)",
+   "title": "The total mass of the Large Magellanic Cloud from its perturbation on the Orphan stream",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:94",
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:6"
+   ],
+   "note": "also a stream-fitting-methods reference (per-star likelihood)",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2403.18000",
+   "doi": "10.1051/0004-6361/202450000",
+   "bibcode": "2024A&A...692A.216H",
+   "cite": "Hunter et al. 2024",
+   "title": "Testing kinematic distances under a realistic Galactic potential",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "README.md:16",
+    "docs/NBODY_CODE_ASSESSMENT.md:27"
+   ],
+   "note": "barred host potential (AGAMA example_mw_potential_hunter24). the project journal marks the paper itself UNVERIFIED/not retrieved; ADS confirms the arXiv ID",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1608.00971",
+   "doi": "10.1093/mnras/stw2759",
+   "bibcode": "2017MNRAS.465...76M",
+   "cite": "McMillan 2017",
+   "title": "The mass distribution and gravitational potential of the Milky Way",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/PROGENITOR_ORBITS.md:25",
+    "docs/SECTION11_TESTS.md:107"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1608.07954",
+   "doi": "10.1093/mnras/stw2819",
+   "bibcode": "2017MNRAS.465.1621P",
+   "cite": "Portail et al. 2017",
+   "title": "Dynamical modelling of the galactic bulge and bar: the Milky Way's pattern speed, stellar and dark matter mass distribution",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/codex_frame_decomp_next_2026-10-10.md:31",
+    "docs/codex_research_fit_campaign_2026-10-08.md:78"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "0912.3693",
+   "doi": "10.1111/j.1365-2966.2010.16253.x",
+   "bibcode": "2010MNRAS.403.1829S",
+   "cite": "Schoenrich, Binney & Dehnen 2010",
+   "title": "Local kinematics and the local standard of rest",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/PROGENITOR_ORBITS.md:25",
+    "docs/progenitor_orbits.tex:696",
+    "src/ocen_dm/streams/frames.py:7"
+   ],
+   "note": "solar motion in src/ocen_dm/streams/frames.py",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2204.13114",
+   "doi": "10.1093/mnrasl/slac046",
+   "bibcode": "2022MNRAS.514L...1S",
+   "cite": "Sormani et al. 2022",
+   "title": "The stellar mass distribution of the Milky Way's bar: an analytical model",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/PROGENITOR_ORBITS.md:121",
+    "docs/STREAM_DIAGNOSTIC_PLAN.md:46",
+    "docs/progenitor_orbits.tex:697"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2009.10726",
+   "doi": "10.1093/mnras/staa3673",
+   "bibcode": "2021MNRAS.501.2279V",
+   "cite": "Vasiliev, Belokurov & Erkal 2021 (Tango for three)",
+   "title": "Tango for three: Sagittarius, LMC, and the Milky Way",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:95",
+    "docs/data_analysis.tex:580"
+   ],
+   "note": "LMC/Sgr recipe in src/ocen_dm/streams/lmc.py; Zenodo 10.5281/zenodo.4300977 data used",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1308.0593",
+   "doi": "10.1093/mnras/stt1376",
+   "bibcode": "2013MNRAS.435.1874W",
+   "cite": "Wegg & Gerhard 2013",
+   "title": "Mapping the three-dimensional density of the Galactic bulge with VVV red clump stars",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "bin/streams/fit_bar_ocen.py:34"
+   ],
+   "note": "bar-angle prior in bin/streams/fit_bar_ocen.py",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1504.01401",
+   "doi": "10.1093/mnras/stv745",
+   "bibcode": "2015MNRAS.450.4050W",
+   "cite": "Wegg, Gerhard & Portail 2015",
+   "title": "The structure of the Milky Way's bar outside the bulge",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "bin/streams/bar3d_sweep.py:23"
+   ],
+   "note": "bar length for corotation cut (bin/streams/bar3d_sweep.py)",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1412.3451",
+   "doi": "10.1088/0067-0049/216/2/29",
+   "bibcode": "2015ApJS..216...29B",
+   "cite": "Bovy 2015 (galpy)",
+   "title": "galpy: A python Library for Galactic Dynamics",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/PROGENITOR_ORBITS.md:45",
+    "docs/dm_capture_constraints.tex:487",
+    "docs/progenitor_orbits.tex:684"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2510.04735",
+   "doi": "10.1093/mnras/stag1254",
+   "bibcode": "2026MNRAS.550g1254B",
+   "cite": "Brooks et al. 2026",
+   "title": "The Milky Way-Large Magellanic Cloud interaction with simulation-based inference",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2406.01676",
+   "doi": "10.3847/1538-4357/addab6",
+   "bibcode": "2025ApJ...988..156C",
+   "cite": "Chandra et al. 2025 (arXiv 2024)",
+   "title": "All-sky Kinematics of the Distant Halo: The Reflex Response to the LMC",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/codex_frame_decomp_next_2026-10-10.md:19",
+    "docs/codex_research_knee_2026-10-08.md:31"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2107.10875",
+   "doi": "10.1093/mnras/stac603",
+   "bibcode": "2022MNRAS.512.2171C",
+   "cite": "Clarke & Gerhard 2022",
+   "title": "The pattern speed of the Milky Way bar/bulge from VIRAC and Gaia",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_fit_campaign_2026-10-08.md:78",
+    "docs/codex_research_knee_2026-10-08.md:22"
+   ],
+   "note": "DOI 10.1093/mnras/stab3451 in codex_research_fit_campaign:78,134 is ERRONEOUS (ADS: Webb et al. 2022); correct DOI from ADS",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2506.09117",
+   "doi": "10.1093/mnras/staf1264",
+   "bibcode": "2025MNRAS.542.1331D",
+   "cite": "Dillamore et al. 2025 (bar-driven dispersal)",
+   "title": "Bar-driven dispersal of Galactic substructure",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_knee_2026-10-08.md:39"
+   ],
+   "note": "arXiv ID from ADS",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1810.09466",
+   "doi": "10.3847/1538-4357/aaf648",
+   "bibcode": "2019ApJ...871..120E",
+   "cite": "Eilers et al. 2019",
+   "title": "The Circular Velocity Curve of the Milky Way from 5 to 25 kpc",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/codex_frame_decomp_next_2026-10-10.md:29"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2001.11030",
+   "doi": "10.1093/mnras/staa2840",
+   "bibcode": "2020MNRAS.498.5574E",
+   "cite": "Erkal et al. 2020",
+   "title": "Equilibrium models of the Milky Way mass are biased high by the LMC",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2010.13789",
+   "doi": "10.1093/mnras/stab1828",
+   "bibcode": "2021MNRAS.506.2677E",
+   "cite": "Erkal et al. 2021",
+   "title": "Detection of the LMC-induced sloshing of the Galactic halo",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1512.04536",
+   "doi": "10.1093/mnras/stw1006",
+   "bibcode": "2016MNRAS.460..497H",
+   "cite": "Hattori, Erkal & Sanders 2016",
+   "title": "Shepherding tidal debris with the Galactic bar: the Ophiuchus stream",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_knee_2026-10-08.md:28"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2607.17040",
+   "doi": "10.3847/1538-4357/ae8b98",
+   "bibcode": "2026ApJ..1007..132H",
+   "cite": "He et al. 2026 (Pal 5 morphology)",
+   "title": "Disentangling the Morphology of Palomar 5: Effects of the Bar, Spiral Arms, LMC, and Halo Flattening",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1211.4353",
+   "doi": "10.1051/0004-6361/201220540",
+   "bibcode": "2013A&A...549A.137I",
+   "cite": "Irrgang et al. 2013",
+   "title": "Milky Way mass models for orbit calculations",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/NBODY_IC_PROPOSAL.md:55",
+    "docs/PROGENITOR_ORBITS.md:46"
+   ],
+   "note": "alternative host in progenitor-orbit comparison",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2206.01798",
+   "doi": "10.1093/mnras/stad406",
+   "bibcode": "2023MNRAS.520.4779L",
+   "cite": "Lucey et al. 2023 (arXiv 2022)",
+   "title": "Dynamically constraining the length of the Milky Way bar",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1703.04627",
+   "doi": "10.1038/s41550-017-0220-3",
+   "bibcode": "2017NatAs...1..633P",
+   "cite": "Pearson, Price-Whelan & Johnston 2017",
+   "title": "Gaps and length asymmetry in the stellar stream Palomar 5 as effects of Galactic bar rotation",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_knee_2026-10-08.md:28"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2001.09142",
+   "doi": "10.1093/mnrasl/slaa029",
+   "bibcode": "2020MNRAS.494L..11P",
+   "cite": "Petersen & Penarrubia 2020",
+   "title": "Reflex motion in the Milky Way stellar halo resulting from the Large Magellanic Cloud infall",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [
+    "docs/codex_frame_decomp_next_2026-10-10.md:19"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2001.04386",
+   "doi": "10.3847/1538-4357/ab76cd",
+   "bibcode": "2020ApJ...892...39R",
+   "cite": "Reid & Brunthaler 2020",
+   "title": "The Proper Motion of Sagittarius A*. III. The Case for a Supermassive Black Hole",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2304.09136",
+   "doi": "10.3390/galaxies11020059",
+   "bibcode": "2023Galax..11...59V",
+   "cite": "Vasiliev 2023 (review)",
+   "title": "The Effect of the LMC on the Milky Way System",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2306.04837",
+   "doi": "10.1093/mnras/stad2612",
+   "bibcode": "2024MNRAS.527..437V",
+   "cite": "Vasiliev 2024",
+   "title": "Dear Magellanic Clouds, welcome back!",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "context",
+   "files": [],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2603.11159",
+   "doi": "10.1093/mnras/stag1110",
+   "bibcode": "2026MNRAS.549g1110D",
+   "cite": "Dillamore, Sanders & Brooks 2026",
+   "title": "GSE versus LMC: reshaping of radially biased stellar haloes by satellites",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "tangential",
+   "files": [],
+   "note": "journal notes \"not directly relevant\"",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2408.01496",
+   "doi": "10.3847/1538-4365/ad9904",
+   "bibcode": "2025ApJS..276...32C",
+   "cite": "Chen et al. 2025 (arXiv 2024)",
+   "title": "Improved Particle Spray Algorithm for Modeling Globular Cluster Streams",
+   "topic": "stream-fitting-methods",
+   "relevance": "core",
+   "files": [
+    "README.md:23",
+    "docs/STREAM_EXPERIMENTS_PLAN.md:42"
+   ],
+   "note": "release model in src/ocen_dm/streams/escape.py; published ApJS 2025 (ADS)",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1410.1861",
+   "doi": "10.1093/mnras/stv1198",
+   "bibcode": "2015MNRAS.452..301F",
+   "cite": "Fardal, Huang & Weinberg 2015",
+   "title": "Generation of mock tidal streams",
+   "topic": "stream-fitting-methods",
+   "relevance": "core",
+   "files": [
+    "OCEN_DM_TAILS_PROJECT.md:290",
+    "docs/STREAM_DIAGNOSTIC_PLAN.md:44"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2211.04495",
+   "doi": "10.1093/mnras/stad551",
+   "bibcode": "2023MNRAS.521.4936K",
+   "cite": "Koposov et al. 2023 (S5 Orphan-Chenab)",
+   "title": "S5: Probing the Milky Way and Magellanic Clouds potentials with the 6D map of the Orphan-Chenab stream",
+   "topic": "stream-fitting-methods",
+   "relevance": "core",
+   "files": [
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:23",
+    "docs/STREAM_FIT_METHODS_REVIEW.md:6"
+   ],
+   "note": "track/likelihood recipe adopted in STREAM_FIT_CAMPAIGN_PLAN",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2601.15373",
+   "doi": "10.1093/mnras/stag1161",
+   "bibcode": "2026MNRAS.550g1161C",
+   "cite": "Chemaly et al. 2026a (StreaMAX)",
+   "title": "Constraining the population of dark matter halo shapes using hierarchical inference with extragalactic stellar streams",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_FIT_METHODS_REVIEW.md:6"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2607.05510",
+   "doi": "",
+   "bibcode": "2026arXiv260705510C",
+   "cite": "Chemaly et al. 2026b",
+   "title": "Constraints on the population level distribution of nearby Dark Matter halo shapes with extragalactic streams",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_FIT_METHODS_REVIEW.md:6"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2205.13547",
+   "doi": "10.1093/mnras/stac2311",
+   "bibcode": "2022MNRAS.516.1685D",
+   "cite": "Dillamore et al. 2022 (Sgr and GD-1)",
+   "title": "The impact of a massive Sagittarius dSph on GD-1-like streams",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:43",
+    "docs/STREAM_FIT_METHODS_REVIEW.md:6"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1609.01282",
+   "doi": "10.1093/mnras/stx1208",
+   "bibcode": "2017MNRAS.470...60E",
+   "cite": "Erkal, Koposov & Belokurov 2017 (Pal 5)",
+   "title": "A sharper view of Pal 5's tails: discovery of stream perturbations with a novel non-parametric technique",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:23",
+    "docs/codex_research_fit_campaign_2026-10-08.md:22",
+    "docs/codex_research_knee_2026-10-08.md:49"
+   ],
+   "note": "both DOIs in the Codex reports are ERRONEOUS: 10.1093/mnras/stw2357 (codex_research_fit_campaign:22,121; ADS: Kurtev 2017) and 10.1093/mnras/stw2584 (codex_research_knee:49,99; ADS: Russell 2017). Correct DOI from ADS.",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2104.11755",
+   "doi": "10.3847/1538-3881/ac3492",
+   "bibcode": "2022AJ....163...18F",
+   "cite": "Ferguson et al. 2022 (arXiv 2021; Jet stream)",
+   "title": "DELVE-ing into the Jet: A Thin Stellar Stream on a Retrograde Orbit at 30 kpc",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_fit_campaign_2026-10-08.md:22"
+   ],
+   "note": "DOI 10.3847/1538-4357/ac0e2a (ApJ) in codex_research_fit_campaign:22,124 not found in ADS (ERRONEOUS); paper is in AJ",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1406.2243",
+   "doi": "10.1093/mnras/stu1986",
+   "bibcode": "2014MNRAS.445.3788G",
+   "cite": "Gibbons, Belokurov & Evans 2014",
+   "title": "'Skinny Milky Way please', says Sagittarius",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:10",
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:34"
+   ],
+   "note": "DOI 10.1093/mnras/stu692 in codex_research_fit_campaign_2026-10-08.md:47,126 is ERRONEOUS (ADS: Khoperskov et al. 2014); correct DOI from ADS",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1701.08515",
+   "doi": "10.1093/biomet/asx010",
+   "bibcode": "2017arXiv170108515H",
+   "cite": "Holmes & Walker 2017",
+   "title": "Assigning a value to a power likelihood in a general Bayesian model",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/reviews/codex_unbiased_likelihood_2026-10-17.md:104"
+   ],
+   "note": "Likelihood calibration / tempering (power likelihood). Biometrika 104, 497; ADS has only the arXiv record; DOI resolves to Biometrika.",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1812.08172",
+   "doi": "10.1093/mnras/stz457",
+   "bibcode": "2019MNRAS.485.4726K",
+   "cite": "Koposov et al. 2019 (Orphan)",
+   "title": "Piercing the Milky Way: an all-sky view of the Orphan Stream",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:5",
+    "docs/codex_research_fit_campaign_2026-10-08.md:20"
+   ],
+   "note": "Codex report gave arXiv:1812.08192 for this paper (ERRONEOUS; corrected in the project journal and STREAM_FIT_CAMPAIGN_PLAN.md:5); the DOI stz457 it gave is correct",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "0907.1085",
+   "doi": "10.1088/0004-637X/712/1/260",
+   "bibcode": "2010ApJ...712..260K",
+   "cite": "Koposov, Rix & Hogg 2010 (GD-1)",
+   "title": "Constraining the Milky Way Potential with a Six-Dimensional Phase-Space Map of the GD-1 Stellar Stream",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_fit_campaign_2026-10-08.md:20"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1111.5013",
+   "doi": "10.1111/j.1365-2966.2011.20242.x",
+   "bibcode": "2012MNRAS.420.2700K",
+   "cite": "Kupper, Lane & Heggie 2012",
+   "title": "More on the structure of tidal tails",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:94",
+    "docs/codex_review_2026-09-19.md:81"
+   ],
+   "note": "",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2212.00949",
+   "doi": "10.1093/mnras/stad1166",
+   "bibcode": "2023MNRAS.522.5022S",
+   "cite": "Starkman et al. 2023 (TrackStream)",
+   "title": "On the fast track: Rapid construction of stellar stream paths",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_FIT_CAMPAIGN_PLAN.md:22",
+    "docs/codex_research_fit_campaign_2026-10-08.md:24"
+   ],
+   "note": "DOI 10.1093/mnras/stad100 in codex_research_fit_campaign:24,122 is ERRONEOUS (ADS: Barlow-Hall et al. 2023); correct DOI from ADS",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "2311.16960",
+   "doi": "10.3847/1538-4357/ad94f2",
+   "bibcode": "2025ApJ...980..253S",
+   "cite": "Starkman et al. 2025 (arXiv 2023; mixture density networks)",
+   "title": "Stream Members Only: Data-driven Characterization of Stellar Streams with Mixture Density Networks",
+   "topic": "stream-fitting-methods",
+   "relevance": "context",
+   "files": [
+    "docs/codex_research_fit_campaign_2026-10-08.md:24"
+   ],
+   "note": "DOI 10.3847/1538-4357/ad00f0 in codex_research_fit_campaign:24,123 not found in ADS (ERRONEOUS); correct DOI from ADS",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "",
+   "doi": "",
+   "bibcode": "2023ApJS..267....8A",
+   "cite": "Andrae et al. 2023 (Gaia XP metallicities)",
+   "title": "",
+   "topic": "data-source",
+   "relevance": "core",
+   "files": [
+    "docs/STREAM_KNEE_INVESTIGATION.md:28",
+    "docs/codex_research_knee_2026-10-08.md:108"
+   ],
+   "note": "XP [M/H] used for stream 54/55; DOI 10.1051/0004-6361/202244399 given in codex_research_knee:108 is ERRONEOUS (ADS: Cernicharo et al. 2022, fulvenallene) Resolved in ADS 2026-10-13 by bibstem/volume/page or author/year search: 2023ApJS..267....8A.",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1802.03578",
+   "doi": "10.3847/1538-3881/aaadab",
+   "bibcode": "2018AJ....155..137B",
+   "cite": "Braga et al. 2018",
+   "title": "On the RR Lyrae Stars in Globulars. V. The Complete Near-infrared (JHKs) Census of omega Centauri RR Lyrae Variables",
+   "topic": "data-source",
+   "relevance": "tangential",
+   "files": [
+    "docs/literature/omega_cen_stream_distances_2026-10-10.md:12"
+   ],
+   "note": "omega Cen distance 5630 pc quoted via Ibata+2019; Resolved 2026-10-17: the only Braga+2018 omega Cen paper in ADS, and in the reference list of Ibata et al. 2019 (2019NatAs...3..667I).",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "1012.4804",
+   "doi": "10.1088/0004-637X/737/2/103",
+   "bibcode": "2011ApJ...737..103S",
+   "cite": "Schlafly & Finkbeiner 2011",
+   "title": "Measuring Reddening with Sloan Digital Sky Survey Stellar Spectra and Recalibrating SFD",
+   "topic": "data-source",
+   "relevance": "tangential",
+   "files": [
+    "docs/literature/omega_cen_stream_distances_2026-10-10.md:14"
+   ],
+   "note": "extinction, quoted from Ibata, Malhan & Martin 2019; Resolved 2026-10-17: in the reference list of Ibata, Malhan & Martin 2019 (2019ApJ...872..152I).",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "",
+   "doi": "",
+   "bibcode": "2003ApJ...582..196H",
+   "cite": "Hashimoto, Funato & Makino 2003",
+   "title": "",
+   "topic": "cluster-dynamics-methods",
+   "relevance": "context",
+   "files": [
+    "bin/streams/sgr_orbit.py:10"
+   ],
+   "note": "Coulomb-logarithm form in bin/streams/sgr_orbit.py Resolved in ADS 2026-10-13 by bibstem/volume/page or author/year search: 2003ApJ...582..196H.",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "",
+   "doi": "",
+   "bibcode": "1996ApJ...461L..13M",
+   "cite": "Moore 1996",
+   "title": "",
+   "topic": "tides-and-dm-survival",
+   "relevance": "context",
+   "files": [
+    "docs/STREAM_EXPERIMENTS_PLAN.md:79"
+   ],
+   "note": "DM-embedded GC tidal argument Resolved in ADS 2026-10-13 by bibstem/volume/page or author/year search: 1996ApJ...461L..13M.",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "",
+   "doi": "",
+   "bibcode": "2018MNRAS.481.2125B",
+   "cite": "Bianchini et al. 2018",
+   "title": "",
+   "topic": "tails-and-streams",
+   "relevance": "core",
+   "files": [
+    "src/ocen_dm/streams/rotation.py:4"
+   ],
+   "note": "omega Cen rotation axis (Gaia DR2) used in src/ocen_dm/streams/rotation.py Resolved in ADS 2026-10-13 by bibstem/volume/page or author/year search: 2018MNRAS.481.2125B.",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "",
+   "doi": "",
+   "bibcode": "2012ApJ...751....6D",
+   "cite": "Da Costa 2012",
+   "title": "",
+   "topic": "tails-and-streams",
+   "relevance": "core",
+   "files": [
+    "docs/df_observed_fit.tex:1409",
+    "bin/nbody/plot_observed_comparison.py:10"
+   ],
+   "note": "LOS dispersion at tidal radius (DC12), quoted via Kuzma+2026 Resolved in ADS 2026-10-13 by bibstem/volume/page or author/year search: 2012ApJ...751....6D.",
+   "needs_resolution": false
+  },
+  {
+   "arxiv": "",
+   "doi": "",
+   "bibcode": "1998MNRAS.294..429D",
+   "cite": "Dehnen & Binney 1998 (DB98 Model 1)",
+   "title": "",
+   "topic": "mw-potential-bar-lmc",
+   "relevance": "core",
+   "files": [
+    "README.md:15",
+    "docs/STREAM_EXPERIMENTS_PLAN.md:58"
+   ],
+   "note": "host potential configs/potentials/DB98_Model1.ini Resolved in ADS 2026-10-13 by bibstem/volume/page or author/year search: 1998MNRAS.294..429D.",
+   "needs_resolution": false
+  }
+ ],
+ "erroneous_identifiers_exclude": [
+  {
+   "id": "arXiv:1812.08192 as \"Koposov et al. 2019 Orphan-Chenab\"",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:20,120",
+   "correct": "arXiv:1812.08172 (2019MNRAS.485.4726K); 1812.08192 is Erkal+2019",
+   "source": "the project journal; STREAM_FIT_CAMPAIGN_PLAN.md:5"
+  },
+  {
+   "id": "\"Ibata et al. 2026\" (omega Cen spectroscopy, stream 55)",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:130",
+   "correct": "Kuzma et al. 2026, arXiv:2605.23474",
+   "source": "the project journal"
+  },
+  {
+   "id": "bibcode 2026MNRAS.stag1147K (bib key)",
+   "where": "docs/df_observed_fit_extra.bib:95; docs/df_observed_fit.tex:1408",
+   "correct": "2026MNRAS.550g1147K",
+   "source": "the project journal; ADS"
+  },
+  {
+   "id": "DOI 10.1093/mnras/stw2357 for Erkal+2017",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:22,121",
+   "correct": "10.1093/mnras/stx1208",
+   "source": "ADS (this check): stw2357 = Kurtev+2017"
+  },
+  {
+   "id": "DOI 10.1093/mnras/stw2584 for Erkal+2017",
+   "where": "docs/codex_research_knee_2026-10-08.md:49,99",
+   "correct": "10.1093/mnras/stx1208",
+   "source": "ADS (this check): stw2584 = Russell+2017"
+  },
+  {
+   "id": "DOI 10.1093/mnras/sty1036 for Malhan & Ibata 2018",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:28,118",
+   "correct": "10.1093/mnras/sty912",
+   "source": "ADS (this check): sty1036 = Chen+2018"
+  },
+  {
+   "id": "DOI 10.1093/mnras/stad100 for Starkman+2023 TrackStream",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:24,122",
+   "correct": "10.1093/mnras/stad1166",
+   "source": "ADS (this check): stad100 = Barlow-Hall+2023"
+  },
+  {
+   "id": "DOI 10.3847/1538-4357/ad00f0 for Starkman+2023 MDN",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:24,123",
+   "correct": "10.3847/1538-4357/ad94f2",
+   "source": "ADS (this check): DOI not indexed"
+  },
+  {
+   "id": "DOI 10.3847/1538-4357/ac0e2a for Ferguson+2021 Jet",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:22,124",
+   "correct": "10.3847/1538-3881/ac3492 (AJ)",
+   "source": "ADS (this check): DOI not indexed"
+  },
+  {
+   "id": "DOI 10.1093/mnras/stab3451 for Clarke & Gerhard 2022",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:78,134",
+   "correct": "10.1093/mnras/stac603",
+   "source": "ADS (this check): stab3451 = Webb+2022"
+  },
+  {
+   "id": "DOI 10.1093/mnras/stu692 for Gibbons+2014",
+   "where": "docs/codex_research_fit_campaign_2026-10-08.md:47,126",
+   "correct": "10.1093/mnras/stu1986",
+   "source": "ADS (this check): stu692 = Khoperskov+2014"
+  },
+  {
+   "id": "DOI 10.1051/0004-6361/202244399 for Andrae+2023",
+   "where": "docs/codex_research_knee_2026-10-08.md:108",
+   "correct": "unresolved (needs ADS lookup)",
+   "source": "ADS (this check): = Cernicharo+2022"
+  }
+ ],
+ "datasets_not_papers": [
+  {
+   "id": "10.5281/zenodo.14791430 (concept 14791429)",
+   "what": "Kuzma & Ishigaki 2025 catalogue"
+  },
+  {
+   "id": "10.5281/zenodo.14978551",
+   "what": "oMEGACat VI profiles"
+  },
+  {
+   "id": "10.5281/zenodo.11104046",
+   "what": "oMEGACat II catalogue"
+  },
+  {
+   "id": "10.5281/zenodo.4891252",
+   "what": "Vasiliev & Baumgardt 2021 EDR3 GC members"
+  },
+  {
+   "id": "10.5281/zenodo.4300977",
+   "what": "Vasiliev+2021 Sgr/LMC simulations"
+  },
+  {
+   "id": "10.17909/7prx-4905",
+   "what": "JWST GO-5110 MAST observations"
+  },
+  {
+   "id": "VizieR J/other/NatAs/3.667",
+   "what": "Ibata+2019 members"
+  },
+  {
+   "id": "VizieR J/AJ/109/218",
+   "what": "Trager+1995"
+  },
+  {
+   "id": "VizieR J/MNRAS/482/5138",
+   "what": "Baumgardt+2019"
+  }
+ ]
+}

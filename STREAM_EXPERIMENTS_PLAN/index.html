@@ -1,0 +1,1466 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Knowledge base of the oCen_stream project (stream data, spray models, bar fits, reviews, literature)">
+      
+      
+      
+        <link rel="canonical" href="https://vasilybelokurov.github.io/ocen_stream/STREAM_EXPERIMENTS_PLAN/">
+      
+      
+        <link rel="prev" href="../STREAM_FIT_CAMPAIGN_PLAN/">
+      
+      
+        <link rel="next" href="../STREAM_FIT_METHODS_REVIEW/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Experiments plan - oCen_stream: the Omega Centauri stream and the Milky Way bar</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../kb/stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#restricted-n-body-tails-with-and-without-dm-vs-fimbulthul-scoping-2026-10-08" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="oCen_stream: the Omega Centauri stream and the Milky Way bar" class="md-header__button md-logo" aria-label="oCen_stream: the Omega Centauri stream and the Milky Way bar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            oCen_stream: the Omega Centauri stream and the Milky Way bar
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Experiments plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vasilybelokurov/ocen_stream" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vasilybelokurov/ocen_stream
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../kb/data/tails_streams/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Data
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../kb/models/stream_likelihood_versions/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Models
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../kb/stream_status/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  History
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../kb/literature/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Literature
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../reviews/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reviews
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="oCen_stream: the Omega Centauri stream and the Milky Way bar" class="md-nav__button md-logo" aria-label="oCen_stream: the Omega Centauri stream and the Milky Way bar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    oCen_stream: the Omega Centauri stream and the Milky Way bar
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vasilybelokurov/ocen_stream" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vasilybelokurov/ocen_stream
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kb/data/tails_streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream sample and caches
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kb/data/potentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potentials and frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Models
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kb/models/stream_likelihood_versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Likelihood versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kb/models/stream_results_index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Results index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kb/stream_status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status (2026-10-18)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STREAM_PM_REFINEMENT_2026-10-13/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PM refinement (2026-10-13)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STREAM_KNEE_INVESTIGATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knee investigation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STREAM_DIAGNOSTIC_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostic plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STREAM_FIT_CAMPAIGN_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fit campaign plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments plan
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Question
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#findings-from-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Findings from scoping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposed-experiment-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposed experiment set
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-for-the-user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions for the user
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references-arxiv-ids-verified-2026-10-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References (arXiv IDs verified 2026-10-08)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STREAM_FIT_METHODS_REVIEW/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream-fitting methods review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STREAM_REQUIREMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../literature/omega_cen_stream_distances_2026-10-10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream distances literature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kb/literature/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Literature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reviews/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviews
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Question
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#findings-from-scoping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Findings from scoping
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposed-experiment-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proposed experiment set
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-for-the-user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions for the user
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references-arxiv-ids-verified-2026-10-08" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References (arXiv IDs verified 2026-10-08)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="restricted-n-body-tails-with-and-without-dm-vs-fimbulthul-scoping-2026-10-08">Restricted N-body tails with and without DM vs Fimbulthul — scoping (2026-10-08)<a class="headerlink" href="#restricted-n-body-tails-with-and-without-dm-vs-fimbulthul-scoping-2026-10-08" title="Permanent link">&para;</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Historical (2026-10-08)</p>
+<p>Scoping of the restricted N-body experiments. Current status:
+<a href="../kb/stream_status/">kb/stream_status.md</a>.</p>
+</div>
+<p>Status: <strong>implemented and run (2026-10-08)</strong>; results and open questions in <a href="../STREAM_KNEE_INVESTIGATION/">STREAM_KNEE_INVESTIGATION.md</a>. Decisions marked D1–D5 are the user's.</p>
+<h2 id="question">Question<a class="headerlink" href="#question" title="Permanent link">&para;</a></h2>
+<p>How do no DM and different amounts of DM around omega Cen change the structure of its tidal
+tails? Compare the results with Fimbulthul (Ibata+2019). Tails are made by constrained
+(restricted) N-body: prescribed host and satellite potentials, with stars as massless tracers
+(mLCS, Gibbons+2014; streams of Erkal+2019 and Vasiliev+2021).</p>
+<h2 id="findings-from-scoping">Findings from scoping<a class="headerlink" href="#findings-from-scoping" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Within the kinematically allowed models the DM barely changes the escape scale.</strong>
+   <code>bin/streams/scope_jacobi.py</code> (results/plot_data/streams_scope_jacobi.json) gives the
+   instantaneous r_J in spherically averaged McMillan17:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">rho20</th>
+<th style="text-align: right;">M_halo (taper 1000 pc)</th>
+<th style="text-align: right;">M(&lt;r_J) peri</th>
+<th>r_J peri / apo [pc]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A no DM</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3.24e6</td>
+<td>78.7 / 195</td>
+</tr>
+<tr>
+<td>rho20scan</td>
+<td style="text-align: right;">0.25</td>
+<td style="text-align: right;">1.7e5</td>
+<td style="text-align: right;">3.28e6</td>
+<td>79.0 / 197</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align: right;">0.5</td>
+<td style="text-align: right;">3.5e5</td>
+<td style="text-align: right;">3.32e6</td>
+<td>79.3 / 198</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">6.9e5</td>
+<td style="text-align: right;">3.39e6</td>
+<td>79.9 / 201</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">1.39e6</td>
+<td style="text-align: right;">3.56e6</td>
+<td>81.2 / 207</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2.78e6</td>
+<td style="text-align: right;">3.91e6</td>
+<td>83.8 / 219</td>
+</tr>
+<tr>
+<td>B (M/N19 = 9)</td>
+<td style="text-align: right;">2.6</td>
+<td style="text-align: right;">1.81e6</td>
+<td style="text-align: right;">3.63e6</td>
+<td>81.8 / 210</td>
+</tr>
+</tbody>
+</table>
+<p>The halo is compact (r_s at 5 pc). Its mass inside r_J is offset by a lower M_star, so
+   M(&lt;r_J) rises by at most 21% and r_J by at most 6.5% at pericentre. Stream width and
+   dispersion scale as M^{1/3}, so the expected differences are &lt;~7%. This matches the
+   live runs, where the tail kinematics agree to within 10%. <strong>The tails respond to DM
+   beyond ~80–200 pc, which the kinematics do not constrain.</strong> The DM axis therefore has to
+   be defined explicitly (D1).
+2. <strong>Orbit, host potential and integration time dominate.</strong> The live 1.96 Gyr McMillan17
+   debris in the Fimbulthul box has mu_dec = -6 to -9 mas/yr, against -9.7 to -11.5
+   observed. Ibata+2019 used a static Dehnen &amp; Binney (1998) Model 1, needed &gt;= ~5 Gyr
+   with a rotating progenitor, and found that a non-rotating King progenitor gives a
+   substantially wider stream. Progenitor rotation is therefore a non-DM systematic at
+   least as large as the expected DM signal.
+3. <strong>The tooling exists in AGAMA 1.0.152; it is not yet in the repo.</strong>
+   <code>agama/py/tutorial_streams.ipynb</code> and <code>example_tidal_stream.py</code> provide particle spray
+   (Fardal+2015 as in Gala, and Chen et al. 2025, <a href="https://arxiv.org/abs/2408.01496">arXiv:2408.01496</a>), streaklines with linear perturbation, and
+   restricted N-body (Vasiliev+2021). In the restricted scheme, tracers move in host plus
+   moving satellite potential, and the satellite potential and mass are refitted from the
+   bound tracers at intervals, with Chandrasekhar friction optional. Potentials accept
+   time-dependent <code>center=</code> and <code>scale=</code>.
+4. <strong>Data.</strong> Local: I19 Table 1 (309 DR2 candidates, data/processed/tails/fimbulthul_members.ecsv)
+   and 5 CFHT RVs (mean 199.7, rms 5.4 km/s). Also available: the Ibata+2024 DR3
+   STREAMFINDER atlas (Fimbulthul and the separate Fimbulthul-S), Simpson+2020 (2 GALAH
+   stars) and Kuzma+2026. No intrinsic width, RV dispersion or density has been
+   published. Width and track have to be measured from the candidates. Absolute density is
+   excluded without a STREAMFINDER selection model.</p>
+<h2 id="proposed-experiment-set">Proposed experiment set<a class="headerlink" href="#proposed-experiment-set" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>S0 — track (no DM).</strong> Use fast spray/mLCS with satellite gravity to find a host,
+  integration time and present-day 6D point that reproduce the Fimbulthul sky, PM, distance
+  and RV track. Candidate hosts: McMillan17 and I19's DB98 Model 1 (D3). Then freeze them.
+  The DM grid must not retune the orbit.</li>
+<li><strong>S1 — validation.</strong> Run restricted N-body for A and B over 1.956 Gyr in static
+  McMillan17, from the same DF samples as the live runs. Compare with the live runs:
+  unbound fraction history, dE/dLz spreads, tail width, near-tail sigma_los and sky track.
+  Tolerances are agreed in advance and tested, not assumed.</li>
+<li><strong>S2 — DM grid</strong> on the frozen S0 orbit: no DM, plus the axis chosen in D1, with tracers
+  of all species. Satellite potential per D2.</li>
+<li><strong>S3 — comparison</strong> in Fimbulthul stream coordinates: phi2(phi1), PM tracks, distance, RV
+  track, width, and (from model tracers only) along-stream density and epicyclic spacing.
+  Apply an approximate STREAMFINDER-like selection (G limit, PM window) to the models.</li>
+</ul>
+<p>Cost (estimate, to be benchmarked): spray tracks take seconds to minutes each. Restricted
+runs with 1e5–1e6 tracers over 2–5 Gyr take of order 10–60 min each with AGAMA's
+multithreaded integrator, against ~30 h for each live run. No run is launched without a go.</p>
+<h2 id="decisions-for-the-user">Decisions for the user<a class="headerlink" href="#decisions-for-the-user" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>D1 DM axis.</strong> (a) The rho20 grid at the fitted taper. This is kinematically consistent
+  and the expected result is null at &lt;~7%. (b) Extended halos (taper / M_halo 1e6–1e8)
+  that keep the fitted inner profile, the regime of Vitral &amp; Boldrini 2022, Errani+2022 and
+  Moore 1996. (c) Both: (a) as the control and (b) as the test.</li>
+<li><strong>D2 Satellite potential.</strong> (i) Self-consistent restricted N-body (Vasiliev+2021): halo
+  stripping follows from the tracers, so no hand-tuned halo-loss law is needed. (ii)
+  Strictly prescribed potential (<code>scale=</code> in t, or r_J-truncated halo): closer to
+  "parameterised", but the halo-loss law has to be assumed. Codex: calibrating it on live
+  run B only is circular for the other halos.</li>
+<li><strong>D3 Host and time.</strong> McMillan17 vs DB98 Model 1, 2 Gyr vs ~5 Gyr. A 5 Gyr run needs a
+  progenitor heavier than today's model, and that mass has to be chosen.</li>
+<li><strong>D4 Rotation.</strong> Keep non-rotating now, or add a rotating DF before S2 (I19: rotation
+  matters for width).</li>
+<li><strong>D5 Data.</strong> Done: Ibata+2024 DR3 (streams 54, 55) and Ibata+2021 EDR3 (stream 16) in $OCEN_CATALOGUES/, see configs/data.yaml.</li>
+</ul>
+<h2 id="references-arxiv-ids-verified-2026-10-08">References (arXiv IDs verified 2026-10-08)<a class="headerlink" href="#references-arxiv-ids-verified-2026-10-08" title="Permanent link">&para;</a></h2>
+<p>Gibbons, Belokurov &amp; Evans 2014, <a href="https://arxiv.org/abs/1406.2243">arXiv:1406.2243</a>; Fardal, Huang &amp; Weinberg 2015, <a href="https://arxiv.org/abs/1410.1861">arXiv:1410.1861</a>;
+Küpper, Lane &amp; Heggie 2012, <a href="https://arxiv.org/abs/1111.5013">arXiv:1111.5013</a>; Erkal+2019, <a href="https://arxiv.org/abs/1812.08192">arXiv:1812.08192</a>; Vasiliev, Belokurov &amp;
+Erkal 2021, <a href="https://arxiv.org/abs/2009.10726">arXiv:2009.10726</a>; Ibata+2019, <a href="https://arxiv.org/abs/1902.09544">arXiv:1902.09544</a> (VizieR J/other/NatAs/3.667);
+Ibata+2021, <a href="https://arxiv.org/abs/2012.05245">arXiv:2012.05245</a>; Ibata+2024, <a href="https://arxiv.org/abs/2311.17202">arXiv:2311.17202</a>; Malhan, Valluri &amp; Freese 2021,
+<a href="https://arxiv.org/abs/2005.12919">arXiv:2005.12919</a>; Vitral &amp; Boldrini 2022, <a href="https://arxiv.org/abs/2112.01265">arXiv:2112.01265</a>; Errani+2022, <a href="https://arxiv.org/abs/2203.02513">arXiv:2203.02513</a>;
+Evans, Strigari &amp; Zivick 2022, <a href="https://arxiv.org/abs/2109.10998">arXiv:2109.10998</a>; Kuzma+2026, <a href="https://arxiv.org/abs/2605.23474">arXiv:2605.23474</a>.
+Codex research pass (ordinary web-research fallback, not Deep Research) supplied the
+bibliography. The I19 method details (DB98 Model 1, &gt;= 5 Gyr, 1e5 particles, rotating
+progenitor) are as reported by Codex from the Methods section and are consistent with the
+journal entry of 2026-09-26. Ibata+2024 (2024ApJ...967...89I) Table 1, fetched 2026-10-08 from the ApJ machine-readable file: Fimbulthul = stream 54 with 3724 stars (29 with VHel); Fimbulthul-S = stream 55 with 1734 stars (25 VHel), which the paper also interprets as omega Cen trailing debris lost 0.5-1 Gyr ago at ~3 kpc. The '22 members' figure from the Codex pass is wrong.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.indexes", "navigation.top", "search.highlight", "content.code.copy", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../kb/javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

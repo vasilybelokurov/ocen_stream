@@ -1,0 +1,1245 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Knowledge base of the oCen_stream project (stream data, spray models, bar fits, reviews, literature)">
+      
+      
+      
+        <link rel="canonical" href="https://vasilybelokurov.github.io/ocen_stream/reviews/codex_likelihood_calibration_2026-10-09/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Codex likelihood calibration 2026 10 09 - oCen_stream: the Omega Centauri stream and the Milky Way bar</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../kb/stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#q1-block-bootstrap" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="oCen_stream: the Omega Centauri stream and the Milky Way bar" class="md-header__button md-logo" aria-label="oCen_stream: the Omega Centauri stream and the Milky Way bar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            oCen_stream: the Omega Centauri stream and the Milky Way bar
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Codex likelihood calibration 2026 10 09
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vasilybelokurov/ocen_stream" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vasilybelokurov/ocen_stream
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../kb/data/tails_streams/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Data
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../kb/models/stream_likelihood_versions/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Models
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../kb/stream_status/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  History
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../kb/literature/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Literature
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Reviews
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="oCen_stream: the Omega Centauri stream and the Milky Way bar" class="md-nav__button md-logo" aria-label="oCen_stream: the Omega Centauri stream and the Milky Way bar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    oCen_stream: the Omega Centauri stream and the Milky Way bar
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vasilybelokurov/ocen_stream" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vasilybelokurov/ocen_stream
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kb/data/tails_streams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream sample and caches
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kb/data/potentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potentials and frames
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Models
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kb/models/stream_likelihood_versions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Likelihood versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kb/models/stream_results_index/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Results index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    History
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kb/stream_status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status (2026-10-18)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../STREAM_PM_REFINEMENT_2026-10-13/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PM refinement (2026-10-13)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../STREAM_KNEE_INVESTIGATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knee investigation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../STREAM_DIAGNOSTIC_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostic plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../STREAM_FIT_CAMPAIGN_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fit campaign plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../STREAM_EXPERIMENTS_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../STREAM_FIT_METHODS_REVIEW/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream-fitting methods review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../STREAM_REQUIREMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../literature/omega_cen_stream_distances_2026-10-10/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stream distances literature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kb/literature/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Literature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reviews
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#q1-block-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q1. Block bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#q2-spray-seed-noise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q2. Spray-seed noise
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#q3-clusterknee-tension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q3. Cluster–knee tension
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#q4-dark-matter-detectability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q4. Dark-matter detectability
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#q5-code-weaknesses-and-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q5. Code weaknesses and tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-vs-assumed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verified vs assumed
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Codex likelihood calibration 2026 10 09</h1>
+
+<p><strong>The premise needs one correction:</strong> the score is computed for each star conditional on its observed <span class="arithmatex">\(u\)</span>, but the bootstrap does not hold those <span class="arithmatex">\(u\)</span> positions fixed. It resamples fixed-width spatial blocks, changing the resampled star count when blocks contain different numbers of members. That matters because the conditional score deliberately omits density along <span class="arithmatex">\(u\)</span> (<code>score.py:231–245</code>, <a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/bootstrap_grid4.py#L30"><code>bootstrap_grid4.py:30–40</code></a>).</p>
+<h2 id="q1-block-bootstrap">Q1. Block bootstrap<a class="headerlink" href="#q1-block-bootstrap" title="Permanent link">&para;</a></h2>
+<p>The block bootstrap is a useful <strong>sensitivity analysis</strong>, but these results do not establish a calibrated standard error. The reported uncertainty rises across the tested block widths, while the score-difference autocorrelation remains substantial at the longest tested lag; the 4-degree resample has only nine blocks. The script tests five fixed widths and does not select one from a defensible criterion (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/bootstrap_grid4.py#L22"><code>bootstrap_grid4.py:22–24</code></a>, <a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/bootstrap_grid4.py#L30"><code>bootstrap_grid4.py:30–48</code></a>). Standard block-bootstrap inference depends on block length; automatic selectors target a specified statistic and dependence setting, not a universal “correct” block width (<a href="https://www.sciencedirect.com/science/article/pii/S0167947399000146">Bühlmann &amp; Künsch</a>).</p>
+<p>I would <strong>not choose one width for the paper from this scan</strong>. Keep the untempered score and report the observed score difference, alongside the 1–4-degree sensitivity range, explicitly labeled as resampling sensitivity rather than a calibrated error bar. For inferential uncertainty, use mock calibration as the primary method. As a secondary estimate, form segment-level score and score-gradient vectors and estimate their long-run covariance; a Godambe/sandwich adjustment is relevant when the working likelihood treats dependent contributions as independent (<a href="https://www3.stat.sinica.edu.tw/statistica/oldpdf/A21n11.pdf">composite-likelihood overview</a>). It will still need mock coverage checks, and the current grid’s discrete argmax makes local curvature estimates fragile.</p>
+<p>Miller–Dunson coarsening and generalized-Bayes learning rates are possible frameworks for tempered inference, but they require a calibration target; choosing <span class="arithmatex">\(N/N_{\rm eff}\)</span> from this diagnostic would be an ad hoc rule, not a consequence of the code or these results. Coarsened posteriors can approximate fractional likelihoods and provide a calibration procedure, but that does not make an arbitrary power justified here (<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6961963/">Miller &amp; Dunson</a>). A stream-segment score is useful for diagnosing <em>where</em> models differ, but normalizing each segment’s contribution would change the target score, not merely its uncertainty; the current code sums per-star log scores (<code>score.py:273–275</code>).</p>
+<p>There is also a bootstrap design issue to fix before presenting it as inferential: the script resamples as many blocks as observed, giving each block equal draw probability regardless of its member count, then sums all its stars. The contrast is between the two models selected on the original data, and those models are held fixed in each replicate (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/bootstrap_grid4.py#L17"><code>bootstrap_grid4.py:17–20</code></a>, <a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/bootstrap_grid4.py#L35"><code>bootstrap_grid4.py:35–45</code></a>). So its reported <span class="arithmatex">\(P(\Delta\ln L\le0)\)</span> is not a calibrated probability that the 20-degree model is better after refitting or reselecting.</p>
+<h2 id="q2-spray-seed-noise">Q2. Spray-seed noise<a class="headerlink" href="#q2-spray-seed-noise" title="Permanent link">&para;</a></h2>
+<p>The seed check is a useful start, but it does <strong>not</strong> isolate particle-number Monte Carlo error. It compares two parameter combinations, uses five seeds at 8,000 release epochs but only three at 32,000, and the release times are newly spaced <code>linspace</code>s at each particle count (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/seed_test.py#L11"><code>seed_test.py:11–22</code></a>, <a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/grid4_common.py#L23"><code>grid4_common.py:23–28</code></a>). Thus the reported 550-lnL increase combines particle resolution, changed release-time quadrature, and the logarithm of a finite-sample KDE. It is consistent with finite-KDE bias, but it does not prove that explanation or show the bias cancels in model differences.</p>
+<p>For a numerical approximation to each model density, average the <strong>per-member density contributions across independent sprays before taking the logarithm</strong>, then sum the resulting per-member log scores. Also compare rankings using paired seeds across the full candidate set, and increase particles until score differences stabilize. The current seed test reports log scores per spray, not a seed-averaged density (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/seed_test.py#L21"><code>seed_test.py:21–30</code></a>).</p>
+<p>Do not combine the supplied seed and block standard deviations by simple quadrature yet. They were not measured in a crossed design, and the seed experiment uses only two models. To separate uncertainties, evaluate the same model grid over several seeds and several mock/resampled data realizations; estimate seed, data-block, and interaction components from that crossed set. Add variances only if those components are estimated for the same contrast and the independence/additivity assumption is supported.</p>
+<h2 id="q3-clusterknee-tension">Q3. Cluster–knee tension<a class="headerlink" href="#q3-clusterknee-tension" title="Permanent link">&para;</a></h2>
+<p>The opposite regional preferences are evidence of tension with this fitted setup, but do <strong>not yet identify model misfit as the cause</strong>. The grid fixes the present-day cluster proper motions at values that differ from the catalog values in <code>OCEN_OBS</code>; the code already has a fit path that varies both proper motions with Gaussian priors (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/grid4_common.py#L14"><code>grid4_common.py:14–27</code></a>, <code>frames.py:9–20</code>, <a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/fit_bar_ocen.py#L26"><code>fit_bar_ocen.py:26–35</code></a>). Also, the grid result lies at the lowest sampled bar angle, so the grid has not tested whether the optimum continues below that edge (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/grid4.py#L20"><code>grid4.py:20</code></a>).</p>
+<p>A cheap sequence:</p>
+<ol>
+<li>Re-score the same models with per-segment contributions and multiple seeds, to establish whether the regional contrast is stable.</li>
+<li>Refit with present-day proper motions free under their measurement priors; test radial velocity only if its measurement uncertainty permits a meaningful nuisance fit. The existing optimizer varies PMs but fixes the radial velocity (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/fit_bar_ocen.py#L27"><code>fit_bar_ocen.py:27–30</code></a>, <a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/bin/streams/fit_bar_ocen.py#L56"><code>fit_bar_ocen.py:56–63</code></a>).</li>
+<li>Extend the angle scan below 16 degrees and profile the other grid parameters. This tests the known boundary issue before adding more model complexity.</li>
+<li>Compare the spray track with compatible tracer runs to test the release prescription. The spray uses Fardal-style randomized offsets and carries the progenitor potential along the orbit (<code>spray.py:3–12</code>, <code>spray.py:42–55</code>).</li>
+<li>Only then test bar slowdown or halo changes, one at a time, against the stable regional residual pattern.</li>
+</ol>
+<h2 id="q4-dark-matter-detectability">Q4. Dark-matter detectability<a class="headerlink" href="#q4-dark-matter-detectability" title="Permanent link">&para;</a></h2>
+<p>Calibrate the A/B/C comparison with end-to-end mocks from each model: generate mock members with the same selection and measurement process, inject plausible bar, orbit, and release-model departures, then repeat the nuisance fits and A/B/C comparison. Measure false-positive rates under A and power for B and C. Use multiple spray seeds in the mocks so particle noise is represented too.</p>
+<p>The per-star conditional KDE can be a <strong>ranking score</strong>, but treating its sum as an ordinary independent-star likelihood is not justified by the code: it sums one log score per member and has no joint dependence model (<code>score.py:231–245</code>, <code>score.py:273–275</code>). It also deliberately conditions away the along-stream density. If DM’s detectable signature is mainly in stripping rate or density along the tail, this statistic can discard that information. Mock calibration should therefore assess the conditional statistic’s power and false positives, and a density-sensitive statistic should be considered if A/B/C differ principally in counts along the stream.</p>
+<h2 id="q5-code-weaknesses-and-tests">Q5. Code weaknesses and tests<a class="headerlink" href="#q5-code-weaknesses-and-tests" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>score_conditional</code> has no explicit checks for compatible array shapes, a positive-width <code>u_window</code>, or a valid positive PM covariance determinant before division (<code>score.py:246–260</code>). Add edge-case tests before using it on altered catalogues or mock inputs.</li>
+<li>The background is described by finite <code>w_box</code> and <code>v_box</code> widths, but the code applies the constant background density without restricting observations to those boxes. If any scored datum lies outside a box, this is not a normalized finite-box uniform component (<code>score.py:236–245</code>, <code>score.py:250–256</code>).</li>
+<li>The existing score tests cover background-only cases, cancellation of <span class="arithmatex">\(u\)</span>-density, duplicating a chi bin, and a kinematic shift; they do not test v_los handling, invalid covariance/window inputs, finite background support, bootstrap coverage, or seed convergence (<a href="https://github.com/vasilybelokurov/ocen_stream/blob/main/tests/test_score_conditional.py#L24"><code>test_score_conditional.py:24–65</code></a>).</li>
+</ul>
+<h2 id="verified-vs-assumed">Verified vs assumed<a class="headerlink" href="#verified-vs-assumed" title="Permanent link">&para;</a></h2>
+<p>Verified by reading: the grid fixes the PMs, the conditional score sums per-star logs, the bootstrap fixes its full-data-selected contrast, and the seed test changes release-epoch spacing with particle count. The reported uncertainties, rankings, regional contrasts, sample size and astrophysical interpretation are taken from the packet; I did not reproduce those runs.</p>
+<p><strong>Strongest argument against this assessment:</strong> the task may only be to compare a fixed set of candidate spray models for this one observed catalogue. For that descriptive ranking, the per-star conditional KDE and block-resampling sensitivity may be adequate, and a fully generative mock calibration could add assumptions that dominate the result.</p>
+<p><strong>To be sure:</strong> inspect the actual <code>grid4_perstar</code> inputs and their provenance; check all members against the stated background boxes; reproduce the block and seed diagnostics with fixed-<span class="arithmatex">\(u\)</span> and crossed resampling designs; and compare the regional result after freeing PMs and extending the angle grid. I did not run tests or recompute the reported results.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.indexes", "navigation.top", "search.highlight", "content.code.copy", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="../../kb/javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
