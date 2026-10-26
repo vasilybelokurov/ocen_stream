@@ -7,7 +7,7 @@ integration (resume), and as a full CPU integrator (integrate). Compiled on firs
 results depend on FMA contraction at the 1e-16 level) into ~/.cache/ocen_stream, keyed by the source hash; particle chunks run on
 several CPU cores in threads (ctypes releases the GIL).
 """
-import ctypes as C, hashlib, os, subprocess
+import ctypes as C, hashlib, os, subprocess, threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import numpy as np
@@ -15,6 +15,7 @@ import numpy as np
 SRC = Path(__file__).parent/"csrc"/"spray.c"
 FLAGS = ["-O2", "-ffp-contract=off", "-shared", "-fPIC"]
 _LIB = None
+_LOCK = threading.Lock()
 DP = C.POINTER(C.c_double)
 IP = C.POINTER(C.c_int)
 
@@ -29,19 +30,24 @@ class Tables(C.Structure):
 def lib():
     """the compiled library (built once per source version)."""
     global _LIB
-    if _LIB is None:
-        src = SRC.read_bytes(); tag = hashlib.sha256(src+" ".join(FLAGS).encode()).hexdigest()[:12]
-        d = Path(os.environ.get("OCEN_CACHE", Path.home()/".cache"/"ocen_stream")); d.mkdir(parents=True, exist_ok=True)
-        so = d/f"spray_{tag}.so"
-        if not so.exists():
-            tmp = so.with_suffix(f".{os.getpid()}.tmp")
-            subprocess.run([os.environ.get("CC", "cc"), *FLAGS, "-o", str(tmp), str(SRC), "-lm"], check=True); os.replace(tmp, so)
-        L = C.CDLL(str(so))
-        L.integrate_many.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, C.c_double, C.c_int, DP, DP, IP, C.POINTER(C.c_long)]
-        L.integrate_resume.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, DP, DP, DP, IP, DP, C.c_double, C.c_int, IP]
-        L.orbit_back.argtypes = [C.POINTER(Tables), DP, C.c_double, C.c_int, DP, DP, DP]; L.orbit_back.restype = C.c_int
-        L.force_many.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, DP, DP, DP]
-        _LIB = L
+    with _LOCK:
+        return _LIB or _build()
+
+
+def _build():
+    global _LIB
+    src = SRC.read_bytes(); tag = hashlib.sha256(src+" ".join(FLAGS).encode()).hexdigest()[:12]
+    d = Path(os.environ.get("OCEN_CACHE", Path.home()/".cache"/"ocen_stream")); d.mkdir(parents=True, exist_ok=True)
+    so = d/f"spray_{tag}.so"
+    if not so.exists():
+        tmp = so.with_suffix(f".{os.getpid()}.tmp")
+        subprocess.run([os.environ.get("CC", "cc"), *FLAGS, "-o", str(tmp), str(SRC), "-lm"], check=True); os.replace(tmp, so)
+    L = C.CDLL(str(so))
+    L.integrate_many.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, C.c_double, C.c_int, DP, DP, IP, C.POINTER(C.c_long)]
+    L.integrate_resume.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, DP, DP, DP, IP, DP, C.c_double, C.c_int, IP]
+    L.orbit_back.argtypes = [C.POINTER(Tables), DP, C.c_double, C.c_int, DP, DP, DP]; L.orbit_back.restype = C.c_int
+    L.force_many.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, DP, DP, DP]
+    _LIB = L
     return _LIB
 
 

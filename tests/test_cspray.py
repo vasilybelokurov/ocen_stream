@@ -54,3 +54,13 @@ def test_c_vs_jax_and_handoff(setup):
         print(lab, "vs JAX: |dx| median", np.median(dx), "max", dx.max(), "| chi sign agree", sg, "| |dchi| median", np.median(dc))
         assert np.median(dx) < 1e-3 and sg >= 0.985 and np.median(dc) < 1e-2, lab
     assert (nc > 0).all()
+
+
+def test_lib_build_thread_safe(tmp_path, monkeypatch):
+    """first use from several threads at once (gpupipe.release_many) must build the library once, without a rename race."""
+    from concurrent.futures import ThreadPoolExecutor
+    from ocen_stream import cspray
+    monkeypatch.setenv("OCEN_CACHE", str(tmp_path)); monkeypatch.setattr(cspray, "_LIB", None)
+    with ThreadPoolExecutor(8) as ex:
+        libs = list(ex.map(lambda _: cspray.lib(), range(8)))
+    assert all(L is libs[0] for L in libs)
