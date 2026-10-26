@@ -131,15 +131,15 @@ def schedule(inp, offset):
 
 def release(params, ht, inp, trel, keep):
     """centre orbit and the kept initial conditions at params = dict(angle, omega, amp, size, halo_q, vc, dist, pmra, pmdec);
-    returns tb (host + progenitor tables for jaxspray), ic, t0, r_J. The centre orbit is AGAMA's DOP853 at ORBIT_ACC (adaptive steps,
-    centre_orbit_dop853, run on the CPU device: a single orbit is latency-bound on a GPU; was 39112 fixed Yoshida steps: 7 s on an
-    A100); the state at the release epochs is cubic Hermite in its steps (spray.spray_unwrapped interpolates linearly between
-    0.05-Myr samples)."""
+    returns tb (host + progenitor tables for jaxspray), ic, t0, r_J. The centre orbit is AGAMA's DOP853 at ORBIT_ACC (adaptive steps)
+    in C (cspray.orbit_back, ~15 ms; the JAX version centre_orbit_dop853 took 1.4 s on Colab's CPU, the original 39112 fixed Yoshida
+    steps 7 s on an A100), resampled onto a uniform 0.05-Myr grid; the state at the release epochs is cubic Hermite in its steps
+    (spray.spray_unwrapped interpolates linearly between 0.05-Myr samples)."""
     T = inp["T"]; tb = J.host_for(ht, params["angle"], params["omega"], params["amp"], params["size"], params["halo_q"], params["vc"], T)
-    cpu = jax.devices("cpu")[0]; dev = jax.devices()[0]                  # one orbit = ~6k sequential steps: latency-bound on a GPU
-    a = jax.device_put((today_xv(params["dist"], params["pmra"], params["pmdec"], inp), {k: v for k, v in tb.items()}, T), cpu)
-    with jax.default_device(cpu):
-        tcu, orbu, orbit_r = jax.device_put(_orbit_resample_jit(*a, jnp.asarray(trel)), dev)
+    from . import cspray                                                 # one orbit = ~6k sequential steps: C on the CPU (~15 ms)
+    tk, yk, ak = cspray.orbit_back(np.asarray(today_xv(params["dist"], params["pmra"], params["pmdec"], inp)), tb, ORBIT_ACC)
+    tcu = np.linspace(0., float(T), 39113); H = lambda t: np.concatenate((cspray.hermite(t, tk, yk[:, :3], yk[:, 3:]), cspray.hermite(t, tk, yk[:, 3:], ak)), 1)
+    tcu, orbu, orbit_r = jnp.asarray(tcu), jnp.asarray(H(tcu)), jnp.asarray(H(np.asarray(trel)))
     # the particles see the centre on a uniform 0.05-Myr grid (O(1) lookup in every force call; a search over the adaptive steps made
     # the GPU spray 3x slower)
     tb = dict(tb, sat=inp["sat"], lr0=inp["lr0"], dlr=inp["dlr"], nr=inp["nr"], mtot=inp["mtot"], G=inp["G"], tc0=tcu[0], dtc=tcu[1]-tcu[0], orb=orbu)
@@ -266,10 +266,10 @@ def dop853_chi(ic, t0, tb, acc=SPRAY_ACC, n_att=32, min_size=256, trace=None, fi
     then the unfinished particles are compacted into a power-of-two array (finished ones stop costing anything). Returns
     (final (N, 6), chi, number of accepted+rejected attempts of the slowest particle). trace (optional list): appended with
     (attempts so far, active particles, array size, seconds) per call, to see where the time goes. finish (optional (N,) array):
-    filled with the attempt count (to n_att resolution) at which each particle reached T. handoff (optional, attempts): once
-    reached, the unfinished particles and the tables move to the CPU device and the same loop continues there (no change to the
-    result: on a GPU the last ~0.1% of particles, which pass through the cluster core, otherwise take ~half the time, latency-
-    bound; docs/reviews/straggler_fable_20261025.md). A no-op when the default device is already the CPU."""
+    filled with the attempt count (to n_att resolution) at which each particle reached T. handoff (optional, attempts; single model
+    only): once reached, the unfinished particles are finished by the C integrator (cspray.resume, same DOP853 and potential; one
+    particle per loop on several CPU cores). On a GPU the last ~0.1% of particles (passages through the cluster core) otherwise
+    take ~half the integration time, latency-bound (docs/reviews/gpu_kernel_design_fable_codex_20261026.md)."""
     T = tb["T"]; n = len(ic); t = jnp.asarray(t0); y = jnp.asarray(ic); mi = jnp.zeros(n, jnp.int32) if mi is None else jnp.asarray(mi)
     h, k1 = _init_jit(y, t, tb, acc, mi if "K" in tb else None)
     out_y, out_chi = np.zeros((n, 6)), np.zeros(n); idx = np.arange(n); calls = 0
@@ -288,8 +288,17 @@ def dop853_chi(ic, t0, tb, acc=SPRAY_ACC, n_att=32, min_size=256, trace=None, fi
             return out_y, out_chi*T_MYR, calls*n_att
         if calls*n_att > max_att:
             raise RuntimeError(f"dop853_chi: {act.size} particles unfinished after {max_att} attempts (non-finite state or stalled step?)")
-        if handoff is not None and calls*n_att >= handoff and s[1].devices() != {cpu := jax.devices("cpu")[0]}:
-            s, tb, T = jax.device_put((s, tb, T), cpu); min_size = 64                      # small arrays are cheap on a CPU
+        if handoff is not None and calls*n_att >= handoff and "K" not in tb:            # the last particles in C on the CPU (cspray)
+            from . import cspray
+            g = lambda a: np.asarray(a)[act]
+            st = cspray.resume(dict(t=g(s[0]), y=g(s[1]), k1=g(s[2]), h=g(s[3]), chi=g(s[4]), nbad=g(s[5]), prev=g(s[6])), tb, float(acc),
+                               max_att-calls*n_att)
+            if np.any(st["natt"] < 0):
+                raise RuntimeError(f"dop853_chi: {np.sum(st['natt'] < 0)} particles failed in the C hand-off")
+            out_y[idx[act]] = st["y"]; out_chi[idx[act]] = st["chi"]
+            if finish is not None:
+                finish[idx[act]] = calls*n_att+st["natt"]
+            return out_y, out_chi*T_MYR, calls*n_att+int(st["natt"].max())
         m = max(min_size, 1 << (2*int(np.ceil(np.log2(act.size)/2))))                     # powers of 4: fewer compiled shapes
         if m < len(idx):                                                                  # compact: keep the unfinished ones
             sel = np.concatenate((act, np.full(m-act.size, act[0])))

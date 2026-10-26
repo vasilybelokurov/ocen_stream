@@ -19,6 +19,9 @@ gpu = ["jax", "diffrax"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+ocen_stream = ["csrc/*.c"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "bin/streams"]
