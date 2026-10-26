@@ -4,14 +4,17 @@
    (math_ode.cpp: initTimeStep, doStep incl. nbad/preverr, sk == 0 skip, three square roots; orbit.cpp accuracy factor).
    Entry points: force_many, integrate_many (from release), integrate_resume (from a mid-integration state: the GPU hand-off of the
    last particles), orbit_back (host-only centre orbit from T back to 0, every accepted step recorded).
-   Built by ocen_stream.cspray with -O2 -ffp-contract=off (fixed flags: results depend on contraction at the 1e-16 level).        */
-#include <math.h>
-#include <stdint.h>
-#include <stddef.h>
+   Built by ocen_stream.cspray with -O2 -ffp-contract=off (fixed flags: results depend on contraction at the 1e-16 level).
+   The same file is the CUDA kernel (ocen_stream.cuspray, NVRTC): integrate_k at the end, one particle per thread.               */
 #ifdef __CUDACC__
 #define DEV __device__ __forceinline__
+#define CONST __constant__ const
+#define INFINITY __longlong_as_double(0x7ff0000000000000ULL)
 #else
+#include <math.h>
+#include <stddef.h>
 #define DEV static inline
+#define CONST static const
 #endif
 
 typedef struct {
@@ -127,9 +130,9 @@ DEV void deriv(const Tables *tb, const double y[6], double t, double k[6], doubl
 }
 
 #define NDIM 6
-static const double C_[11] = {0.05260015195876773187856, 0.07890022793815159781784, 0.11835034190722739672676, 0.28164965809277260327324,
+CONST double C_[11] = {0.05260015195876773187856, 0.07890022793815159781784, 0.11835034190722739672676, 0.28164965809277260327324,
     0.33333333333333333333333, 0.25, 0.30769230769230769230769, 0.65128205128205128205128, 0.6, 0.85714285714285714285714, 1.0};
-static const double A_[11][11] = {
+CONST double A_[11][11] = {
     {0.05260015195876773187856},
     {0.01972505698453789945446, 0.05917517095361369836338},
     {0.02958758547680684918169, 0., 0.08876275643042054754507},
@@ -141,10 +144,10 @@ static const double A_[11][11] = {
     {0.47766253643826436589043, 0., 0., -2.48811461997166764192642, -0.59029082683684299637145, 21.2300514481811942347289, 15.2792336328824235832597, -33.2882109689848629194453, -0.02033120170850862613582},
     {-0.93714243008598732571704, 0., 0., 5.18637242884406370830024, 1.09143734899672957818500, -8.14978701074692612513997, -18.5200656599969598641566, 22.7394870993505042818970, 2.49360555267965238987089, -3.04676447189821950038237},
     {2.27331014751653820792360, 0., 0., -10.5344954667372501984067, -2.00087205822486249909676, -17.9589318631187989172766, 27.9488845294199600508500, -2.85899827713502369474066, -8.87285693353062954433549, 12.3605671757943030647266, 0.64339274601576353035597}};
-static const double B_[12] = {0.05429373411656876223805, 0, 0, 0, 0, 4.45031289275240888144114, 1.89151789931450038304282, -5.80120396001058478146721,
+CONST double B_[12] = {0.05429373411656876223805, 0, 0, 0, 0, 4.45031289275240888144114, 1.89151789931450038304282, -5.80120396001058478146721,
     0.31116436695781989440892, -0.15216094966251607855618, 0.20136540080403034837478, 0.04471061572777259051769};
-static const double BHH_[12] = {0.24409448818897637795276, 0, 0, 0, 0, 0, 0, 0, 0.73384668828161185734136, 0, 0, 0.02205882352941176470588};
-static const double ER_[12] = {0.01312004499419488073250, 0, 0, 0, 0, -1.22515644637620444072057, -0.49575894965725019152141, 1.66437718245498653696153,
+CONST double BHH_[12] = {0.24409448818897637795276, 0, 0, 0, 0, 0, 0, 0, 0.73384668828161185734136, 0, 0, 0.02205882352941176470588};
+CONST double ER_[12] = {0.01312004499419488073250, 0, 0, 0, 0, -1.22515644637620444072057, -0.49575894965725019152141, 1.66437718245498653696153,
     -0.35032884874997368168865, 0.33417911871301747902973, 0.08192320648511571246571, -0.02235530786388629525884};
 
 DEV double clip(double x, double lo, double hi) { return x < lo ? lo : (x > hi ? hi : x); }
@@ -225,6 +228,17 @@ DEV int integrate(const Tables *tb, const double y0[6], double t0, double acc, i
     return natt;
 }
 
+#ifdef __CUDACC__
+/* ---- GPU: one particle per thread. Thread q integrates particle order[q] of model mi[order[q]] (tbs: one Tables per model, device
+   pointers). Each particle's arithmetic depends only on its own inputs, so results do not depend on the batch or the order. ---- */
+extern "C" __global__ void integrate_k(const Tables *tbs, const int *mi, const int *order, int n, const double *y0, const double *t0,
+                                       double acc, int max_att, double *yout, double *chi, int *natt)
+{
+    int q = blockIdx.x*blockDim.x + threadIdx.x; if (q >= n) return;
+    int p = order[q]; Tables tb = tbs[mi[p]];
+    natt[p] = integrate(&tb, y0 + 6*p, t0[p], acc, max_att, yout + 6*p, chi + p, 0);
+}
+#else
 /* ---- host entry points for the ctypes harness ---- */
 void force_many(const Tables *tb, int n, const double *x, const double *t, double *a, double *pot, double *dchi)
 {
@@ -304,3 +318,4 @@ int orbit_back(const Tables *tb, const double xv0[6], double acc, int nmax, doub
     }
     return n + 1;
 }
+#endif
