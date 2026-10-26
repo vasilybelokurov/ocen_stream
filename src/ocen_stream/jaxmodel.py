@@ -241,8 +241,9 @@ def _attempts(s, T, tb, acc, n_att):
         kb = sum(b*K[j] for j, b in _B.items()); ynew = y+dt[:, None]*kb
         k13, d13, fac = _deriv(ynew, t+dt, tb, True, mi_)
         sk = acc*jnp.maximum(jnp.abs(y), jnp.abs(ynew))*fac[:, None]
-        e3 = jnp.sum(((kb-sum(b*K[j] for j, b in _BHH.items()))/sk)**2, 1); e5 = jnp.sum((sum(b*K[j] for j, b in _ER.items())/sk)**2, 1)
-        den = jnp.sqrt(6*(e5+0.01*e3)); err = jnp.where(den == 0, 0., e5*dt/den); f8 = err**0.125
+        q = lambda num: jnp.where(sk == 0, 0., num/jnp.where(sk == 0, 1., sk))**2            # AGAMA skips components with sk == 0
+        e3 = jnp.sum(q(kb-sum(b*K[j] for j, b in _BHH.items())), 1); e5 = jnp.sum(q(sum(b*K[j] for j, b in _ER.items())), 1)
+        den = jnp.sqrt(6*(e5+0.01*e3)); err = jnp.where(den == 0, 0., e5*dt/den); f8 = jnp.sqrt(jnp.sqrt(jnp.sqrt(err)))   # as AGAMA
         ok = (err <= 1) | (nbad >= 3) & (err > 0.5*prev)                                # AGAMA: accept, or give up after 4 bad tries
         worse = err > 0.5*prev; nb = jnp.where(worse, nbad+1, 0)
         hrej = dt*jnp.maximum(0.333, 0.9/jnp.where(nb >= 2, 1/0.333, f8))
@@ -325,8 +326,9 @@ def centre_orbit_dop853(xv0, tb, T, acc=1e-12, nmax=32768):
             K.append(f(tau+c*dt, y+dt*sum(aj*K[j] for j, aj in enumerate(a) if aj))[0])
         kb = sum(b*K[j] for j, b in _B.items()); ynew = y+dt*kb; k13, fac = f(tau+dt, ynew, True)
         sk = acc*jnp.maximum(jnp.abs(y), jnp.abs(ynew))*fac
-        e3 = jnp.sum(((kb-sum(b*K[j] for j, b in _BHH.items()))/sk)**2); e5 = jnp.sum((sum(b*K[j] for j, b in _ER.items())/sk)**2)
-        den = jnp.sqrt(6*(e5+0.01*e3)); err = jnp.where(den == 0, 0., e5*dt/den); f8 = err**0.125
+        q = lambda num: jnp.where(sk == 0, 0., num/jnp.where(sk == 0, 1., sk))**2            # AGAMA skips components with sk == 0
+        e3 = jnp.sum(q(kb-sum(b*K[j] for j, b in _BHH.items()))); e5 = jnp.sum(q(sum(b*K[j] for j, b in _ER.items())))
+        den = jnp.sqrt(6*(e5+0.01*e3)); err = jnp.where(den == 0, 0., e5*dt/den); f8 = jnp.sqrt(jnp.sqrt(jnp.sqrt(err)))   # as AGAMA
         worse = err > 0.5*prev; nb = jnp.where(worse, nbad+1, 0); ok = (err <= 1) | ((nbad >= 3) & worse)
         hn = jnp.where(ok, jnp.where(err <= 1, dt*jnp.minimum(6., 0.9/f8), dt), dt*jnp.maximum(0.333, 0.9/jnp.where(nb >= 2, 1/0.333, f8)))
         tau2 = jnp.where(ok, jnp.where(dt == rem, T, tau+dt), tau); n2 = jnp.where(ok, n+1, n)
