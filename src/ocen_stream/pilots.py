@@ -26,15 +26,28 @@ MU, MU_ERR, RBAR, D = (-3.250, -6.746), 0.022, 4.25, 9
 def r_cr(ht, omega, vc, q):
     """corotation radius [kpc] of the axisymmetric host (tables of jaxspray.host_for, bar off): root of v_c(R)/R = omega on a 0.005-kpc
     grid, linear between nodes (vs AGAMA training_set.r_cr: 0.005 kpc at Omega 20-50)."""
-    import jax, jax.numpy as jnp
-    from . import jaxspray as J
-    tb = dict(J.host_for(ht, 0., omega, 0., 1., q, vc, 0.), A=0.); R = np.linspace(1., 25., 4801)
-    x = jnp.stack([jnp.asarray(R), 0*jnp.asarray(R), 0*jnp.asarray(R)], 1)
-    g = jax.grad(lambda x: jnp.sum(J.phi_host(x, jnp.zeros(len(R)), tb)))(x); f = np.sqrt(R*np.asarray(g[:, 0]))/R-omega
+    R = np.linspace(1., 25., 4801); f = np.sqrt(R*np.asarray(_dphidR(ht)(float(vc), float(q))))/R-omega
     i = np.nonzero(f < 0)[0]
     if i.size == 0 or i[0] == 0:
         raise ValueError(f"corotation not bracketed for omega {omega}")
     i = i[0]; return R[i-1]+(R[i]-R[i-1])*f[i-1]/(f[i-1]-f[i])
+
+
+_DPHI = {}
+
+
+def _dphidR(ht):
+    """jitted dPhi/dR of the axisymmetric host at z = 0 on the r_cr grid, as a function of (v_c, q) (one compilation per ht)."""
+    if id(ht) not in _DPHI:
+        import jax, jax.numpy as jnp
+        from . import jaxspray as J
+        R = jnp.linspace(1., 25., 4801); x = jnp.stack([R, 0*R, 0*R], 1)
+
+        def f(vc, q):
+            tb = dict(J.host_for(ht, 0., 0., 0., 1., q, vc, 0.), A=0.)
+            return jax.grad(lambda x: jnp.sum(J.phi_host(x, jnp.zeros(R.size), tb)))(x)[:, 0]
+        _DPHI[id(ht)] = jax.jit(f)
+    return _DPHI[id(ht)]
 
 
 def to_params(u, ht):
@@ -106,6 +119,7 @@ class Evaluator:
         I = Path(inputs); self.ht, self.inp, self.si = J.load_host(I/"host_tables.npz"), JM.load_inputs(I/"spray_inputs.npz"), JS.load(I/"score_inputs.npz")
         pts = json.loads((I/"points.json").read_text()); off = pts.pop("_epoch_offset"); self.trel, self.keep = JM.schedule(self.inp, off)
         self.points = {k: {q: float(v) for q, v in p.items()} for k, p in pts.items()}; self.banks = {}
+        self.obs = jax.jit(lambda y: JM.observables(y, self.inp)); self.c2 = jax.jit(lambda m, e: (JS.chi2(m, e, self.si), JS.chi2(m, e, self.si, logdet=True)))
 
     def bank(self, seed):
         import jax.numpy as jnp
@@ -115,26 +129,40 @@ class Evaluator:
         return self.banks[seed]
 
     def _models(self, U, seed):
-        """chi2, chi2 + log-det term, summaries m, errors e for the rows of U (one gpupipe-style batch; failed models -> inf)."""
+        """chi2, chi2 + log-det term, summaries m, errors e for the rows of U (one launch for the batch). A model whose parameters,
+        release or particles fail gets chi2 = inf; the other models of the batch are unaffected."""
         if self.fake:
             return fake_chi2(U)
         import jax.numpy as jnp
-        from . import jaxmodel as JM, jaxscore as JS, gpupipe as G, cuspray
-        bk = self.bank(seed)
-        try:
-            P = [to_params(u, self.ht) for u in U]; tbs, ic, t0 = G.release_many(P, self.ht, self.inp, self.trel, self.keep)
-            out = cuspray.integrate([(ic[k], t0, tbs[k]) for k in range(len(P))], JM.SPRAY_ACC)
-        except Exception:
-            if len(U) == 1:
-                return np.array([np.inf]), np.array([np.inf]), np.full((1, 25), np.nan), np.full((1, 25), np.nan)
-            r = [self._models(U[k:k+1], seed) for k in range(len(U))]; return tuple(np.concatenate(x) for x in zip(*r))
-        age = jnp.asarray((float(self.inp["T"])-t0)*JM.T_MYR); c2, c2l, M, E = [], [], [], []
-        for y, chi, natt in out:
+        from concurrent.futures import ThreadPoolExecutor
+        from . import jaxmodel as JM, jaxscore as JS, cuspray
+        bk = self.bank(seed); n = len(U); c2, c2l = np.full(n, np.inf), np.full(n, np.inf); M, E = np.full((n, 25), np.nan), np.full((n, 25), np.nan)
+
+        def prep(u):
+            try:
+                return JM.release_prepare(to_params(u, self.ht), self.ht, self.inp, self.trel)
+            except Exception:
+                return None
+        with ThreadPoolExecutor(os.cpu_count()) as ex:                                    # CPU part in threads (as gpupipe)
+            pre = list(ex.map(prep, U))
+        ok, rel = [], []
+        for k, pr in enumerate(pre):
+            if pr is None:
+                continue
+            try:
+                rel.append(JM.release_finish(*pr, self.trel, self.inp, self.keep)); ok.append(k)
+            except Exception:
+                pass
+        if not ok:
+            return c2, c2l, M, E
+        t0 = np.asarray(rel[0][2]); out = cuspray.integrate([(np.asarray(r[1]), t0, r[0]) for r in rel], JM.SPRAY_ACC)
+        age = jnp.asarray((float(self.inp["T"])-t0)*JM.T_MYR)
+        for k, (y, chi, natt) in zip(ok, out):
             if np.any(natt < 0):
-                c2.append(np.inf); c2l.append(np.inf); M.append(np.full(25, np.nan)); E.append(np.full(25, np.nan)); continue
-            m, e = JS.measure_capped(JM.observables(jnp.asarray(y), self.inp), jnp.asarray(chi*JM.T_MYR), age, self.si, bk)
-            c2.append(float(JS.chi2(m, e, self.si))); c2l.append(float(JS.chi2(m, e, self.si, logdet=True))); M.append(np.asarray(m)); E.append(np.asarray(e))
-        return np.array(c2), np.array(c2l), np.array(M), np.array(E)
+                continue
+            m, e = JS.measure_capped(self.obs(jnp.asarray(y)), jnp.asarray(chi*JM.T_MYR), age, self.si, bk); a, b = self.c2(m, e)
+            c2[k], c2l[k], M[k], E[k] = float(a), float(b), np.asarray(m), np.asarray(e)
+        return c2, c2l, M, E
 
     def __call__(self, U, tag, seed=7):
         """chi2 (len(U),) of unit points U; cached points are not re-evaluated."""
