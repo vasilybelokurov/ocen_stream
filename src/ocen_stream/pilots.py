@@ -5,9 +5,11 @@ v_c(R0) 200-250 km/s, distance 5.28-5.78 kpc, PMs within +-4 x 0.022 mas/yr of (
 0.8 + u_S (S_max - 0.8) (conditionally uniform). Target for tempering: exp(-beta chi2 / 2) x uniform(u).
   jitter   chi2 along one line through the best point (offsets 1e-6..1e-1 in u, both signs): is the jitter white on proposal scales?
   smc      Fable's pilot: 500 Sobol points, adaptive tempering (next beta: ESS = N/2) to beta = 0.1, systematic resampling, 5 sweeps
-           of differential-evolution Metropolis moves per stage (gamma 2.38/sqrt(18), every 10th sweep gamma 1); budget 8000
-  scan     Codex's pilot: 4000 Sobol points; local Nelder-Mead searches (60 dispersed starts, 200 evaluations each); paths between
-           the 10 best distinct minima (45 pairs x 60 points) and the 100 best points rescored with 8 independent score banks
+           of differential-evolution Metropolis moves per stage (gamma 2.38/sqrt(18), every 10th sweep gamma 1); budget 16000
+  scan     Codex's pilot: 4000 Sobol points; local Nelder-Mead searches (60 dispersed starts, 200 evaluations each)
+  diagnose the same for both pilots, on their own points: paths between their 10 best distinct minima (45 pairs x 60 points) and the
+           10 best points near each minimum rescored with 8 independent score banks (Fable: budget 16000 so the SMC reaches beta 0.1;
+           Codex/Fable: identical diagnostics for both)
 Every evaluation (u, chi2, chi2 + log|C| term, summaries, errors, seconds) is appended to OUT/log/*.npz and reused (cache keyed by
 u and bank): a restart repeats nothing; the pilots' random numbers are seeded by (pilot, stage, sweep), so a restart retraces them.
 Usage: python -m ocen_stream.pilots --inputs DIR --out DIR --run jitter,smc,scan     (--fake: analytic test likelihood, no GPU)
@@ -51,10 +53,26 @@ def to_unit(p, ht):
                      (p["pmdec"]-MU[1])/MU_ERR/8+0.5, f("vc"), f("halo_q")])
 
 
+def provenance(inputs, fake):
+    """hashes of the inputs and of the evaluator's sources (a log is reused only with the same provenance)."""
+    import hashlib
+    h = lambda f: hashlib.sha256(Path(f).read_bytes()).hexdigest()[:16]; src = Path(__file__).parent
+    r = dict(fake=bool(fake), **{f.name: h(f) for f in [src/"pilots.py", src/"gpupipe.py", src/"jaxscore.py", src/"jaxmodel.py",
+                                                       src/"jaxspray.py", src/"cuspray.py", src/"cspray.py", src/"csrc"/"spray.c"]})
+    if not fake:
+        r.update({f: h(Path(inputs)/f) for f in ("host_tables.npz", "spray_inputs.npz", "score_inputs.npz", "points.json")})
+    return r
+
+
 class Log:
-    """append-only evaluation log in OUT/log (one npz per batch, written atomically) + an in-memory cache keyed by (u bytes, bank)."""
-    def __init__(self, out):
-        self.d = Path(out)/"log"; self.d.mkdir(parents=True, exist_ok=True); self.cache = {}; self.n = 0
+    """append-only evaluation log in OUT/log (one npz per batch, written atomically) + an in-memory cache keyed by (u bytes, bank).
+    OUT/manifest.json holds the provenance; a log written with other inputs or sources is refused."""
+    def __init__(self, out, prov=None):
+        self.d = Path(out)/"log"; self.d.mkdir(parents=True, exist_ok=True); self.cache = {}; self.n = 0; mf = Path(out)/"manifest.json"
+        if prov is not None:
+            if mf.exists() and json.loads(mf.read_text()) != prov:
+                raise RuntimeError(f"{mf}: log written with other inputs/sources; use a new --out")
+            mf.write_text(json.dumps(prov, indent=1))
         for f in sorted(self.d.glob("*.npz")):
             z = np.load(f)
             for k in range(len(z["chi2"])):
@@ -66,13 +84,21 @@ class Log:
         for k in range(len(rec["chi2"])):
             self.cache[(rec["u"][k].tobytes(), int(rec["bank"][k]))] = (float(rec["chi2"][k]), float(rec["chi2ld"][k]))
 
+    def records(self, prefix, bank=7, exclude="_diag"):
+        """all logged (u, chi2, chi2ld, seconds) with tags starting with prefix (and not containing exclude), in log order."""
+        U, C, L, S = [], [], [], []
+        for f in sorted(self.d.glob("[0-9]*.npz")):
+            z = np.load(f); k = np.array([str(t).startswith(prefix) and exclude not in str(t) for t in z["tag"]]) & (z["bank"] == bank)
+            U.append(z["u"][k]); C.append(z["chi2"][k]); L.append(z["chi2ld"][k]); S.append(z["s"][k])
+        return tuple(np.concatenate(x) if x else np.zeros(0) for x in (U, C, L, S))
+
 
 class Evaluator:
     """chi2 of unit-cube points (B, 9) in batches of BATCH through gpupipe (or an analytic fake); every evaluation logged."""
     BATCH = 20
 
     def __init__(self, inputs, out, fake=False):
-        self.log, self.fake, self.nev, self.t = Log(out), fake, 0, 0.
+        self.log, self.fake, self.nev, self.t = Log(out, provenance(inputs, fake)), fake, 0, 0.
         if fake:
             return
         import jax, jax.numpy as jnp
@@ -94,9 +120,9 @@ class Evaluator:
             return fake_chi2(U)
         import jax.numpy as jnp
         from . import jaxmodel as JM, jaxscore as JS, gpupipe as G, cuspray
-        P = [to_params(u, self.ht) for u in U]; bk = self.bank(seed)
+        bk = self.bank(seed)
         try:
-            tbs, ic, t0 = G.release_many(P, self.ht, self.inp, self.trel, self.keep)
+            P = [to_params(u, self.ht) for u in U]; tbs, ic, t0 = G.release_many(P, self.ht, self.inp, self.trel, self.keep)
             out = cuspray.integrate([(ic[k], t0, tbs[k]) for k in range(len(P))], JM.SPRAY_ACC)
         except Exception:
             if len(U) == 1:
@@ -147,7 +173,7 @@ def _state_save(path, **s):
     tmp = Path(str(path)+".tmp.npz"); np.savez(tmp, **s); os.replace(tmp, path)
 
 
-def smc(ev, out, n=500, beta_end=0.1, sweeps=5, budget=8000, seed=1):
+def smc(ev, out, n=500, beta_end=0.1, sweeps=5, budget=16000, seed=1):
     """Fable's pilot (adaptive tempering SMC with DE moves). State saved after every sweep (OUT/smc_state.npz); history of populations
     per stage in OUT/smc_stages.npz."""
     from scipy.stats import qmc
@@ -203,7 +229,10 @@ class NM:
             self.xr = np.clip(self.cen+(self.cen-self.S[-1]), 0, 1); return [self.xr]
         if self.phase == "expand":
             return [np.clip(self.cen+2*(self.cen-self.S[-1]), 0, 1)]
-        return [np.clip(self.cen+0.5*(self.S[-1]-self.cen), 0, 1)]                       # contract
+        return [self._xc()]                                                                 # contract (outside / inside)
+
+    def _xc(self):
+        return np.clip(self.cen+0.5*(self.xr-self.cen), 0, 1) if self.phase == "contract_out" else np.clip(self.cen+0.5*(self.S[-1]-self.cen), 0, 1)
 
     def tell(self, f):
         self.n += len(f)
@@ -218,13 +247,13 @@ class NM:
             elif self.fr < self.F[-2]:
                 self.S[-1], self.F[-1] = self.xr, self.fr
             else:
-                self.phase = "contract"
+                self.phase = "contract_out" if self.fr < self.F[-1] else "contract_in"
             return
         if self.phase == "expand":
             xe = np.clip(self.cen+2*(self.cen-self.S[-1]), 0, 1)
             self.S[-1], self.F[-1] = (xe, f[0]) if f[0] < self.fr else (self.xr, self.fr); self.phase = "reflect"; return
-        xc = np.clip(self.cen+0.5*(self.S[-1]-self.cen), 0, 1)                             # contract
-        if f[0] < self.F[-1]:
+        xc = self._xc(); ref = self.fr if self.phase == "contract_out" else self.F[-1]          # contract: accept if better than ref
+        if f[0] <= ref:
             self.S[-1], self.F[-1] = xc, f[0]; self.phase = "reflect"
         else:
             self.S = [self.S[0]]+[self.S[0]+0.5*(s-self.S[0]) for s in self.S[1:]]; self.pend = list(range(1, D+1)); self.phase = "shrink"
@@ -236,10 +265,10 @@ class NM:
         return max(np.max(np.abs(s-self.S[0])) for s in self.S)
 
 
-def scan(ev, out, n_sobol=4000, n_starts=60, nm_budget=200, n_min=10, n_path=60, n_rescore=100, banks=tuple(range(101, 109)), seed=2):
-    """Codex's pilot: Sobol scan, dispersed local Nelder-Mead searches, paths between minima, independent-bank rescoring."""
+def scan(ev, out, n_sobol=4000, n_starts=60, nm_budget=200, seed=2):
+    """Codex's pilot: Sobol scan and dispersed local Nelder-Mead searches (then the shared diagnostics)."""
     from scipy.stats import qmc
-    X = qmc.Sobol(D, scramble=True, seed=seed).random(n_sobol); C = ev(X, "scan_sobol"); seen = [(X, C)]           # this pilot's points
+    X = qmc.Sobol(D, scramble=True, seed=seed).random(n_sobol); C = ev(X, "scan_sobol")
     print(f"scan: Sobol {n_sobol} done, best chi2 {np.nanmin(C):.1f}, evaluations {ev.nev}", flush=True)
     order = np.argsort(np.where(np.isfinite(C), C, np.inf)); starts = []
     for i in order:                                                                         # dispersed starts: >= 0.25 apart in u
@@ -252,29 +281,42 @@ def scan(ev, out, n_sobol=4000, n_starts=60, nm_budget=200, n_min=10, n_path=60,
         act = [ch for ch in chains if ch.n < nm_budget and ch.size() > 1e-3]
         if not act:
             break
-        asks = [ch.ask() for ch in act]; flat = np.array([u for a in asks for u in a]); f = ev(flat, "scan_nm"); k = 0; seen.append((flat, f))
+        asks = [ch.ask() for ch in act]; flat = np.array([u for a in asks for u in a]); f = ev(flat, "scan_nm"); k = 0
         for ch, a in zip(act, asks):
             ch.tell(list(f[k:k+len(a)])); k += len(a)
     ends = sorted([ch.best() for ch in chains], key=lambda b: b[1])
     np.savez(Path(out)/"scan_nm.npz", x=np.array([e[0] for e in ends]), c=np.array([e[1] for e in ends]), starts=X[starts], cstart=C[starts])
     print(f"scan: local searches done, best chi2 {ends[0][1]:.1f}, evaluations {ev.nev}", flush=True)
-    mins = []
-    for x, c in ends:                                                                       # distinct minima (> 0.1 apart in u)
-        if all(np.max(np.abs(x-m[0])) > 0.1 for m in mins):
-            mins.append((x, c))
+
+
+def diagnose(ev, out, name, n_min=10, n_path=60, n_near=10, banks=tuple(range(101, 109))):
+    """the same diagnostics for each pilot, from its own logged points (tags name*): up to n_min local minima (points with >= 5 points of
+    the pilot and none better within 0.1 in u, best first), chi2 along the straight paths between them (45 pairs x n_path), and the n_near best
+    points near each minimum rescored with independent score banks. Results in OUT/<name>_diag.npz."""
+    U, C, _, _ = ev.log.records(name); U, i = np.unique(U, axis=0, return_index=True); C = np.where(np.isfinite(C[i]), C[i], np.inf)
+    o = np.argsort(C); mins = []
+    for k in o:
+        nb = np.max(np.abs(U-U[k]), 1) < 0.1
+        if np.isfinite(C[k]) and nb.sum() >= 5 and C[k] <= C[nb].min():                    # explored neighbourhood, nothing better in it
+            mins.append(k)
         if len(mins) == n_min:
             break
     t = np.linspace(0, 1, n_path+2)[1:-1]; paths = {}
     for i in range(len(mins)):
         for j in range(i+1, len(mins)):
-            P = mins[i][0][None]+t[:, None]*(mins[j][0]-mins[i][0])[None]; paths[f"{i}_{j}"] = ev(P, f"scan_path_{i}_{j}"); seen.append((P, paths[f"{i}_{j}"]))
-    np.savez(Path(out)/"scan_paths.npz", t=t, xmin=np.array([m[0] for m in mins]), cmin=np.array([m[1] for m in mins]), **{"p"+k: v for k, v in paths.items()})
-    print(f"scan: paths done, evaluations {ev.nev}", flush=True)
-    allu = np.concatenate([np.clip(u, 0, 1) for u, _ in seen]); allc = np.concatenate([c for _, c in seen])
-    allu, i = np.unique(allu, axis=0, return_index=True); allc = allc[i]; best = allu[np.argsort(np.where(np.isfinite(allc), allc, np.inf))[:n_rescore]]
-    R = np.array([ev(best, f"scan_rescore_{b}", seed=b) for b in banks])
-    np.savez(Path(out)/"scan_rescore.npz", u=best, c7=ev(best, "scan_rescore_7"), c=R, banks=np.array(banks))
-    print(f"scan: rescoring done, evaluations {ev.nev}", flush=True)
+            P = U[mins[i]][None]+t[:, None]*(U[mins[j]]-U[mins[i]])[None]; paths[f"p{i}_{j}"] = ev(P, f"{name}_diag_path_{i}_{j}")
+    near = []
+    for m in mins:
+        d = np.max(np.abs(U-U[m]), 1); k = [q for q in o if d[q] < 0.1][:n_near]; near += k
+    R = np.array([ev(U[near], f"{name}_diag_rescore_{b}", seed=b) for b in banks])
+    np.savez(Path(out)/f"{name}_diag.npz", t=t, umin=U[mins], cmin=C[mins], unear=U[near], cnear=C[near], rescore=R, banks=np.array(banks), **paths)
+    print(f"{name} diagnostics: {len(mins)} minima, chi2 {np.round(C[mins], 1).tolist()}, evaluations {ev.nev}", flush=True)
+
+
+def cost(ev, name):
+    """evaluations and A100 seconds of a pilot from the log (all tags name*, including its diagnostics; across restarts)."""
+    U, C, _, S = ev.log.records(name, exclude="\0"); R = [ev.log.records(name, bank=b, exclude="\0") for b in range(101, 109)]
+    return dict(evaluations=int(len(C)+sum(len(r[1]) for r in R)), gpu_s=float(S.sum()+sum(r[3].sum() for r in R)))
 
 
 def main():
@@ -291,10 +333,10 @@ def main():
             off, c, c0 = jitter(ev, u0, O); print("jitter: chi2_0", c0, "chi2 - chi2_0 at |offset| 1e-6, 1e-4, 1e-2:",
                                                   [float(np.median(np.abs(c[np.isclose(np.abs(off), v, rtol=0.2)]-c0))) for v in (1e-6, 1e-4, 1e-2)], flush=True)
         elif job == "smc":
-            smc(ev, O)
+            smc(ev, O); diagnose(ev, O, "smc")
         elif job == "scan":
-            scan(ev, O)
-        rec = dict(job=job, evaluations=ev.nev-n0, gpu_s=ev.t-s0, wall_s=time.time()-w0)
+            scan(ev, O); diagnose(ev, O, "scan")
+        rec = dict(job=job, this_session=dict(evaluations=ev.nev-n0, gpu_s=ev.t-s0, wall_s=time.time()-w0), **(cost(ev, job) if job != "jitter" else {}))
         print("done", rec, flush=True); (O/f"done_{job}.json").write_text(json.dumps(rec))
 
 if __name__ == "__main__":
