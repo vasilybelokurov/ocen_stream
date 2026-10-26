@@ -4,7 +4,7 @@
             jaxmodel's single-model function (bit-identical to jaxmodel.release)
   integrate one CUDA launch for all B x 179,200 particles (cuspray; per-model results independent of the batch), launch order
             sorted by the attempts of the previous call when given
-  score     jaxscore.measure + chi2 per model (jitted single-model score) or for all B models in one vmapped call
+  score     jaxscore.measure_capped + chi2 model by model
 A model's chi2 must not depend on its slot or on the other models in the batch: main() checks it (B = 1 vs 10, slot permutation).
 Usage (timing + checks on a GPU): python -m ocen_stream.gpupipe --inputs DIR --out DIR
 """
@@ -29,15 +29,12 @@ def release_many(params_list, ht, inp, trel, keep, nthreads=None):
     return [o[0] for o in out], [np.asarray(o[1]) for o in out], np.asarray(out[0][2])
 
 
-def make_score(inp, si, bank, batched=False):
-    """chi2 of B models from final phase space (B, N, 6) and chi [AGAMA time x kpc] (B, N) at ages age (N,) [Myr]: one jitted
-    single-model score per model (batched=False) or one vmapped call (batched=True; bit-identity to single to be checked)."""
-    def one(y, chi, age):
-        m, e = JS.measure(JM.observables(y, inp), chi*JM.T_MYR, age, si, bank); return JS.chi2(m, e, si)
-    if batched:
-        return jax.jit(jax.vmap(one, in_axes=(0, 0, None)))
-    f = jax.jit(one)
-    return lambda y, chi, age: jnp.stack([f(y[k], chi[k], age) for k in range(y.shape[0])])
+def make_score(inp, si, bank):
+    """chi2 of B models from final phase space (B, N, 6) and chi [AGAMA time x kpc] (B, N) at ages age (N,) [Myr], model by model
+    (a vmapped score was no faster and differed from the single score by 1e-7); PM knot fits over gathered particles
+    (jaxscore.measure_capped, ~10x faster than over all particles)."""
+    obs = jax.jit(lambda y: JM.observables(y, inp)); c2 = jax.jit(lambda m, e: JS.chi2(m, e, si))
+    return lambda y, chi, age: jnp.stack([c2(*JS.measure_capped(obs(y[k]), chi[k]*JM.T_MYR, age, si, bank)) for k in range(y.shape[0])])
 
 
 def evaluate(params_list, ht, inp, trel, keep, score, order=None, fmad=False, times=None):
@@ -73,7 +70,7 @@ def main():
     base = [{k: float(v) for k, v in p.items()} for p in pts.values()]
     P = [dict(p, angle=p["angle"]+d) for d in (0., 1., -1., 2.) for p in base]             # 20 distinct models
     bank = {k: jnp.asarray(v) for k, v in JS.make_bank(len(keep), 8, 7).items()}
-    S = dict(loop=make_score(inp, si, bank), vmap=make_score(inp, si, bank, batched=True))
+    S = dict(loop=make_score(inp, si, bank))
 
     def save():
         (O/"gpupipe.json").write_text(json.dumps(res, indent=1))

@@ -98,15 +98,38 @@ def sky(P, w, si):
     return jnp.where(bad, jnp.nan, c), jnp.where(bad, jnp.nan, s)
 
 
-def pm(P, w, si):
-    """truncated-Gaussian fits with a linear trend at the PM knots (intrinsic PMs relative to the frozen track, |v| < W)."""
+def _pm_terms(P, si):
+    """per PM component: intrinsic PM vq relative to the frozen track and the particle mask without the weights."""
     out = {}
     for q, oth in (("pmra", "pmdec"), ("pmdec", "pmra")):
-        W = si["D"][q+"_W"]; vq = P[q]-jnp.interp(P["u"], si["G"], si[q+"_c"])
-        base = w*(P["inwin"] & P["m_"+oth] & (jnp.abs(vq) < W))
+        vq = P[q]-jnp.interp(P["u"], si["G"], si[q+"_c"]); out[q] = (vq, P["inwin"] & P["m_"+oth] & (jnp.abs(vq) < si["D"][q+"_W"]))
+    return out
 
+
+def knot_index(P, si, cap):
+    """indices (cap,) of the particles entering each PM knot fit (mask and |phi1 - knot| < 1.5 deg, ascending; padded with 0 and
+    flagged invalid) and the largest count over the knots (> cap: the caller must use a larger cap)."""
+    out, nmax = {}, 0
+    for q, (vq, mask) in _pm_terms(P, si).items():
         def one(c0):
-            x = P["u"]-c0; wk = base*(jnp.abs(x) < 1.5); n = wk.sum(); mu = jnp.sum(wk*vq)/jnp.maximum(n, 1)
+            cond = mask & (jnp.abs(P["u"]-c0) < 1.5); return jnp.nonzero(cond, size=cap, fill_value=0)[0], cond.sum()
+        idx, cnt = jax.vmap(one)(si["D"][q+"_k"]); out[q] = (idx, jnp.arange(cap)[None, :] < cnt[:, None]); nmax = jnp.maximum(nmax, cnt.max())
+    return out, nmax
+
+
+def pm(P, w, si, K=None):
+    """truncated-Gaussian fits with a linear trend at the PM knots (intrinsic PMs relative to the frozen track, |v| < W). K (optional,
+    from knot_index): each knot's fit runs over its own particles only (same fit; ~20x less work; sums in a different order)."""
+    out = {}
+    for q, (vq_all, mask) in _pm_terms(P, si).items():
+        W = si["D"][q+"_W"]; base = w*mask
+
+        def one(c0, idx=None, valid=None):
+            if idx is None:
+                x = P["u"]-c0; vq = vq_all; wk = base*(jnp.abs(x) < 1.5)
+            else:
+                x = P["u"][idx]-c0; vq = vq_all[idx]; wk = jnp.where(valid, w[idx], 0.)
+            n = wk.sum(); mu = jnp.sum(wk*vq)/jnp.maximum(n, 1)
             sd = jnp.sqrt(jnp.sum(wk*(vq-mu)**2)/jnp.maximum(n, 1))
 
             def nl(p):
@@ -114,20 +137,34 @@ def pm(P, w, si):
                 return -jnp.sum(wk*(-0.5*((vq-m)/sg)**2-p[2]-jnp.log(jnp.maximum(Z, 1e-12))))
             p, _ = _lm(nl, jnp.array([mu, 0., jnp.log(jnp.maximum(sd, 0.1))]))
             return jnp.where(n < 20, jnp.nan, p[0])
-        out[q] = jax.vmap(one)(si["D"][q+"_k"])
+        out[q] = jax.vmap(one)(si["D"][q+"_k"]) if K is None else jax.vmap(one)(si["D"][q+"_k"], *K[q])
     return out
 
 
-def measure(obs, chi, age, si, bank):
-    """model summaries (sky c, s in the kept windows, pmra, pmdec at the knots) and their bootstrap sd."""
-    P = particles(obs, chi, age, si, bank); kw = si["keep"]
+def measure(obs, chi, age, si, bank, cap=None):
+    """model summaries (sky c, s in the kept windows, pmra, pmdec at the knots) and their bootstrap sd. cap (optional, static): PM
+    knot fits over gathered particles (knot_index); then also returns the largest knot count (results invalid if > cap)."""
+    P = particles(obs, chi, age, si, bank); kw = si["keep"]; K, nmax = knot_index(P, si, cap) if cap else (None, 0)
 
     def vec(w):
-        c, s = sky(P, w, si); q = pm(P, w, si)
+        c, s = sky(P, w, si); q = pm(P, w, si, K)
         return jnp.concatenate((c[kw], s[kw], q["pmra"], q["pmdec"]))
     sel = P["sel"].astype(float)
     V = jax.vmap(vec)(jnp.concatenate((sel[None], sel[None]*bank["boot"]), 0))       # all bootstraps in one batch (was lax.map)
-    return V[0], jnp.nanstd(V[1:], 0)
+    return (V[0], jnp.nanstd(V[1:], 0)) if cap is None else (V[0], jnp.nanstd(V[1:], 0), nmax)
+
+
+def measure_capped(obs, chi, age, si, bank, cap=16384, _jit={}):
+    """measure with the PM knot fits over gathered particles: cap = 16384, doubled until it holds the largest knot count (never
+    truncated; the cap is a function of the model alone). Jitted per (si, bank, cap)."""
+    while True:
+        key = (id(si), id(bank), cap)
+        if key not in _jit:
+            _jit[key] = jax.jit(lambda o, c, g: measure(o, c, g, si, bank, cap=cap))
+        m, e, nmax = _jit[key](obs, chi, age)
+        if int(nmax) <= cap:
+            return m, e
+        cap = 1 << (int(nmax)-1).bit_length()
 
 
 def chi2(m, e, si, logdet=False):
