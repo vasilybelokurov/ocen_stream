@@ -135,6 +135,11 @@ def release(params, ht, inp, trel, keep):
     in C (cspray.orbit_back, ~15 ms; the JAX version centre_orbit_dop853 took 1.4 s on Colab's CPU, the original 39112 fixed Yoshida
     steps 7 s on an A100), resampled onto a uniform 0.05-Myr grid; the state at the release epochs is cubic Hermite in its steps
     (spray.spray_unwrapped interpolates linearly between 0.05-Myr samples)."""
+    return release_finish(*release_prepare(params, ht, inp, trel), trel, inp, keep)
+
+
+def release_prepare(params, ht, inp, trel):
+    """CPU part of release (host tables, C centre orbit, its uniform resampling and state at the release epochs): (tb, orbit_r)."""
     T = inp["T"]; tb = J.host_for(ht, params["angle"], params["omega"], params["amp"], params["size"], params["halo_q"], params["vc"], T)
     from . import cspray                                                 # one orbit = ~6k sequential steps: C on the CPU (~15 ms)
     tk, yk, ak = cspray.orbit_back(np.asarray(today_xv(params["dist"], params["pmra"], params["pmdec"], inp)), tb, ORBIT_ACC)
@@ -143,6 +148,11 @@ def release(params, ht, inp, trel, keep):
     # the particles see the centre on a uniform 0.05-Myr grid (O(1) lookup in every force call; a search over the adaptive steps made
     # the GPU spray 3x slower)
     tb = dict(tb, sat=inp["sat"], lr0=inp["lr0"], dlr=inp["dlr"], nr=inp["nr"], mtot=inp["mtot"], G=inp["G"], tc0=tcu[0], dtc=tcu[1]-tcu[0], orb=orbu)
+    return tb, orbit_r
+
+
+def release_finish(tb, orbit_r, trel, inp, keep):
+    """GPU part of release (r_J, Fardal offsets; one model per call, so its bits never depend on other models)."""
     ic, rj = _release_ic_jit(orbit_r, jnp.asarray(trel), tb, inp)
     return tb, ic[keep], jnp.repeat(jnp.asarray(trel), 2)[keep], jnp.repeat(rj, 2)[keep]
 
