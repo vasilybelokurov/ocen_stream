@@ -171,6 +171,8 @@ class Evaluator:
                 continue
             m, e = JS.measure_capped(self.obs(jnp.asarray(y)), jnp.asarray(chi*JM.T_MYR), age, self.si, bk); a, b = self.c2(m, e)
             c2[k], c2l[k], M[k], E[k] = float(a), float(b), np.asarray(m), np.asarray(e)
+            if c2[k] < 0:                                                                 # impossible for a valid covariance: stop, do not sample it
+                raise RuntimeError(f"negative chi2 {c2[k]:.3g} at u = {U[k].tolist()}")
         self.stage = dict(t_release=t2-t1, t_integrate=t3-t2, t_score=time.perf_counter()-t3, max_att=max(int(o[2].max()) for o in out),
                           n_escaped=np.array([int(np.sum(np.isneginf(o[1]))) for o in out]).sum())
         return c2, c2l, M, E

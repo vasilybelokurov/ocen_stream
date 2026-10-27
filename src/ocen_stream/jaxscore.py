@@ -168,14 +168,15 @@ def measure_capped(obs, chi, age, si, bank, cap=16384, _jit={}):
 
 
 def chi2(m, e, si, logdet=False):
-    """stream_model_compare.chi2 (missing value: 1e3 penalty); optionally + log|C_data + C_model| - log|C_data|."""
+    """stream_model_compare.chi2 (missing value: 1e3 penalty; a knot whose bootstrap error is not finite counts as missing);
+    optionally + log|C_data + C_model| - log|C_data|."""
     D = si["D"]; k = D["pk"].shape[0]; na = D["pmra_k"].shape[0]; tot = 0.; ld = 0.
     for sl, q in ((slice(0, k), "sky_c"), (slice(k, 2*k), "sky_s")):
         de = D[q+"e"]
         var = de**2+e[sl]**2; r = (D[q]-m[sl])**2/var; ok = jnp.isfinite(r)
         tot = tot+jnp.sum(jnp.where(ok, r, 0.))+1e3*jnp.sum(~ok); ld = ld+jnp.sum(jnp.where(ok, jnp.log1p(e[sl]**2/de**2), 0.))
     for sl, q in ((slice(2*k, 2*k+na), "pmra"), (slice(2*k+na, None), "pmdec")):
-        r = D[q]-m[sl]; ok = jnp.isfinite(r); r0 = jnp.where(ok, r, 0.)
+        r = D[q]-m[sl]; ok = jnp.isfinite(r) & jnp.isfinite(e[sl]); r0 = jnp.where(ok, r, 0.)
         C = D[q+"_C"]+jnp.diag(jnp.where(ok, e[sl], 0.)**2); C = jnp.where(ok[:, None] & ok[None, :], C, jnp.eye(r.size))
         tot = tot+r0@jnp.linalg.solve(C, r0)+1e3*jnp.sum(~ok); ld = ld+jnp.linalg.slogdet(C)[1]-jnp.linalg.slogdet(D[q+"_C"])[1]
     return tot+(ld if logdet else 0.)

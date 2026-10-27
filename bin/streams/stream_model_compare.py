@@ -129,7 +129,7 @@ def chi2(D, M):
     for q, e in (("sky_c", "sky_ce"), ("sky_s", "sky_se")):
         r = (D[q]-M[q])**2/(D[e]**2+M[e]**2); out[q] = float(np.nansum(r)) + (1e3*np.isnan(r).sum())    # missing window: 1e3 penalty
     for q in ("pmra", "pmdec"):
-        r = D[q]-M[q]; ok = np.isfinite(r); C = D[q+"_C"][np.ix_(ok, ok)]+np.diag(M[q+"_e"][ok]**2)
+        r = D[q]-M[q]; ok = np.isfinite(r) & np.isfinite(M[q+"_e"]); C = D[q+"_C"][np.ix_(ok, ok)]+np.diag(M[q+"_e"][ok]**2)
         out[q] = float(r[ok]@np.linalg.solve(C, r[ok]))+1e3*(~ok).sum()
     out["total"] = sum(out.values()); return out
 
