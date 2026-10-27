@@ -104,3 +104,11 @@ def test_changed_box_refused(tmp_path):
             PL.Evaluator(None, o, fake="gauss")
     finally:
         PL.LIM.clear(); PL.LIM.update(lim)
+
+
+def test_polish_uses_prior(tmp_path):
+    """with a Gaussian distance prior (coordinate 4) much narrower than the likelihood, the polish follows the prior (Fable, bug a)."""
+    o = tmp_path/"pp"; ev = PL.Evaluator(None, o, fake="gauss"); lo, hi = PL.LIM["dist"]; mu, sd = lo+0.5*(hi-lo), 0.2*0.005*(hi-lo)
+    x0 = np.random.default_rng(1).multivariate_normal(np.full(D, 0.5), PL.FAKE_COV, 400)
+    s = S.polish(ev, o, x0, nwalkers=40, nsteps=300, dist_prior=(mu, sd), log=lambda *a: None)
+    d = lo+(hi-lo)*s.get_chain(discard=150, flat=True)[:, 4]; assert d.std() < 3*sd, (d.std(), sd)

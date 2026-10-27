@@ -70,6 +70,8 @@ def smc(ev, out, n=600, beta_end=1., min_sweeps=2, moves=2., max_sweeps=25, seed
             if beta >= beta_end:
                 break
             cc = np.where(np.isfinite(c), c, np.inf); c0 = cc[np.isfinite(cc)].min()
+            if np.sum(np.isfinite(cc)) < n/2:                                             # else the bisection stalls (Fable)
+                raise RuntimeError(f"smc: only {np.sum(np.isfinite(cc))} of {n} particles have finite chi2 at stage {stage}")
 
             def lw(b):
                 return -0.5*(b-beta)*(cc-c0)
@@ -106,15 +108,15 @@ def smc(ev, out, n=600, beta_end=1., min_sweeps=2, moves=2., max_sweeps=25, seed
     return x, c, logz
 
 
-def polish(ev, out, x0, beta=1., nwalkers=40, nsteps=1000, seed=3, log=print):
+def polish(ev, out, x0, beta=1., nwalkers=40, nsteps=1000, seed=3, dist_prior=None, log=print):
     """emcee from walkers drawn (without replacement where possible) from the final SMC population x0."""
     import emcee
     out = Path(out); be = emcee.backends.HDFBackend(str(out/"polish.h5"))
 
     def logp(U):
-        U = np.atleast_2d(U); r = np.full(len(U), -np.inf); ok = np.all((U >= 0) & (U <= 1), 1)
+        U = np.atleast_2d(U); r = log_prior(U, dist_prior); ok = np.isfinite(r)                  # same prior as the SMC
         if ok.any():
-            r[ok] = -0.5*beta*ev(U[ok], "polish")
+            r[ok] += -0.5*beta*ev(U[ok], "polish")
         return np.where(np.isfinite(r), r, -np.inf)
     s = emcee.EnsembleSampler(nwalkers, D, logp, vectorize=True, backend=be, moves=[(emcee.moves.DEMove(), 0.8), (emcee.moves.StretchMove(), 0.2)])
     done = be.iteration if os.path.exists(out/"polish.h5") else 0
@@ -151,7 +153,7 @@ def main():
     ev = PL.Evaluator(a.inputs, O, fake=a.fake or False); t0 = time.time()
     x, c, logz = smc(ev, O, n=a.n, beta_end=a.beta_end, seed=a.seed, dist_prior=dp)
     if a.polish_steps:
-        polish(ev, O, x, beta=a.beta_end, nwalkers=a.walkers, nsteps=a.polish_steps)
+        polish(ev, O, x, beta=a.beta_end, nwalkers=a.walkers, nsteps=a.polish_steps, dist_prior=dp)
     print("done", json.dumps(dict(evaluations=ev.nev, gpu_s=ev.t, wall_s=time.time()-t0, logz=logz, best_chi2=float(np.min(c)))), flush=True)
 
 
