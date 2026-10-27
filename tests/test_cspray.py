@@ -64,3 +64,21 @@ def test_lib_build_thread_safe(tmp_path, monkeypatch):
     with ThreadPoolExecutor(8) as ex:
         libs = list(ex.map(lambda _: cspray.lib(), range(8)))
     assert all(L is libs[0] for L in libs)
+
+
+def test_escaper_stopped():
+    """a particle leaving R or |z| = cspray.RESC is stopped with chi = -inf (excluded from the stream), the others are untouched."""
+    import json
+    from pathlib import Path
+    import numpy as np, jax
+    jax.config.update("jax_enable_x64", True)
+    from ocen_stream import cspray, jaxspray as J, jaxmodel as JM
+    I = Path(__file__).resolve().parents[1]/"results"/"gpu"
+    ht, inp = J.load_host(I/"host_tables.npz"), JM.load_inputs(I/"spray_inputs.npz")
+    pts = json.loads((I/"points.json").read_text()); off = pts.pop("_epoch_offset"); trel, keep = JM.schedule(inp, off)
+    p = {k: float(v) for k, v in pts["c0_final"].items()}; tb, ic, t0, rj = JM.release(p, ht, inp, trel, keep)
+    ic, t0 = np.asarray(ic)[:64].copy(), np.asarray(t0)[:64]; ref = cspray.integrate(ic, t0, tb, JM.SPRAY_ACC)
+    ic[0, 3:] *= 10.                                                                    # ~3000 km/s: leaves 100 kpc in < 50 Myr
+    y, chi, n = cspray.integrate(ic, t0, tb, JM.SPRAY_ACC)
+    assert np.isneginf(chi[0]) and n[0] > 0 and max(np.hypot(*y[0, :2]), abs(y[0, 2])) > cspray.RESC
+    assert np.array_equal(y[1:], ref[0][1:]) and np.array_equal(chi[1:], ref[1][1:])

@@ -9,7 +9,9 @@ with Phi_b the axisymmetrised Hunter+2024 baryons, Phi_h the unit-normalisation 
 c = (v_c^2 - v_b^2(R0)) / v_h^2(R0; q) (mw_variants.axisymmetric_variant). Tables: grid uniform in u = asinh(R / 0.5) and
 w = asinh(z / 0.2) (as gpu_bench_export.py), cubic B-spline coefficients (mirror at 0); halo tables on a q stack with not-a-knot
 B-spline coefficients along q (and for v_h^2(R0; q)), so a model's halo is a fixed linear combination of 4 stack tables.
-Usage: PYTHONPATH=src python bin/streams/gpu_host_export.py -> results/gpu/host_tables.npz
+Grid: R <= 250, |z| <= 250 kpc (2026-10-27): the kernel stops particles beyond 100 kpc, well inside (the mirror boundary of the
+spline prefilter spoils the outer ~20% of the range: 10% force errors at the old 30 kpc edge).
+Usage: PYTHONPATH=src python bin/streams/gpu_host_export.py [OUT] -> results/gpu/host_tables.npz
 """
 import os, sys, time
 from pathlib import Path
@@ -20,10 +22,13 @@ from ocen_stream.restricted import agama_kpc, HUNTER24_DIR
 from ocen_stream.mw_variants import PARAMS_DARK, MUL, _vc2
 from ocen_stream.frames import frame_r0
 
-NU, NW, NPHI, MMAX = 256, 128, 32, 8
-RS, ZS, RMAX, ZMAX = 0.5, 0.2, 30., 10.
+NPHI, MMAX = 32, 8
+RS, ZS, RMAX, ZMAX = 0.5, 0.2, 250., 250.   # 2026-10-27: was 30, 10 kpc (256 x 128 nodes); escapers left the tables and the
+                                            # extrapolated spline flung them to 1e4 km/s (docs/reviews/trapped_particles_fable_codex_20261027.md)
+DU, DW = np.arcsinh(30./RS)/255, np.arcsinh(10./ZS)/127      # node spacing of the 2026-10-25 tables (kept; old nodes are a subset)
+NU, NW = int(np.ceil(np.arcsinh(RMAX/RS)/DU))+1, int(np.ceil(np.arcsinh(ZMAX/ZS)/DW))+1
 QS = np.round(np.arange(0.55, 1.3501, 0.05), 3)                      # usable q 0.65-1.25 (two nodes of margin)
-OUT = ROOT/"results/gpu/host_tables.npz"
+OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT/"results/gpu/host_tables.npz"
 
 
 def bcoef_nak(f, axis=0):
@@ -40,7 +45,7 @@ def bcoef_nak(f, axis=0):
 
 def main():
     agama = agama_kpc(); t1 = time.time(); r0 = frame_r0("gravity21")
-    u = np.linspace(0., np.arcsinh(RMAX/RS), NU); w = np.linspace(0., np.arcsinh(ZMAX/ZS), NW)
+    u = DU*np.arange(NU); w = DW*np.arange(NW)
     R, Z = np.meshgrid(RS*np.sinh(u), ZS*np.sinh(w), indexing="ij"); XZ = np.column_stack((R.ravel(), 0*R.ravel(), Z.ravel()))
     filt = lambda a: spline_filter(a, order=3, mode="mirror")
     bary = agama.Potential(file=os.path.join(HUNTER24_DIR, "MWPotentialHunter24_baryon_axi.ini"))
@@ -63,7 +68,7 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     np.savez(OUT, axi_b=filt(phib), bar=np.stack([filt(b) for b in bar]), bar_m=np.arange(0, MMAX+1, 2), halo=hc, q=QS, vh2=bcoef_nak(np.array(vh2)),
              vb2=vb2, r0=r0, du=u[1]-u[0], dw=w[1]-w[0], rs=RS, zs=ZS)
-    print(f"{OUT.relative_to(ROOT)}: {OUT.stat().st_size/1e6:.1f} MB, {time.time()-t1:.0f} s")
+    print(f"{OUT}: {NU} x {NW} nodes, {OUT.stat().st_size/1e6:.1f} MB, {time.time()-t1:.0f} s")
 
 
 if __name__ == "__main__":

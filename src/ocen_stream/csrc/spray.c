@@ -26,6 +26,7 @@ typedef struct {
     double A, S, theta_T, omega, T;                                   /* A,S,theta_T,omega per model */
     const double *sat; int nr; double lr0, dlr, mtot, G;             /* progenitor profile */
     const double *orb; int norb; double tc0, dtc;                     /* centre orbit (norb, 6) uniform in t (per model) */
+    double resc;            /* escape: a particle with R or |z| > resc [kpc] is stopped and gets chi = -inf (not in the stream)    */
 } Tables;
 
 /* cubic B-spline weights and their t-derivatives for nodes i-1..i+2, t in [0,1) */
@@ -208,6 +209,7 @@ DEV int run_state(const Tables *tb, double *t_, double y[6], double k1[6], doubl
             t = (dt == rem) ? T : t + dt;
             for (int i = 0; i < NDIM; i++) { y[i] = xt[i]; k1[i] = k13[i]; }
             h = (err <= 1) ? dt*fmin(6.0, 0.9/f8) : dt; nbad = 0; prev = INFINITY;
+            if (fabs(y[2]) > tb->resc || hypot(y[0], y[1]) > tb->resc) { chi = -INFINITY; t = T; break; }   /* escaped */
         } else {
             h = dt*fmax(0.333, 0.9/(nb >= 2 ? 1/0.333 : f8)); nbad = nb; prev = err;
         }

@@ -69,8 +69,9 @@ def _w(t):
 
 def _spline2(c, x, y, nx, ny, mi=None):
     """tensor cubic B-spline at grid coordinates (x, y) (in node units) of padded coefficients c (..., nx+4, ny+4). Beyond the grid
-    the cell index is clamped but the weights are not: the last cell's cubic is extrapolated (the grid, R <= 30, |z| <= 10 kpc,
-    covers all orbits here). mi (optional, (N,) ints): per-point index into a leading model axis of c (batched models)."""
+    the cell index is clamped but the weights are not: the last cell's cubic is extrapolated, i.e. garbage far out (the
+    2026-10-25 tables ended at R = 30, |z| = 10 kpc and flung escapers to 1e4 km/s; the 2026-10-27 tables reach 250 kpc and the
+    C/CUDA integrator stops particles beyond cspray.RESC = 100 kpc; the outer ~20% of the range is spoiled by the mirror prefilter). mi (optional, (N,) ints): per-point index into a leading model axis of c (batched models)."""
     i = jnp.clip(jnp.floor(x), 0, nx-2); j = jnp.clip(jnp.floor(y), 0, ny-2)
     wx, wy = _w(x-i), _w(y-j); k = jnp.arange(4)
     I = (i.astype(jnp.int32)+1)[..., None]+k; J = (j.astype(jnp.int32)+1)[..., None]+k

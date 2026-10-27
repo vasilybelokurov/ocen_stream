@@ -15,6 +15,7 @@ import numpy as np
 SRC = Path(__file__).parent/"csrc"/"spray.c"
 FLAGS = ["-O2", "-ffp-contract=off", "-shared", "-fPIC"]
 _LIB = None
+RESC = 100.   # kpc: particles beyond R or |z| = RESC are stopped and excluded (chi = -inf); the host tables reach 250 kpc
 _LOCK = threading.Lock()
 DP = C.POINTER(C.c_double)
 IP = C.POINTER(C.c_int)
@@ -24,7 +25,7 @@ class Tables(C.Structure):
     _fields_ = [("axi", DP), ("bar", DP), ("m", DP), ("nm", C.c_int), ("nu", C.c_int), ("nw", C.c_int), ("du", C.c_double), ("dw", C.c_double),
                 ("rs", C.c_double), ("zs", C.c_double), ("A", C.c_double), ("S", C.c_double), ("theta_T", C.c_double), ("omega", C.c_double),
                 ("T", C.c_double), ("sat", DP), ("nr", C.c_int), ("lr0", C.c_double), ("dlr", C.c_double), ("mtot", C.c_double),
-                ("G", C.c_double), ("orb", DP), ("norb", C.c_int), ("tc0", C.c_double), ("dtc", C.c_double)]
+                ("G", C.c_double), ("orb", DP), ("norb", C.c_int), ("tc0", C.c_double), ("dtc", C.c_double), ("resc", C.c_double)]
 
 
 def lib():
@@ -62,7 +63,7 @@ def pack(tb):
     g = lambda k, d=0.: float(np.asarray(tb[k])) if k in tb else d
     t = Tables(_p(keep[0]), _p(keep[1]), _p(keep[2]), keep[2].size, int(tb["nu"]), int(tb["nw"]), g("du"), g("dw"), g("rs"), g("zs"),
                g("A"), g("S"), g("theta_T"), g("omega"), g("T"), _p(keep[3]), int(tb.get("nr", 0)), g("lr0"), g("dlr"), g("mtot"), g("G"),
-               _p(keep[4]), keep[4].shape[0] if keep[4].ndim == 2 else 0, g("tc0"), g("dtc"))
+               _p(keep[4]), keep[4].shape[0] if keep[4].ndim == 2 else 0, g("tc0"), g("dtc"), g("resc", RESC))
     return t, keep
 
 
