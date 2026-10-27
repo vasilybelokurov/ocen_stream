@@ -70,7 +70,7 @@ def provenance(inputs, fake):
     """hashes of the inputs and of the evaluator's sources (a log is reused only with the same provenance)."""
     import hashlib
     h = lambda f: hashlib.sha256(Path(f).read_bytes()).hexdigest()[:16]; src = Path(__file__).parent
-    r = dict(fake=bool(fake), **{f.name: h(f) for f in [src/"pilots.py", src/"gpupipe.py", src/"jaxscore.py", src/"jaxmodel.py",
+    r = dict(fake=str(fake) if fake else False, **{f.name: h(f) for f in [src/"pilots.py", src/"gpupipe.py", src/"jaxscore.py", src/"jaxmodel.py",
                                                        src/"jaxspray.py", src/"cuspray.py", src/"cspray.py", src/"csrc"/"spray.c"]})
     if not fake:
         r.update({f: h(Path(inputs)/f) for f in ("host_tables.npz", "spray_inputs.npz", "score_inputs.npz", "points.json")})
@@ -130,9 +130,11 @@ class Evaluator:
 
     def _models(self, U, seed):
         """chi2, chi2 + log-det term, summaries m, errors e for the rows of U (one launch for the batch). A model whose parameters,
-        release or particles fail gets chi2 = inf; the other models of the batch are unaffected."""
+        release or particles fail gets chi2 = inf; the other models of the batch are unaffected. Particles are launched in decreasing
+        order of the running mean of log attempts per particle slot (99% correlated between models, 2026-10-27): fewer idle threads;
+        results do not depend on the order."""
         if self.fake:
-            return fake_chi2(U)
+            return fake_chi2(U, self.fake)
         import jax.numpy as jnp
         from concurrent.futures import ThreadPoolExecutor
         from . import jaxmodel as JM, jaxscore as JS, cuspray
@@ -156,8 +158,13 @@ class Evaluator:
                 pass
         if not ok:
             return c2, c2l, M, E
-        t0 = np.asarray(rel[0][2]); t2 = time.perf_counter(); out = cuspray.integrate([(np.asarray(r[1]), t0, r[0]) for r in rel], JM.SPRAY_ACC)
+        t0 = np.asarray(rel[0][2]); t2 = time.perf_counter(); order = None
+        if getattr(self, "slot_cost", None) is not None:                                  # launch order: predicted cost per particle slot
+            order = np.argsort(-np.tile(self.slot_cost, len(rel)), kind="stable").astype(np.int32)
+        out = cuspray.integrate([(np.asarray(r[1]), t0, r[0]) for r in rel], JM.SPRAY_ACC, order=order)
         t3 = time.perf_counter()
+        lc = np.mean([np.log1p(np.maximum(o[2], 0)) for o in out], 0); self.n_cost = getattr(self, "n_cost", 0)+1
+        self.slot_cost = lc if self.n_cost == 1 else self.slot_cost+(lc-self.slot_cost)/min(self.n_cost, 50)   # running mean of log attempts
         age = jnp.asarray((float(self.inp["T"])-t0)*JM.T_MYR)
         for k, (y, chi, natt) in zip(ok, out):
             if np.any(natt < 0):
@@ -186,11 +193,22 @@ class Evaluator:
         return res
 
 
-def fake_chi2(U):
-    """analytic test likelihood: two separated quadratic basins (chi2 166 and 351) + deterministic jitter (+-2 near the minimum)."""
-    U = np.atleast_2d(U); c1, c2 = np.full(D, 0.4), np.array([0.66, 0.8, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
-    q1 = 166+np.sum(((U-c1)/0.03)**2, 1); q2 = 351+np.sum(((U-c2)/0.03)**2, 1); c = np.minimum(q1, q2)
-    jit = (1+0.05*(c-166))*np.sin(1e5*U@np.arange(1., D+1)); c = c+jit
+FAKE_COV = (lambda A: A@A.T)(np.random.default_rng(5).normal(size=(D, D))*0.01+np.diag(np.linspace(0.02, 0.05, D)))
+
+
+def fake_chi2(U, mode=True):
+    """analytic test likelihoods + deterministic jitter (+-2 in chi2 near the minimum, rising with chi2, as measured):
+    True / 'two': two separated quadratic basins (chi2 166 and 351); 'gauss': correlated Gaussian (mean 0.5, covariance FAKE_COV);
+    'valley': curved valley u1 = 0.4 + 1.5 (u0 - 0.5)^2 (width 0.01) with u0 ~ N(0.5, 0.2), other coordinates N(0.5, 0.03)."""
+    U = np.atleast_2d(U)
+    if mode == "gauss":
+        d = U-0.5; c = 166+np.einsum("ni,ij,nj->n", d, np.linalg.inv(FAKE_COV), d)
+    elif mode == "valley":
+        c = 166+((U[:, 0]-0.5)/0.2)**2+((U[:, 1]-0.4-1.5*(U[:, 0]-0.5)**2)/0.01)**2+np.sum(((U[:, 2:]-0.5)/0.03)**2, 1)
+    else:
+        c1, c2 = np.full(D, 0.4), np.array([0.66, 0.8, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+        q1 = 166+np.sum(((U-c1)/0.03)**2, 1); q2 = 351+np.sum(((U-c2)/0.03)**2, 1); c = np.minimum(q1, q2)
+    jit = 2*(1+0.05*(c-166))*np.sin(1e5*U@np.arange(1., D+1)); c = c+jit          # sd 1.4 at the minimum (measured: |dchi2| ~2)
     return c, c+1., np.zeros((len(U), 25)), np.ones((len(U), 25))
 
 
