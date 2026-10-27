@@ -70,7 +70,7 @@ def provenance(inputs, fake):
     """hashes of the inputs and of the evaluator's sources (a log is reused only with the same provenance)."""
     import hashlib
     h = lambda f: hashlib.sha256(Path(f).read_bytes()).hexdigest()[:16]; src = Path(__file__).parent
-    r = dict(fake=str(fake) if fake else False, **{f.name: h(f) for f in [src/"pilots.py", src/"gpupipe.py", src/"jaxscore.py", src/"jaxmodel.py",
+    r = dict(fake=str(fake) if fake else False, box={k: list(v) for k, v in LIM.items()}, **{f.name: h(f) for f in [src/"pilots.py", src/"smc.py", src/"gpupipe.py", src/"jaxscore.py", src/"jaxmodel.py",
                                                        src/"jaxspray.py", src/"cuspray.py", src/"cspray.py", src/"csrc"/"spray.c"]})
     if not fake:
         r.update({f: h(Path(inputs)/f) for f in ("host_tables.npz", "spray_inputs.npz", "score_inputs.npz", "points.json")})

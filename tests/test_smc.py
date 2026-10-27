@@ -60,3 +60,47 @@ def test_resume_identical_and_polish(tmp_path):
     s = S.polish(ev2, tmp_path/"gauss", x, nwalkers=40, nsteps=600, log=lambda *a: None)
     ch = s.get_chain(discard=200, flat=True); sd = np.sqrt(np.diag(PL.FAKE_COV))
     assert np.all(np.abs(ch.mean(0)-0.5)/sd < 0.3) and np.all(np.abs(ch.std(0)/sd-1) < 0.25), (ch.mean(0)-0.5)/sd
+
+
+def test_interrupted_resume_identical(tmp_path):
+    """a run killed in the middle of a sweep and resumed gives the same population, chi2 and log Z as an uninterrupted run."""
+    ev, x, c, logz = run(tmp_path, "gauss", n=200)
+
+    class Boom(Exception):
+        pass
+
+    class Killer(PL.Evaluator):
+        def __call__(self, U, tag, seed=7):
+            if self.nev > 3000:
+                raise Boom
+            return super().__call__(U, tag, seed)
+    o = tmp_path/"killed"; k = Killer(None, o, fake="gauss")
+    with pytest.raises(Boom):
+        S.smc(k, o, n=200, log=lambda *a: None)
+    ev2 = PL.Evaluator(None, o, fake="gauss"); x2, c2, l2 = S.smc(ev2, o, n=200, log=lambda *a: None)
+    assert np.array_equal(x, x2) and np.array_equal(c, c2) and logz == l2
+
+
+def test_kept_beta_and_stationarity(tmp_path):
+    """the T = 10 population is saved exactly at beta 0.1; started from exact posterior draws, the moves keep the Gaussian (no
+    variance contraction: sd within 5% of the jittered target's, whose jitter grows with chi2, after 40 sweeps of 2000 particles)."""
+    ev, x, c, logz = run(tmp_path, "gauss", n=300)
+    b = sorted(float(np.load(f)["beta"]) for f in (tmp_path/"gauss").glob("smc_stage*.npz")); assert 0.1 in b and b[-1] == 1.0
+    rng = np.random.default_rng(7); x0 = rng.multivariate_normal(np.full(D, 0.5), PL.FAKE_COV, 2000)
+    o = tmp_path/"stat"; o.mkdir(); ev2 = PL.Evaluator(None, o, fake="gauss"); c0 = ev2(x0, "init")
+    S._save(o/"smc_state.npz", x=x0, c=c0, beta=1., stage=1, sweep=0, acc_sum=0., logz=0.)
+    xs, cs, _ = S.smc(ev2, o, n=2000, min_sweeps=40, moves=1e9, max_sweeps=40, log=lambda *a: None)
+    u = exact("gauss"); d = u-0.5; c0 = 166+np.einsum("ni,ij,nj->n", d, np.linalg.inv(PL.FAKE_COV), d)
+    w = np.exp(-0.5*(PL.fake_chi2(u, "gauss")[0]-c0)); sd_t = np.sqrt(np.average((u-np.average(u, 0, w))**2, 0, w))   # jittered target
+    r = xs.std(0)/sd_t; assert np.all(np.abs(r-1) < 0.05), r
+
+
+def test_changed_box_refused(tmp_path):
+    o = tmp_path/"box"; PL.Evaluator(None, o, fake="gauss")
+    lim = dict(PL.LIM)
+    try:
+        PL.LIM["dist"] = (5.0, 6.0)
+        with pytest.raises(RuntimeError):
+            PL.Evaluator(None, o, fake="gauss")
+    finally:
+        PL.LIM.clear(); PL.LIM.update(lim)
