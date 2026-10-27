@@ -136,13 +136,14 @@ class Evaluator:
         import jax.numpy as jnp
         from concurrent.futures import ThreadPoolExecutor
         from . import jaxmodel as JM, jaxscore as JS, cuspray
-        bk = self.bank(seed); n = len(U); c2, c2l = np.full(n, np.inf), np.full(n, np.inf); M, E = np.full((n, 25), np.nan), np.full((n, 25), np.nan)
+        self.stage = {}; bk = self.bank(seed); n = len(U); c2, c2l = np.full(n, np.inf), np.full(n, np.inf); M, E = np.full((n, 25), np.nan), np.full((n, 25), np.nan)
 
         def prep(u):
             try:
                 return JM.release_prepare(to_params(u, self.ht), self.ht, self.inp, self.trel)
             except Exception:
                 return None
+        t1 = time.perf_counter()
         with ThreadPoolExecutor(os.cpu_count()) as ex:                                    # CPU part in threads (as gpupipe)
             pre = list(ex.map(prep, U))
         ok, rel = [], []
@@ -155,13 +156,16 @@ class Evaluator:
                 pass
         if not ok:
             return c2, c2l, M, E
-        t0 = np.asarray(rel[0][2]); out = cuspray.integrate([(np.asarray(r[1]), t0, r[0]) for r in rel], JM.SPRAY_ACC)
+        t0 = np.asarray(rel[0][2]); t2 = time.perf_counter(); out = cuspray.integrate([(np.asarray(r[1]), t0, r[0]) for r in rel], JM.SPRAY_ACC)
+        t3 = time.perf_counter()
         age = jnp.asarray((float(self.inp["T"])-t0)*JM.T_MYR)
         for k, (y, chi, natt) in zip(ok, out):
             if np.any(natt < 0):
                 continue
             m, e = JS.measure_capped(self.obs(jnp.asarray(y)), jnp.asarray(chi*JM.T_MYR), age, self.si, bk); a, b = self.c2(m, e)
             c2[k], c2l[k], M[k], E[k] = float(a), float(b), np.asarray(m), np.asarray(e)
+        self.stage = dict(t_release=t2-t1, t_integrate=t3-t2, t_score=time.perf_counter()-t3, max_att=max(int(o[2].max()) for o in out),
+                          n_escaped=np.array([int(np.sum(np.isneginf(o[1]))) for o in out]).sum())
         return c2, c2l, M, E
 
     def __call__(self, U, tag, seed=7):
@@ -176,7 +180,8 @@ class Evaluator:
                 res[k] = c[0]
         for a in range(0, len(todo), self.BATCH):
             idx = todo[a:a+self.BATCH]; t1 = time.perf_counter(); c2, c2l, M, E = self._models(U[idx], seed); dt = time.perf_counter()-t1
-            self.log.write(dict(u=U[idx], chi2=c2, chi2ld=c2l, m=M, e=E, bank=np.full(len(idx), seed), tag=np.array([tag]*len(idx)), s=np.full(len(idx), dt/len(idx))))
+            self.log.write(dict(u=U[idx], chi2=c2, chi2ld=c2l, m=M, e=E, bank=np.full(len(idx), seed), tag=np.array([tag]*len(idx)), s=np.full(len(idx), dt/len(idx)),
+                                **{k: np.array(v) for k, v in getattr(self, "stage", {}).items()}))          # per-batch stage times
             res[idx] = c2; self.nev += len(idx); self.t += dt
         return res
 
