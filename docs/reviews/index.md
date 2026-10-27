@@ -5,6 +5,7 @@ They were written in oCen_dm before the stream work moved here on 2026-10-25: co
 
 | Date | Review | Subject |
 |---|---|---|
+| 2026-10-27 | [final_run_fable_codex_20261027](final_run_fable_codex_20261027.md) | Final GPU run: kernel fixes, mock criteria, temperature, distance prior, N 600 vs 1200 |
 | 2026-10-26 | [sampler_fable_codex_20261026](sampler_fable_codex_20261026.md) | Sampler for the GPU fit: emcee vs SMC vs dynesty; mode test; target; distance prior flag |
 | 2026-10-24 | [sky1comp_fable_codex_20261024](sky1comp_fable_codex_20261024.md) | Single-component sky fit: two likelihood bugs; local fixed-knot fits, main band only |
 | 2026-10-24 | [twocomp_modelling_fable_codex_20261024](twocomp_modelling_fable_codex_20261024.md) | Two-component measurement and the modelling likelihood (density likelihood, not knots) |
