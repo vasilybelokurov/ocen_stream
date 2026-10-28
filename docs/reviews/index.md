@@ -52,3 +52,4 @@ They were written in oCen_dm before the stream work moved here on 2026-10-25: co
 | 2026-10-08 | [codex_research_knee_2026-10-08](codex_research_knee_2026-10-08.md) | Web research pass on the stream-54 PM knee (contains wrong DOIs; see Literature) |
 | 2026-10-08 | [codex_research_fit_campaign_2026-10-08](codex_research_fit_campaign_2026-10-08.md) | Web research for the stream fit campaign (two arXiv-ID errors and wrong DOIs; see Literature) |
 - [error_floors_fable_codex_20261028.md](error_floors_fable_codex_20261028.md) — S5-style likelihood floors: Codex (adopt, validate first) vs Fable (no: floors switch off pmdec; misfit sits in four end knots)
+- [pm_windows_fable_codex_20261028.md](pm_windows_fable_codex_20261028.md) — PM local windows instead of spline knots: both yes in principle; pmdec windows all pass (far-end misfit stays, +0.19 +- 0.05); pmra interior degenerate without a fixed width; Fable pragmatic vs Codex full validation
