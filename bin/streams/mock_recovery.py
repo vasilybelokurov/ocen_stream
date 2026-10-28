@@ -1,135 +1,75 @@
 #!/usr/bin/env python3
-"""Emulator recovery test on a mock catalogue (2026-10-18).
+"""Asimov mock recovery check for the production SMC (2026-10-28; docs/reviews/final_run_fable_codex_20261027.md).
 
-Input: OUTDIR/rescore.json from rescore_batch.py for the mock (all stored emulator sprays scored against it) and the mock's
-truth (mocks_20261018/T<t>/mock_c<c>.json). Steps (same pipeline as the real data):
-1. emulator fit: replicate means, noise surface from the replicate variances (jackknife covariate), mean GP; held-out
-   validation points excluded from the fit;
-2. 5-fold CV with the noise model refitted per fold; held-out points;
-3. emulator maximum (L-BFGS-B from the 20 best runs) and optimised 1-D profiles (per bin: L-BFGS-B over the other 8
-   coordinates from the bin's 3 best candidates);
-Profiles for 'size' fix its unit coordinate (fraction of the corotation-allowed range), not the physical size.
-4. truth: emulator mean +- sd at the truth's unit coordinates vs the jackknife score of the independent truth-check spray
-   (same parameters, other seed) against the mock; the generating spray's own score for reference.
-Output: OUTDIR/recovery.json, plots/mock_recovery_<tag>.png
-Usage: OMP_NUM_THREADS=4 PYTHONPATH=src python bin/streams/mock_recovery.py --mock results/streams/mocks_20261018/T1/mock_c0.npz \
-           --rescore DIR --tag T1c0
+Reads a run of ocen_stream.smc on a mock made by gpu_mock_export.py, from the private runs repository ($OCEN_RUNS_DIR):
+the final population (smc_final.npz, beta = 1; or the latest stage if the run is unfinished) and the beta = 0.1 stage, plus the
+truth (inputs/<mock>/truth.json). Particles are equally weighted (resampled at every stage).
+Reports, per parameter: truth, best particle, 16/50/84% of the population, (truth - median)/sd.
+Joint check: squared Mahalanobis distance of the truth from the population (mean, covariance, 9-D) and the fraction of particles
+nearer than the truth (truth inside the joint 68% region if < 0.68). Best chi2 vs the chi2 at the truth (0.27, bank 7).
+Plot: plots/mock_recovery_<run>.png (pairs of the main parameters, beta = 0.1 grey and beta = 1 blue, truth red; chi2 vs angle).
+Usage: OCEN_RUNS_DIR=... PYTHONPATH=src python bin/streams/mock_recovery.py --run smc_mock_scanbest_n300_v2_20261027 \
+         --mock mock_scanbest_20261027
 """
-import argparse, json, sys, warnings
+import argparse, glob, json, os
 from pathlib import Path
 import numpy as np
+import jax
+jax.config.update("jax_enable_x64", True)
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from ocen_stream import pilots as PL, jaxspray as J
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
-warnings.filterwarnings("ignore")
-import emulator_design as ED      # noqa: E402
-import emulator_report as ER      # noqa: E402
-from ocen_stream.emulator import group_replicates, MeanEmulator   # noqa: E402
-
-HELD = "validation (held out)"
-
-
-def to_unit(p, smax):
-    u = np.array([(p["angle"]-10)/25, (p["omega"]-30)/10, (p["amp"]-0.6)/1.4, 0., (p["dist"]-5.25)/0.7,
-                  (p["pmra"]+3.250)/(8*0.022)+0.5, (p["pmdec"]+6.746)/(8*0.022)+0.5, (p["vc"]-220)/20, (p["halo_q"]-0.8)/0.4])
-    sm = float(smax(np.array([[p["omega"], p["vc"], p["halo_q"]]]))[0]); u[3] = (p["size"]-0.8)/(sm-0.8)
-    return u
+ROOT = Path(__file__).resolve().parents[2]; RUNS = Path(os.environ["OCEN_RUNS_DIR"])
+LAB = dict(angle="bar angle [deg]", omega="Omega_b [km/s/kpc]", amp="A", size="S", dist="distance [kpc]", pmra="pmra [mas/yr]",
+           pmdec="pmdec [mas/yr]", vc="v_c(R0) [km/s]", halo_q="halo q")
+PAIRS = (("angle", "omega"), ("angle", "halo_q"), ("angle", "vc"), ("dist", "vc"), ("amp", "size"))
 
 
-def score_spray(path, cat, bounds):
-    from grid4_common import win, project_gc, GC
-    BG_BOUNDS, V_BOUNDS = [tuple(map(tuple, bounds[0])), tuple(bounds[1])]
-    from ocen_stream.score import score_conditional
-    m = dict(np.load(path)); mu, mx = project_gc(m["l"], m["b"], GC)
-    return score_conditional(cat["du"], cat["dw"], cat["dv"], cat["dev"], cat["cov"], mu, np.column_stack((mx, m["pmra"], m["pmdec"])),
-                             m["vlos"], m["chi"], m["age"], u_window=win, w_bounds=BG_BOUNDS, v_bounds=V_BOUNDS, chi_edges=np.arange(0., 205., 5.),
-                             cutoff=7., jackknife_groups=10, chunk=50)
+def population(run):
+    f = run/"smc_final.npz"
+    if not f.exists():
+        f = sorted(run.glob("smc_stage*.npz"))[-1]
+    z = np.load(f); return z["x"], z["c"], float(z["beta"]), f.name
+
+
+def stage_at(run, beta):
+    for f in sorted(run.glob("smc_stage*.npz")):
+        z = np.load(f)
+        if abs(float(z["beta"])-beta) < 1e-9:
+            return z["x"], z["c"]
+    return None
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--mock", required=True); ap.add_argument("--rescore", required=True)
-    ap.add_argument("--tag", required=True); ap.add_argument("--variant", default="", help="suffix for repeated analyses")
-    a = ap.parse_args()
-    mock = Path(a.mock) if Path(a.mock).is_absolute() else ROOT/a.mock; rd = Path(a.rescore) if Path(a.rescore).is_absolute() else ROOT/a.rescore
-    info = json.loads(mock.with_suffix(".json").read_text()); truth = info["params"]
-    R = json.loads((rd/"rescore.json").read_text())
-    import hashlib
-    if R["manifest"]["catalogue_sha256"] != hashlib.sha256(mock.read_bytes()).hexdigest():
-        raise SystemExit("rescore.json was made for a different catalogue than --mock")
-    outf = rd/f"recovery{'_'+a.variant if a.variant else ''}.json"
-    if outf.exists():
-        raise SystemExit(f"{outf} exists; refusing to overwrite")
-    rows = [r for r in R["rows"] if r["purpose"] != HELD]; held = [r for r in R["rows"] if r["purpose"] == HELD]
-    X = np.array([r["unit"] for r in rows]); y = np.array([r["total_jk"] for r in rows]); v = np.array([r["var_jk"] for r in rows])
-    key = np.array([r["key"] for r in rows])
-    g = group_replicates(X, y, v, key)
-    s2 = ED.noise_var(g); em = MeanEmulator(n_restarts=5).fit(g["X"], g["ybar"], s2/g["r"])
-    mu_cv, sp_cv, z_cv = ED.cv(g)
-    top = g["ybar"] > np.percentile(g["ybar"], 80)
-    out = dict(tag=a.tag, truth=truth, n_points=len(g["ybar"]), n_runs=int(g["r"].sum()), kernel=str(em.gp.kernel_),
-               cv_all=ED.summarise(g["ybar"], mu_cv, sp_cv, z_cv, np.ones(len(g["ybar"]), bool)),
-               cv_top20=ED.summarise(g["ybar"], mu_cv, sp_cv, z_cv, top))
-    if held:
-        Xh = np.array([r["unit"] for r in held]); yh = np.array([r["total_jk"] for r in held]); vh = np.array([r["var_jk"] for r in held])
-        m, s = em.predict(Xh); out["heldout"] = ED.summarise(yh, m, s, (yh-m)/np.sqrt(s**2+vh), np.ones(len(yh), bool))
-    # truth
-    smax = ER.smax_interp(); ut = to_unit(truth, smax)
-    mt, st = em.predict(ut[None]); cat = dict(np.load(mock))
-    bd = R["manifest"]["bounds"]
-    chk = score_spray(mock.parent/"check_spray.npz", cat, bd); gen = score_spray(mock.parent/"truth_spray.npz", cat, bd)
-    out["truth_unit"] = ut.tolist()
-    out["truth_score"] = dict(check_spray_jk=chk["total_jk"], check_spray_sd_jk=float(np.sqrt(chk["var_jk"])), generating_spray_jk=gen["total_jk"],
-                              emulator_mu=float(mt[0]), emulator_sd=float(st[0]),
-                              z=float((chk["total_jk"]-mt[0])/np.hypot(st[0], np.sqrt(chk["var_jk"]))))
-    out["best_measured"] = dict(total_jk=float(y.max()), params=rows[int(np.argmax(y))]["params"])
-    # emulator maximum
-    from scipy.optimize import minimize
-    best = None
-    for x0 in g["X"][np.argsort(-g["ybar"])[:20]]:           # measured points only: no truth-informed start (Codex 2026-10-18)
-        r = minimize(lambda x: -em.predict(x[None], return_std=False)[0], x0, method="L-BFGS-B", bounds=[(0, 1)]*9)
-        best = r if best is None or r.fun < best.fun else best
-    mb, sb = em.predict(best.x[None]); pb = ED.unit_to_params(best.x)
-    out["emulator_max"] = dict(params=pb, mu=float(mb[0]), sd=float(sb[0]), unit=best.x.tolist(),
-                               truth_minus_max=float(out["truth_score"]["check_spray_jk"]-mb[0]),
-                               param_error={k: float(pb[k]-truth[k]) for k in ED.NAMES})
-    # 1-D profiles with the truth
-    from scipy.stats import qmc
-    import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
-    rng = np.random.default_rng(5); C = qmc.Sobol(9, scramble=True, seed=21).random_base2(15)
-    C = np.vstack((C, np.clip(np.repeat(g["X"][np.argsort(-g["ybar"])[:10]], 300, 0)+rng.normal(0, 0.05, (3000, 9)), 0, 1)))
-    mu, sd = em.predict(C); P = ER.physical(C, smax); ref = max(mu.max(), float(mb[0]))
-    fig, ax = plt.subplots(3, 3, figsize=(11, 9), constrained_layout=True); out["profiles"] = {}
-    for k, axx in zip(ED.NAMES, ax.ravel()):
-        e = np.linspace(P[k].min(), P[k].max(), 21); c = 0.5*(e[1:]+e[:-1]); pm, ps = [], []
-        j = ED.NAMES.index(k)
-        for x0, x1 in zip(e[:-1], e[1:]):
-            # optimised profile (2026-10-18): maximise mu over the other 8 coordinates, coordinate j fixed at the bin centre (in
-            # unit space), from the 3 best candidates of the bin; size uses its unit coordinate
-            s = (P[k] >= x0) & (P[k] <= x1); cand = np.flatnonzero(s)[np.argsort(-mu[s])[:3]]
-            uc = np.median(C[s, j]); bestv, bests = -np.inf, 0.
-            for i in cand:
-                free = [q for q in range(9) if q != j]
-                def negmu(z, i=i):
-                    x = C[i].copy(); x[free] = z; x[j] = uc
-                    return -em.predict(x[None], return_std=False)[0]
-                r = minimize(negmu, C[i][free], method="L-BFGS-B", bounds=[(0, 1)]*8, options=dict(maxiter=60))
-                if -r.fun > bestv:
-                    x = C[i].copy(); x[free] = r.x; x[j] = uc; bestv = -r.fun; bests = em.predict(x[None])[1][0]
-            pm.append(bestv-ref); ps.append(bests)
-        pm, ps = np.array(pm), np.array(ps); out["profiles"][k] = dict(x=c.tolist(), dlnL=pm.tolist(), sd=ps.tolist())
-        axx.fill_between(c, pm-2*ps, pm+2*ps, color="0.85"); axx.plot(c, pm, "k-"); axx.axvline(truth[k], color="C3", lw=1.2)
-        axx.axvline(pb[k], color="C0", lw=0.8, ls="--"); axx.set(xlabel=k, ylim=(-4000, 600))
-    fig.suptitle(f"mock {a.tag}: emulator profiles (max over the rest, rel. to the max; 2 sd band); red: truth; blue dashed: emulator max",
-                 fontsize=9)
-    fig.savefig(ROOT/f"plots/mock_recovery_{a.tag}.png", dpi=120); plt.close(fig)
-    outf.write_text(json.dumps(out, indent=1))
-    ts = out["truth_score"]; ex = out["emulator_max"]
-    print(f"{a.tag}: CV all rmse {out['cv_all']['rmse']:.0f} z_sd {out['cv_all']['z_sd']:.2f} cover95 {out['cv_all']['cover95']:.2f}; "
-          f"top20 rmse {out['cv_top20']['rmse']:.0f} bias {out['cv_top20']['bias']:+.0f}; held-out rmse {out.get('heldout', {}).get('rmse', np.nan):.0f}")
-    print(f"  truth: check-spray jk {ts['check_spray_jk']:.0f} (generating {ts['generating_spray_jk']:.0f}); emulator at truth "
-          f"{ts['emulator_mu']:.0f} +- {ts['emulator_sd']:.0f} (z {ts['z']:+.2f}); best training run {out['best_measured']['total_jk']:.0f}")
-    print(f"  emulator max {ex['mu']:.0f} +- {ex['sd']:.0f}; truth - max {ex['truth_minus_max']:+.0f}; param errors " +
-          ", ".join(f"{k} {v:+.2f}" for k, v in ex["param_error"].items()))
+    ap = argparse.ArgumentParser(); ap.add_argument("--run", required=True); ap.add_argument("--mock", required=True); a = ap.parse_args()
+    run = RUNS/a.run; ht = J.load_host(ROOT/"results/gpu/host_tables.npz")
+    truth = json.loads((RUNS/"inputs"/a.mock/"truth.json").read_text())["truth"]
+    x, c, beta, src = population(run); P = {k: np.array([PL.to_params(u, ht)[k] for u in x]) for k in PL.NAMES}; b = int(np.argmin(c))
+    rows = {}
+    for k in PL.NAMES:
+        q = np.percentile(P[k], [16, 50, 84]); rows[k] = dict(truth=truth[k], best=float(P[k][b]), p16=float(q[0]), p50=float(q[1]), p84=float(q[2]),
+                                                               z=float((truth[k]-q[1])/np.std(P[k])))
+    ut = PL.to_unit(truth, ht); mu = x.mean(0); Ci = np.linalg.inv(np.cov(x.T))
+    d2 = lambda u: float((u-mu)@Ci@(u-mu)); dt = d2(ut); frac = float(np.mean([d2(u) < dt for u in x]))
+    res = dict(source=src, beta=beta, n=len(x), unique=int(len(np.unique(x, axis=0))), best_chi2=float(c[b]), median_chi2=float(np.median(c)),
+               truth_mahalanobis2=dt, frac_particles_nearer_than_truth=frac, truth_inside_joint_68=frac < 0.68, params=rows)
+    print(json.dumps(res, indent=1))
+    # plot
+    lo = stage_at(run, 0.1); fig, ax = plt.subplots(1, len(PAIRS)+1, figsize=(4.2*(len(PAIRS)+1), 4))
+    for A, (p, q) in zip(ax, PAIRS):
+        if lo is not None:
+            Q = {k: np.array([PL.to_params(u, ht)[k] for u in lo[0]]) for k in (p, q)}; A.scatter(Q[p], Q[q], s=4, c="0.7", label="beta = 0.1")
+        A.scatter(P[p], P[q], s=4, c="tab:blue", label=f"beta = {beta:.2g}"); A.scatter([truth[p]], [truth[q]], s=120, c="tab:red", marker="*", edgecolor="k", label="truth")
+        A.set_xlabel(LAB[p]); A.set_ylabel(LAB[q])
+    ax[0].legend(fontsize=8)
+    if lo is not None:
+        ax[-1].scatter([PL.to_params(u, ht)["angle"] for u in lo[0]], lo[1], s=4, c="0.7")
+    ax[-1].scatter(P["angle"], c, s=4, c="tab:blue"); ax[-1].axvline(truth["angle"], c="tab:red"); ax[-1].axhline(0.27, c="tab:red", ls=":")
+    ax[-1].set_yscale("log"); ax[-1].set_xlabel(LAB["angle"]); ax[-1].set_ylabel("chi2 (bank 7); dotted: chi2 at truth")
+    fig.suptitle(f"Asimov mock recovery ({a.run}): population at beta = 0.1 (grey) and beta = {beta:.2g} (blue); truth = red star")
+    out = ROOT/f"plots/mock_recovery_{a.run}.png"; fig.savefig(out, dpi=110, bbox_inches="tight"); print("plot:", out)
 
 
 if __name__ == "__main__":
