@@ -1,4 +1,4 @@
-"""Fable review 2026-10-28 (docs/reviews/pm_windows_fable_codex_20261028.md). Usage: PYTHONPATH=src python bin/streams/reviews/pm_windows_check_20261028.py
+"""Fable review 2026-10-28 (docs/reviews/pm_windows_fable_codex_20261028.md). Usage: PYTHONPATH=src python bin/streams/reviews/pm_windows_check_20261028.py [--width 2]
 Per 3-deg window along phi1 -2..28: stars, spline stream fraction, expected stream stars, curvature of the residual spline m over
 the window, and a quick local truncated-Gaussian + empirical background fit (track c, slope, width, fraction) with Hessian errors.
 Saves results/plot_data/pm_windows_20261028.json (per window and the spline track with its 1-sigma band) for bin/streams/pm_windows_plot.py."""
@@ -6,12 +6,13 @@ import sys, json, time
 from pathlib import Path
 import numpy as np, torch
 ROOT = Path(__file__).resolve().parents[3]; sys.path[:0] = [str(ROOT/"bin/streams"), str(ROOT/"src")]
+WIDTH = float(sys.argv[sys.argv.index("--width")+1]) if "--width" in sys.argv else 3.
 sys.argv = [sys.argv[0]]
 import stream_spline_fit as SF
 from scipy.optimize import minimize
 from scipy.special import ndtr
 F = json.loads((ROOT/"results/plot_data/stream_spline_fit.json").read_text())
-EDGES = np.arange(-2., 28.01, 3.)   # -2..1, 1..4, ..., 25..28
+EDGES = np.arange(-2., 28.01, WIDTH)   # --width W (default 3): -2..1, 1..4, ..., 25..28
 def local_fit(u, v, e, lb, W, c0):
     x = u-c0
     def nll(p):
@@ -48,4 +49,4 @@ for q in ("pmra", "pmdec"):
         OUT[q]["windows"].append(dict(a0=float(a0), a1=float(a1), n=int(k.sum()), n_stream=float(post[k].sum()), c=float(p[0]), c_err=float(pe[0]), slope=float(p[1]),
                                       width=float(np.sqrt(np.exp(2*p[2])+0.05**2)), f=float(1/(1+np.exp(-p[3])))))
         print(f" {a0:5.1f}..{a1:5.1f} {k.sum():5d} {fs[k].mean():5.3f} {post[k].sum():8.0f} {fs[k].sum():8.0f} | {np.interp(c0, g, f['m']):+6.3f}   {curv:6.3f}               | {p[0]:+6.3f} +- {pe[0]:5.3f} {p[1]:+6.3f} {np.sqrt(np.exp(2*p[2])+0.05**2):5.2f} {1/(1+np.exp(-p[3])):5.3f} | knot {km[jn]:5.1f} sd {sd[jn]:.3f}")
-(ROOT/"results/plot_data/pm_windows_20261028.json").write_text(json.dumps(OUT, indent=1))
+(ROOT/("results/plot_data/pm_windows_20261028.json" if WIDTH == 3 else f"results/plot_data/pm_windows_20261028_w{WIDTH:g}.json")).write_text(json.dumps(OUT, indent=1))
