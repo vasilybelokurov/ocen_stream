@@ -56,7 +56,7 @@ def main():
             d, de = np.array(f["fit"]["m"]["values"]), np.sqrt(np.diag(np.array(f["cov"])[:n, :n])); m, me = np.array(M[q], float), np.array(M[q+"_e"], float)
             s = (y1-y0)/(yb-ya)
             ax.errorbar(px(k), py(t+d), yerr=de*s, fmt="s", color="k", ms=6, capsize=3, lw=1.5, label="data knots" if q == "pmra" else None)
-            ax.errorbar(px(np.where(k > 27, k-0.4, k+0.4)), py(t+m), yerr=me*s, fmt="o", color=MC, mec="k", ms=6, capsize=2, lw=1.5, label="model knots" if q == "pmra" else None)
+            ax.errorbar(px(k), py(t+m), yerr=me*s, fmt="o", color=MC, mec="k", ms=6, capsize=2, lw=1.5, label="model knots" if q == "pmra" else None)
     fig.legend(*ax.get_legend_handles_labels(), loc="center right", fontsize=9, frameon=False, title="right column:\nmeasurements", title_fontsize=9)
     out = ROOT/a.png.replace(".png", "_measured.png"); fig.savefig(out, dpi=80); print(out)
 
