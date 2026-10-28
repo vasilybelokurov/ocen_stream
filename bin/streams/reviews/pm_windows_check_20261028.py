@@ -1,6 +1,7 @@
 """Fable review 2026-10-28 (docs/reviews/pm_windows_fable_codex_20261028.md). Usage: PYTHONPATH=src python bin/streams/reviews/pm_windows_check_20261028.py
 Per 3-deg window along phi1 -2..28: stars, spline stream fraction, expected stream stars, curvature of the residual spline m over
-the window, and a quick local truncated-Gaussian + empirical background fit (track c, slope, width, fraction) with Hessian errors."""
+the window, and a quick local truncated-Gaussian + empirical background fit (track c, slope, width, fraction) with Hessian errors.
+Saves results/plot_data/pm_windows_20261028.json (per window and the spline track with its 1-sigma band) for bin/streams/pm_windows_plot.py."""
 import sys, json, time
 from pathlib import Path
 import numpy as np, torch
@@ -29,6 +30,7 @@ def local_fit(u, v, e, lb, W, c0):
             ei, ej = np.eye(n)[i]*h, np.eye(n)[j]*h
             H[i, j] = H[j, i] = (nll(p+ei+ej)-nll(p+ei-ej)-nll(p-ei+ej)+nll(p-ei-ej))/(4*h*h)
     C = np.linalg.pinv(H); return p, np.sqrt(np.clip(np.diag(C), 0, None)), C
+OUT = {}
 for q in ("pmra", "pmdec"):
     t0 = time.time(); d = SF.load(q); f = F[q]; g = np.array(f["grid"]); u, v, e, lb = d["u"], d["v"], d["e"], np.log(np.maximum(d["b"], 1e-12)); W = d["W"]
     fs = np.interp(u, g, f["f"]); ms = np.interp(u, g, f["m"]); ss = np.interp(u, g, f["s"]); sig = np.sqrt(ss**2+e**2)
@@ -37,8 +39,13 @@ for q in ("pmra", "pmdec"):
     post = fs*np.exp(lg)/(fs*np.exp(lg)+(1-fs)*np.exp(lb))
     print(f"\n{q}: {u.size} stars, W {W}, load {time.time()-t0:.0f} s; spline m knots {np.round(f['fit']['m']['knots'],2).tolist()}")
     print(" window      N   <f>  Nstr(post) Nstr(f) | m_spline(centre) curv(max|m-lin| over win) | local: c +- err  slope  width  f   | spline sd at nearest knot")
-    km = np.array(f["fit"]["m"]["knots"]); sd = np.array(f["fit"]["m"]["err"])
+    km = np.array(f["fit"]["m"]["knots"]); sd = np.array(f["fit"]["m"]["err"]); n = len(km); gq = np.linspace(-2, 28, 301); Bq = SF.basis(km, gq)
+    band = np.sqrt(np.einsum("ij,jk,ik->i", Bq, np.array(f["cov"])[:n, :n], Bq))
+    OUT[q] = dict(W=float(W), knots=km.tolist(), knot_values=f["fit"]["m"]["values"], knot_err=sd.tolist(), grid=gq.tolist(), m=(Bq@np.array(f["fit"]["m"]["values"])).tolist(), band=band.tolist(), windows=[])
     for a0, a1 in zip(EDGES[:-1], EDGES[1:]):
         k = (u >= a0) & (u < a1); c0 = 0.5*(a0+a1); gg = np.linspace(a0, a1, 31); mg = np.interp(gg, g, f["m"]); lin = np.polyfit(gg, mg, 1); curv = np.max(np.abs(mg-np.polyval(lin, gg)))
         p, pe, C = local_fit(u[k], v[k], e[k], lb[k], W, c0); jn = np.argmin(np.abs(km-c0))
+        OUT[q]["windows"].append(dict(a0=float(a0), a1=float(a1), n=int(k.sum()), n_stream=float(post[k].sum()), c=float(p[0]), c_err=float(pe[0]), slope=float(p[1]),
+                                      width=float(np.sqrt(np.exp(2*p[2])+0.05**2)), f=float(1/(1+np.exp(-p[3])))))
         print(f" {a0:5.1f}..{a1:5.1f} {k.sum():5d} {fs[k].mean():5.3f} {post[k].sum():8.0f} {fs[k].sum():8.0f} | {np.interp(c0, g, f['m']):+6.3f}   {curv:6.3f}               | {p[0]:+6.3f} +- {pe[0]:5.3f} {p[1]:+6.3f} {np.sqrt(np.exp(2*p[2])+0.05**2):5.2f} {1/(1+np.exp(-p[3])):5.3f} | knot {km[jn]:5.1f} sd {sd[jn]:.3f}")
+(ROOT/"results/plot_data/pm_windows_20261028.json").write_text(json.dumps(OUT, indent=1))
