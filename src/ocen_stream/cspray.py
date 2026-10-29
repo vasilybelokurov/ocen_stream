@@ -37,12 +37,14 @@ def lib():
 
 def _build():
     global _LIB
-    src = SRC.read_bytes(); tag = hashlib.sha256(src+" ".join(FLAGS).encode()).hexdigest()[:12]
+    cc = os.environ.get("CC", "cc")                                                    # compiler identity in the cache key (2026-10-29)
+    ccv = subprocess.run([cc, "--version"], capture_output=True, text=True).stdout.encode()
+    src = SRC.read_bytes(); tag = hashlib.sha256(src+" ".join(FLAGS).encode()+ccv).hexdigest()[:12]
     d = Path(os.environ.get("OCEN_CACHE", Path.home()/".cache"/"ocen_stream")); d.mkdir(parents=True, exist_ok=True)
     so = d/f"spray_{tag}.so"
     if not so.exists():
         tmp = so.with_suffix(f".{os.getpid()}.tmp")
-        subprocess.run([os.environ.get("CC", "cc"), *FLAGS, "-o", str(tmp), str(SRC), "-lm"], check=True); os.replace(tmp, so)
+        subprocess.run([cc, *FLAGS, "-o", str(tmp), str(SRC), "-lm"], check=True); os.replace(tmp, so)
     L = C.CDLL(str(so))
     L.integrate_many.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, C.c_double, C.c_int, DP, DP, IP, C.POINTER(C.c_long)]
     L.integrate_resume.argtypes = [C.POINTER(Tables), C.c_int, DP, DP, DP, DP, DP, IP, DP, C.c_double, C.c_int, IP]

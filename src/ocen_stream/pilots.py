@@ -74,6 +74,32 @@ def provenance(inputs, fake):
                                                        src/"jaxspray.py", src/"cuspray.py", src/"cspray.py", src/"csrc"/"spray.c"]})
     if not fake:
         r.update({f: h(Path(inputs)/f) for f in ("host_tables.npz", "spray_inputs.npz", "score_inputs.npz", "points.json")})
+        r["environment"] = environment()
+    return r
+
+
+def environment():
+    """what the chi2 depends on beyond code and inputs (2026-10-29): the same point gives different chi2 on Colab and CSD3 (sd ~1;
+    last-bit differences amplified by the chaotic integration), so a log or a resume is accepted only in the same environment.
+    No host name: any node of the same type and software image gives the same results."""
+    import platform, subprocess
+    import jax, numpy, scipy
+    r = dict(python=platform.python_version(), machine=platform.machine(), libc=" ".join(platform.libc_ver()), numpy=numpy.__version__,
+             scipy=scipy.__version__, jax=jax.__version__, jaxlib=__import__("jaxlib").__version__)
+    try:
+        r["cpu"] = next(l.split(":", 1)[1].strip() for l in open("/proc/cpuinfo") if l.startswith("model name"))
+    except (OSError, StopIteration):
+        r["cpu"] = platform.processor()
+    try:
+        r["cc"] = subprocess.run([os.environ.get("CC", "cc"), "--version"], capture_output=True, text=True).stdout.splitlines()[0]
+    except (OSError, IndexError):
+        r["cc"] = "unknown"
+    try:
+        import cupy as cp
+        r.update(cupy=cp.__version__, nvrtc=".".join(map(str, cp.cuda.nvrtc.getVersion())), cuda_driver=int(cp.cuda.runtime.driverGetVersion()),
+                 gpu=cp.cuda.runtime.getDeviceProperties(0)["name"].decode())
+    except Exception as e:                                                                 # CPU-only machine
+        r["gpu"] = f"none ({type(e).__name__})"
     return r
 
 

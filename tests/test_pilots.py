@@ -35,3 +35,11 @@ def test_pilots_fake_restart_and_provenance(tmp_path, monkeypatch):
     (out/"manifest.json").write_text(json.dumps(dict(fake=False)))
     with pytest.raises(RuntimeError):
         PL.Evaluator(None, out, fake=True)
+
+
+def test_log_refuses_other_environment(tmp_path):
+    """a log (and so a resume) written in one environment is refused in another (Colab vs CSD3 chi2 differ, 2026-10-29)."""
+    env = PL.environment(); assert {"python", "libc", "numpy", "jax", "cpu", "cc", "gpu"} <= set(env)
+    PL.Log(tmp_path, dict(a=1, environment=env)); PL.Log(tmp_path, dict(a=1, environment=env))   # same environment: accepted
+    with pytest.raises(RuntimeError):
+        PL.Log(tmp_path, dict(a=1, environment=dict(env, gpu="another GPU")))
