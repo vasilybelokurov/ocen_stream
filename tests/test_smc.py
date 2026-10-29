@@ -112,3 +112,18 @@ def test_polish_uses_prior(tmp_path):
     x0 = np.random.default_rng(1).multivariate_normal(np.full(D, 0.5), PL.FAKE_COV, 400)
     s = S.polish(ev, o, x0, nwalkers=40, nsteps=300, dist_prior=(mu, sd), log=lambda *a: None)
     d = lo+(hi-lo)*s.get_chain(discard=150, flat=True)[:, 4]; assert d.std() < 3*sd, (d.std(), sd)
+
+
+def test_max_sweeps_in_config(tmp_path, monkeypatch):
+    """--max-sweeps is part of the run configuration: a resume with another cap is refused; a config written before the option
+    existed counts as cap 25 (2026-10-29)."""
+    import json, sys
+    o = tmp_path/"cap"; o.mkdir()
+    (o/"config.json").write_text(json.dumps(dict(n=50, beta_end=1e-9, seed=1, box=PL.LIM, dist_prior=None, fake="gauss")))   # old: no cap
+    for cap, ok in ((25, True), (40, False)):
+        monkeypatch.setattr(sys, "argv", ["smc", "--out", str(o), "--fake", "gauss", "--n", "50", "--beta-end", "1e-9", "--max-sweeps", str(cap)])
+        if ok:
+            S.main()
+        else:
+            with pytest.raises(SystemExit):
+                S.main()

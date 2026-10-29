@@ -138,20 +138,21 @@ def main():
     ap.add_argument("--box", default="", help="name=lo,hi;... e.g. dist=5.28,5.78;vc=200,250")
     ap.add_argument("--dist-prior", default=None, help="mu,sigma [kpc]: Gaussian prior on the distance (untempered)")
     ap.add_argument("--polish-steps", type=int, default=0); ap.add_argument("--walkers", type=int, default=40)
+    ap.add_argument("--max-sweeps", type=int, default=25, help="cap on move sweeps per stage (target: summed acceptance >= 2)")
     ap.add_argument("--fake", default=None, choices=[None, "gauss", "valley"]); a = ap.parse_args()
     for item in filter(None, a.box.split(";")):
         k, v = item.split("="); PL.LIM[k] = tuple(float(q) for q in v.split(","))
     dp = tuple(float(q) for q in a.dist_prior.split(",")) if a.dist_prior else None
-    O = Path(a.out); O.mkdir(parents=True, exist_ok=True); cfg = dict(n=a.n, beta_end=a.beta_end, seed=a.seed, box=PL.LIM, dist_prior=dp, fake=a.fake)
+    O = Path(a.out); O.mkdir(parents=True, exist_ok=True); cfg = dict(n=a.n, beta_end=a.beta_end, seed=a.seed, box=PL.LIM, dist_prior=dp, fake=a.fake, max_sweeps=a.max_sweeps)
     cf = O/"config.json"
-    if cf.exists() and json.loads(cf.read_text()) != json.loads(json.dumps(cfg)):
+    if cf.exists() and dict(dict(max_sweeps=25), **json.loads(cf.read_text())) != json.loads(json.dumps(cfg)):   # runs before 2026-10-29: cap 25
         raise SystemExit(f"{cf}: this run was started with another configuration ({cf.read_text()}); use a new --out")
     cf.write_text(json.dumps(cfg))
     if not a.fake:
         import jax
         jax.config.update("jax_enable_x64", True)
     ev = PL.Evaluator(a.inputs, O, fake=a.fake or False); t0 = time.time()
-    x, c, logz = smc(ev, O, n=a.n, beta_end=a.beta_end, seed=a.seed, dist_prior=dp)
+    x, c, logz = smc(ev, O, n=a.n, beta_end=a.beta_end, seed=a.seed, dist_prior=dp, max_sweeps=a.max_sweeps)
     if a.polish_steps:
         polish(ev, O, x, beta=a.beta_end, nwalkers=a.walkers, nsteps=a.polish_steps, dist_prior=dp)
     print("done", json.dumps(dict(evaluations=ev.nev, gpu_s=ev.t, wall_s=time.time()-t0, logz=logz, best_chi2=float(np.min(c)))), flush=True)
