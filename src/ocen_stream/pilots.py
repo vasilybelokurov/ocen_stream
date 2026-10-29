@@ -116,6 +116,8 @@ class Evaluator:
             return
         import jax, jax.numpy as jnp
         from . import jaxspray as J, jaxmodel as JM, jaxscore as JS
+        if not jax.config.jax_enable_x64:                                                 # float32 silently changes every chi2
+            raise RuntimeError("Evaluator needs jax_enable_x64 (jax.config.update('jax_enable_x64', True) before use)")
         I = Path(inputs); self.ht, self.inp, self.si = J.load_host(I/"host_tables.npz"), JM.load_inputs(I/"spray_inputs.npz"), JS.load(I/"score_inputs.npz")
         pts = json.loads((I/"points.json").read_text()); off = pts.pop("_epoch_offset"); self.trel, self.keep = JM.schedule(self.inp, off)
         self.points = {k: {q: float(v) for q, v in p.items()} for k, p in pts.items()}; self.banks = {}
