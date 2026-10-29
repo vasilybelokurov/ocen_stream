@@ -44,3 +44,6 @@ JOURNAL.md
 
 # draft papers (unpublished; kept out of the public repository)
 /paper/
+
+# local HPC account notes (CSD3 welcome email etc.); never commit
+hpc/
