@@ -89,7 +89,7 @@ def main():
     D = run(P, u); D["environment"] = np.array(json.dumps(env))
     ev = PL.Evaluator(a.inputs, tempfile.mkdtemp()); c_ev = float(ev(u[None], "xdump", seed=a.bank)[0])
     print(f"chi2 {D['chi2']!r}; Evaluator {c_ev!r}; dump reproduces the production path: {D['chi2'] == c_ev}", flush=True)
-    np.savez_compressed(a.out, **D); print("saved", a.out, flush=True)
+    Path(a.out).parent.mkdir(parents=True, exist_ok=True); np.savez_compressed(a.out, **D); print("saved", a.out, flush=True)
     if a.feed:
         B = np.load(a.feed); print("\nother machine:", str(B["environment"]), "\nother chi2", float(B["chi2"]), "| here", float(D["chi2"]))
         print("\n-- own outputs vs the other machine's (same u):")
