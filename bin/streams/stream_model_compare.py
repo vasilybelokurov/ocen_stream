@@ -225,6 +225,22 @@ def model_maps(O, M):
     c = M["chi2"]; fig.suptitle(f"{Path(M['file']).stem}: data | model | residual (units of sqrt(B)); chi2 sky track {c['sky_c']:.0f}, width {c['sky_s']:.0f}, "
                                 f"pmra {c['pmra']:.0f}, pmdec {c['pmdec']:.0f}, total {c['total']:.0f}; dotted: frozen PM track; sky: +-6 fit window (model scaled inside it)")
     out = ROOT/f"plots/stream_model_compare_{Path(M['file']).stem}.png"; fig.savefig(out, dpi=80); print(out.relative_to(ROOT))
+    # data - background with the (observed, scaled) model as contours, same smoothing and units (sqrt(B)) as the panels above
+    fig, ax = plt.subplots(3, 1, figsize=(12, 13), constrained_layout=True); lev = (1., 2., 4., 8.)
+    for a, (q, E1, Ey, Xd, Sd, Rd, lab, xl) in zip(ax, rows):
+        cm = plt.get_cmap("Greys"); ext = (E1[0], E1[-1], Ey[0], Ey[-1])
+        im = a.imshow(sm(np.nan_to_num(Xd)).T, origin="lower", aspect="auto", cmap=cm, vmin=0, vmax=3 if q == "sky" else 6, extent=ext)
+        c1, cy = 0.5*(E1[1:]+E1[:-1]), 0.5*(Ey[1:]+Ey[:-1])
+        cs = a.contour(c1, cy, sm(np.nan_to_num(Sd)).T, levels=lev, colors=("#9ecae1", "#4292c6", "#08519c", "#08306b"), linewidths=1.2)
+        a.set(xlim=xl, ylabel=lab, xlabel=r"$\phi_1$ [deg]", title=f"{q}: data - background (grey) and model (contours at {', '.join(f'{l:g}' for l in lev)} sqrt(B))")
+        fig.colorbar(im, ax=a, pad=0.01, label="data - background [sqrt(B)]")
+        if q != "sky":
+            g = np.linspace(-2, 28, 301); a.plot(g, O.ev(q, g), "r:", lw=0.8)
+        else:
+            a.axhline(6, color="r", ls=":", lw=0.6); a.axhline(-6, color="r", ls=":", lw=0.6)
+    fig.suptitle(f"{Path(M['file']).stem}: data with the model as contours\n(model observed with Gaia errors, same masks, scaled to the data excess per phi1 column/window;\n"
+                 f"PM model only inside the fit window); dotted red: frozen PM track / sky fit window", fontsize=10)
+    out = ROOT/f"plots/stream_model_contours_{Path(M['file']).stem}.png"; fig.savefig(out, dpi=90); print(out.relative_to(ROOT))
 
 
 if __name__ == "__main__":
