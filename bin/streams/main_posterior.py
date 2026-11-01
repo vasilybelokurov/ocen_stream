@@ -13,6 +13,8 @@ Usage: OCEN_RUNS_DIR=... PYTHONPATH=src python bin/streams/main_posterior.py --r
 import argparse, json, os
 from pathlib import Path
 import numpy as np
+import jax
+jax.config.update("jax_enable_x64", True)
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
