@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]; sys.path[:0] = [str(ROOT/"bin/stream
 FILES = [a for a in sys.argv[1:] if a.endswith(".npz")]
 TAG = ("_"+sys.argv[sys.argv.index("--tag")+1]) if "--tag" in sys.argv else ""
 sys.argv = [sys.argv[0], "--strip", "0"]                                    # stream_sky_local: no branch cut (its argv set-up)
-import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
+import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt; import matplotlib.patheffects as pe
 from scipy.optimize import minimize
 from scipy.special import ndtr
 from scipy.ndimage import gaussian_filter
@@ -233,16 +233,18 @@ def model_maps(O, M):
         c1, cy = 0.5*(E1[1:]+E1[:-1]), 0.5*(Ey[1:]+Ey[:-1])
         lev = (0.25, 0.5, 0.75, 1., 1.5, 2.) if q == "sky" else (1., 2., 4., 8.)                      # sky: lower S/N per pixel
         Sc = gaussian_filter(np.nan_to_num(Sd), 1.5 if q == "sky" else 1.)                               # sky model: a bit smoother
-        cs = a.contour(c1, cy, Sc.T, levels=lev, colors=[plt.get_cmap("autumn_r")(0.15+0.85*i/(len(lev)-1)) for i in range(len(lev))],
-                       linewidths=2.0)
+        cs = a.contour(c1, cy, Sc.T, levels=lev, colors=[plt.get_cmap("plasma")(0.75*i/(len(lev)-1)) for i in range(len(lev))],
+                       linewidths=2.0)                                                                   # dark blue -> magenta
+        for col in (cs.collections if hasattr(cs, "collections") else [cs]):
+            col.set_path_effects([pe.Stroke(linewidth=3.6, foreground="white"), pe.Normal()])           # white halo on dark pixels
         a.set(xlim=xl, ylabel=lab, xlabel=r"$\phi_1$ [deg]", title=f"{q}: data - background (grey) and model (contours at {', '.join(f'{l:g}' for l in lev)} sqrt(B))")
         fig.colorbar(im, ax=a, pad=0.01, label="data - background [sqrt(B)]")
         if q != "sky":
-            g = np.linspace(-2, 28, 301); a.plot(g, O.ev(q, g), "c:", lw=1.0)
+            g = np.linspace(-2, 28, 301); a.plot(g, O.ev(q, g), ":", color="#00a651", lw=1.2)
         else:
-            a.axhline(6, color="c", ls=":", lw=1.0); a.axhline(-6, color="c", ls=":", lw=1.0)
+            a.axhline(6, color="#00a651", ls=":", lw=1.2); a.axhline(-6, color="#00a651", ls=":", lw=1.2)
     fig.suptitle(f"{Path(M['file']).stem}: data with the model as contours\n(model observed with Gaia errors, same masks, scaled to the data excess per phi1 column/window;\n"
-                 f"PM model only inside the fit window); dotted cyan: frozen PM track / sky fit window", fontsize=10)
+                 f"PM model only inside the fit window); dotted green: frozen PM track / sky fit window", fontsize=10)
     out = ROOT/f"plots/stream_model_contours_{Path(M['file']).stem}.png"; fig.savefig(out, dpi=90); print(out.relative_to(ROOT))
 
 
