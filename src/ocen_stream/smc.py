@@ -125,7 +125,7 @@ def polish(ev, out, x0, beta=1., nwalkers=40, nsteps=1000, seed=3, dist_prior=No
         p0 = np.clip(p0+1e-6*rng.standard_normal(p0.shape), 0., 1.); be.reset(nwalkers, D); s._random.seed(seed)
     else:
         p0 = None
-    for k, _ in enumerate(s.sample(p0, iterations=nsteps-done, store=True)):
+    for k, _ in enumerate(s.sample(p0, iterations=nsteps-done, store=True) if done < nsteps else ()):   # complete: nothing to do
         if (done+k+1) % 50 == 0:
             tau = s.get_autocorr_time(tol=0); log(f"polish step {done+k+1}: acceptance {np.mean(s.acceptance_fraction):.2f}, tau median {np.median(tau):.0f}, max {np.max(tau):.0f}")
     tau = s.get_autocorr_time(tol=0); (out/"polish_tau.json").write_text(json.dumps(dict(steps=int(be.iteration), tau=tau.tolist(), n_over_tau=float(be.iteration/np.max(tau)))))

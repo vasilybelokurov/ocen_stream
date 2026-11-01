@@ -60,6 +60,8 @@ def test_resume_identical_and_polish(tmp_path):
     s = S.polish(ev2, tmp_path/"gauss", x, nwalkers=40, nsteps=600, log=lambda *a: None)
     ch = s.get_chain(discard=200, flat=True); sd = np.sqrt(np.diag(PL.FAKE_COV))
     assert np.all(np.abs(ch.mean(0)-0.5)/sd < 0.3) and np.all(np.abs(ch.std(0)/sd-1) < 0.25), (ch.mean(0)-0.5)/sd
+    n0 = ev2.nev; s2 = S.polish(ev2, tmp_path/"gauss", x, nwalkers=40, nsteps=600, log=lambda *a: None)   # complete: a resubmitted job
+    assert ev2.nev == n0 and np.array_equal(s2.get_chain(), s.get_chain())                                # does nothing (2026-11-01)
 
 
 def test_interrupted_resume_identical(tmp_path):
