@@ -231,15 +231,15 @@ def model_maps(O, M):
         cm = plt.get_cmap("Greys"); ext = (E1[0], E1[-1], Ey[0], Ey[-1])
         im = a.imshow(sm(np.nan_to_num(Xd)).T, origin="lower", aspect="auto", cmap=cm, vmin=0, vmax=3 if q == "sky" else 6, extent=ext)
         c1, cy = 0.5*(E1[1:]+E1[:-1]), 0.5*(Ey[1:]+Ey[:-1])
-        cs = a.contour(c1, cy, sm(np.nan_to_num(Sd)).T, levels=lev, colors=("#9ecae1", "#4292c6", "#08519c", "#08306b"), linewidths=1.2)
+        cs = a.contour(c1, cy, sm(np.nan_to_num(Sd)).T, levels=lev, colors=("#ffb000", "#ff6a00", "#e8000b", "#a0005a"), linewidths=2.2)
         a.set(xlim=xl, ylabel=lab, xlabel=r"$\phi_1$ [deg]", title=f"{q}: data - background (grey) and model (contours at {', '.join(f'{l:g}' for l in lev)} sqrt(B))")
         fig.colorbar(im, ax=a, pad=0.01, label="data - background [sqrt(B)]")
         if q != "sky":
-            g = np.linspace(-2, 28, 301); a.plot(g, O.ev(q, g), "r:", lw=0.8)
+            g = np.linspace(-2, 28, 301); a.plot(g, O.ev(q, g), "c:", lw=1.0)
         else:
-            a.axhline(6, color="r", ls=":", lw=0.6); a.axhline(-6, color="r", ls=":", lw=0.6)
+            a.axhline(6, color="c", ls=":", lw=1.0); a.axhline(-6, color="c", ls=":", lw=1.0)
     fig.suptitle(f"{Path(M['file']).stem}: data with the model as contours\n(model observed with Gaia errors, same masks, scaled to the data excess per phi1 column/window;\n"
-                 f"PM model only inside the fit window); dotted red: frozen PM track / sky fit window", fontsize=10)
+                 f"PM model only inside the fit window); dotted cyan: frozen PM track / sky fit window", fontsize=10)
     out = ROOT/f"plots/stream_model_contours_{Path(M['file']).stem}.png"; fig.savefig(out, dpi=90); print(out.relative_to(ROOT))
 
 
