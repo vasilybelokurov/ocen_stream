@@ -226,12 +226,15 @@ def model_maps(O, M):
                                 f"pmra {c['pmra']:.0f}, pmdec {c['pmdec']:.0f}, total {c['total']:.0f}; dotted: frozen PM track; sky: +-6 fit window (model scaled inside it)")
     out = ROOT/f"plots/stream_model_compare_{Path(M['file']).stem}.png"; fig.savefig(out, dpi=80); print(out.relative_to(ROOT))
     # data - background with the (observed, scaled) model as contours, same smoothing and units (sqrt(B)) as the panels above
-    fig, ax = plt.subplots(3, 1, figsize=(12, 13), constrained_layout=True); lev = (1., 2., 4., 8.)
+    fig, ax = plt.subplots(3, 1, figsize=(12, 13), constrained_layout=True)
     for a, (q, E1, Ey, Xd, Sd, Rd, lab, xl) in zip(ax, rows):
         cm = plt.get_cmap("Greys"); ext = (E1[0], E1[-1], Ey[0], Ey[-1])
         im = a.imshow(sm(np.nan_to_num(Xd)).T, origin="lower", aspect="auto", cmap=cm, vmin=0, vmax=3 if q == "sky" else 6, extent=ext)
         c1, cy = 0.5*(E1[1:]+E1[:-1]), 0.5*(Ey[1:]+Ey[:-1])
-        cs = a.contour(c1, cy, sm(np.nan_to_num(Sd)).T, levels=lev, colors=("#ffb000", "#ff6a00", "#e8000b", "#a0005a"), linewidths=2.2)
+        lev = (0.25, 0.5, 0.75, 1., 1.5, 2.) if q == "sky" else (1., 2., 4., 8.)                      # sky: lower S/N per pixel
+        Sc = gaussian_filter(np.nan_to_num(Sd), 1.5 if q == "sky" else 1.)                               # sky model: a bit smoother
+        cs = a.contour(c1, cy, Sc.T, levels=lev, colors=[plt.get_cmap("autumn_r")(0.15+0.85*i/(len(lev)-1)) for i in range(len(lev))],
+                       linewidths=2.0)
         a.set(xlim=xl, ylabel=lab, xlabel=r"$\phi_1$ [deg]", title=f"{q}: data - background (grey) and model (contours at {', '.join(f'{l:g}' for l in lev)} sqrt(B))")
         fig.colorbar(im, ax=a, pad=0.01, label="data - background [sqrt(B)]")
         if q != "sky":
