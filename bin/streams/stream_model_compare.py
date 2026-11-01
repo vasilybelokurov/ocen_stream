@@ -151,7 +151,7 @@ def plot(D, O, Ms):
     for a, (q, e, lab) in zip(ax, rows):
         x = D[q+"_k"] if q.startswith("pm") else pk; de = D[e] if e else np.sqrt(np.diag(D[q+"_C"])); a.errorbar(x, D[q], de, fmt="ko", capsize=3, ms=5, label="data", zorder=5)
         for i, M in enumerate(Ms):
-            me = M[e] if e else M[q+"_e"]; a.errorbar(x+0.15*(i+1), M[q], me, fmt="s-", ms=3, lw=1, color=f"C{i}", capsize=2,
+            me = M[e] if e else M[q+"_e"]; a.errorbar(x+(0.15*(i+1) if len(Ms) > 1 else 0.), M[q], me, fmt="s-", ms=3, lw=1, color=f"C{i}", capsize=2,
                                                        label=f"{Path(M['file']).stem}: chi2 {M['chi2'][q.replace('pmra', 'pmra')]:.0f}")
         a.set(xlabel=r"$\phi_1$ (sky: window centre; PM: spline knot) [deg]", ylabel=lab); a.legend(fontsize=7); a.axhline(0, color="k", lw=0.3)
     fig.suptitle("Data (local sky fits, PM splines) vs models measured the same way; chi2 per observable; sky 7 windows (phi1 6-9 dropped), PMs at the spline knots")
